@@ -1,0 +1,35 @@
+{
+  "name": "@synfin/adapters",
+  "version": "0.1.0",
+  "description": "Synfin venue adapters implementing the VenueAdapter port. Includes a deterministic MockVenueAdapter for development and tests (not a real venue).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@synfin/spec": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "2.1.8",
+    "fast-check": "3.23.1",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}
