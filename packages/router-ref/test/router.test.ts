@@ -6,11 +6,7 @@ import {
   type Quote,
   type SwapIntent,
 } from '@synfin/spec';
-import {
-  NoViableRouteError,
-  createReferenceRouter,
-  route,
-} from '../src/index.js';
+import { referenceRouter, route } from '../src/index.js';
 
 const USD: AssetId = { registry: 'reg::usd', instrumentId: 'USD', decimals: 2 };
 const BTC: AssetId = { registry: 'reg::btc', instrumentId: 'BTC', decimals: 8 };
@@ -116,50 +112,62 @@ describe('reference router — happy paths', () => {
   });
 });
 
-describe('reference router — no viable route', () => {
-  it('no eligible quotes (asset mismatch / expired / disallowed)', () => {
-    expect(route(intent(), [], NOW).ok).toBe(false);
+describe('reference router — no viable route (typed reasons, no throwing)', () => {
+  it("returns 'no-eligible-quotes' (empty / asset mismatch / expired / disallowed)", () => {
+    const empty = route(intent(), [], NOW);
+    expect(empty.ok).toBe(false);
+    if (!empty.ok) expect(empty.reason).toBe('no-eligible-quotes');
+
     expect(
       route(intent(), [quote({ receive: { asset: EUR, amount: '1.00' } })], NOW)
         .ok,
     ).toBe(false);
-    expect(route(intent(), [quote({ validUntil: PAST })], NOW).ok).toBe(false);
+    const expired = route(intent(), [quote({ validUntil: PAST })], NOW);
+    expect(expired.ok).toBe(false);
+    if (!expired.ok) expect(expired.reason).toBe('no-eligible-quotes');
     const disallowed = route(
       intent({ constraints: { venueAllowList: ['other'] } }),
       [quote()],
       NOW,
     );
     expect(disallowed.ok).toBe(false);
+    if (!disallowed.ok) expect(disallowed.reason).toBe('no-eligible-quotes');
   });
 
-  it('insufficient depth when the give cannot be fully allocated', () => {
+  it("returns 'min-receive-unreachable' when the give cannot be fully allocated", () => {
     const r = route(
       intent(),
       [quote({ give: { asset: USD, amount: '50' } })],
       NOW,
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toBe('insufficient_depth');
+    if (!r.ok) expect(r.reason).toBe('min-receive-unreachable');
   });
 
-  it('min_receive_unmet when the best plan is below the floor', () => {
+  it("returns 'min-receive-unreachable' when the best plan is below the floor", () => {
     const r = route(
       intent({ want: { asset: BTC, minReceive: '9.00000000' } }),
       [quote()],
       NOW,
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toBe('min_receive_unmet');
+    if (!r.ok) expect(r.reason).toBe('min-receive-unreachable');
   });
 
-  it('constraint_violation on a malformed intent amount', () => {
+  it('never returns slippage-exceeded: a tight maxSlippageBps=0 still routes', () => {
+    // The reference router adds zero slippage, so a 0 bound is always satisfied.
+    const r = route(intent({ maxSlippageBps: 0 }), [quote()], NOW);
+    expect(r.ok).toBe(true);
+  });
+
+  it('returns a typed result (does not throw) on a malformed intent amount', () => {
     const r = route(
       intent({ give: { asset: USD, amount: 'abc' } }),
       [quote()],
       NOW,
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toBe('constraint_violation');
+    if (!r.ok) expect(r.reason).toBe('min-receive-unreachable');
   });
 
   it('respects maxVenues: a split that needs 2 venues fails at maxVenues=1', () => {
@@ -248,14 +256,16 @@ describe('reference router — determinism & tie-breaking', () => {
   });
 });
 
-describe('createReferenceRouter (Router port adapter)', () => {
-  it('returns a plan for a viable intent', () => {
-    const router = createReferenceRouter(NOW);
-    expect(router.route(intent(), [quote()]).legs).toHaveLength(1);
+describe('referenceRouter (Router port value, RFC-0002)', () => {
+  it('routes via the per-call port signature route(intent, quotes, now)', () => {
+    const r = referenceRouter.route(intent(), [quote()], NOW);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.legs).toHaveLength(1);
   });
 
-  it('throws NoViableRouteError when no route exists', () => {
-    const router = createReferenceRouter(NOW);
-    expect(() => router.route(intent(), [])).toThrow(NoViableRouteError);
+  it('returns a typed no-route result (never throws)', () => {
+    const r = referenceRouter.route(intent(), [], NOW);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('no-eligible-quotes');
   });
 });
