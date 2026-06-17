@@ -8,6 +8,16 @@ are versioned independently; each release records the spec version it targets.
 ## [Unreleased]
 
 ### Added
+- **`daml/synfin-settlement` — on-ledger atomic multi-leg settlement (ADR-0008).** Composes an
+  N-leg route into a SINGLE atomic Daml transaction on the **real CIP-0056** token-standard
+  allocation interfaces (`hyperledger-labs/splice@canton-3.4`, depended on as DARs — not
+  stubs): all-or-nothing, single-use allocations, expiry, idempotency by `intentId`, and
+  on-ledger enforcement of `minReceive`/`maxSlippageBps`/`deadline`/conservation (SPEC §6).
+  Full Daml Script matrix green against Amulet (happy path 2-venue/4-leg, all-or-nothing,
+  abort/expiry, executor-only authorization, no-double-spend, bound enforcement; TESTING.md §3).
+  Real CIP-0056 DARs vendored in `daml/dars/` (provenance + regenerate script). Daml CI job
+  activated (JDK 17 + pinned SDK `3.3.0-snapshot.20250507.0`). ADR-0008 records the design and
+  a known per-venue-privacy limitation (SPEC §7) as a candidate RFC.
 - Foundational documentation set: README, ARCHITECTURE, SPECIFICATION (SQSS draft),
   ENGINEERING, TESTING, THREAT_MODEL, GOVERNANCE, SECURITY, CONTRIBUTING, CODE_OF_CONDUCT,
   GLOSSARY, ROADMAP, CLAUDE.
