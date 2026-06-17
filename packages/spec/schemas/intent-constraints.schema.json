@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "intent-constraints.schema.json",
+  "title": "IntentConstraints",
+  "description": "Optional routing constraints attached to a SwapIntent (SPEC §4.1).",
+  "type": "object",
+  "properties": {
+    "maxVenues": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional cap on the number of legs (venues) in a RoutePlan (SPEC §4.1, §4.4)."
+    },
+    "venueAllowList": {
+      "type": "array",
+      "items": { "$ref": "primitives.schema.json#/$defs/VenueId" },
+      "description": "Optional restriction: only these venues may appear in a RoutePlan (SPEC §4.1, §4.4)."
+    },
+    "privacy": {
+      "type": "string",
+      "enum": ["strict"],
+      "description": "Privacy mode. Default and only defined value is 'strict': no leg may learn the aggregate intent (SPEC §4.1, §7)."
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quote.schema.json",
+  "title": "Quote",
+  "description": "A venue's normalized answer to a QuoteRequest (SPEC §4.3). Fees are already reflected in `receive`. A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
+  "type": "object",
+  "properties": {
+    "venueId": { "$ref": "primitives.schema.json#/$defs/VenueId" },
+    "give": {
+      "type": "object",
+      "description": "Echoes the requested size (SPEC §4.3).",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
+      },
+      "required": ["asset", "amount"]
+    },
+    "receive": {
+      "type": "object",
+      "description": "The offered output, with all fees already reflected (SPEC §4.3).",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
+      },
+      "required": ["asset", "amount"]
+    },
+    "feeBps": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Fees already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3)."
+    },
+    "sourceKind": {
+      "type": "string",
+      "enum": ["AMM", "CLOB", "RFQ"],
+      "description": "The kind of liquidity source (SPEC §4.3)."
+    },
+    "firmness": {
+      "type": "string",
+      "enum": ["indicative", "firm"],
+      "description": "An indicative quote is non-binding; a firm quote is binding and MUST be backed by commitment+signature (SPEC §4.3)."
+    },
+    "validUntil": {
+      "$ref": "primitives.schema.json#/$defs/Timestamp",
+      "description": "Consumers MUST reject quotes whose validUntil has passed (SPEC §4.3, §8)."
+    },
+    "commitment": {
+      "$ref": "primitives.schema.json#/$defs/CommitmentRef",
+      "description": "REQUIRED if firmness == 'firm' (SPEC §4.3)."
+    },
+    "signature": {
+      "$ref": "primitives.schema.json#/$defs/Signature",
+      "description": "REQUIRED if firmness == 'firm' (SPEC §4.3)."
+    }
+  },
+  "required": [
+    "venueId",
+    "give",
+    "receive",
+    "feeBps",
+    "sourceKind",
+    "firmness",
+    "validUntil"
+  ],
+  "allOf": [
+    {
+      "description": "A firm quote MUST carry both a commitment and a signature (SPEC §4.3).",
+      "if": {
+        "properties": { "firmness": { "const": "firm" } },
+        "required": ["firmness"]
+      },
+      "then": { "required": ["commitment", "signature"] }
+    }
+  ]
+}

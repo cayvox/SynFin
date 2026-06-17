@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "primitives.schema.json",
+  "title": "SQSS shared primitives",
+  "description": "Shared scalar/value primitives referenced by the SQSS wire types. Realizes SPECIFICATION.md §3 (Conventions) and §4 (Data model). Non-normative prose lives in the spec; these schemas are the authoritative shapes.",
+  "$defs": {
+    "PartyId": {
+      "title": "PartyId",
+      "description": "A Canton party identifier (SPEC §4.1). Opaque non-empty string; SQSS does not constrain the internal format beyond non-emptiness so as not to diverge from Canton's own party-id format.",
+      "type": "string",
+      "minLength": 1
+    },
+    "VenueId": {
+      "title": "VenueId",
+      "description": "Stable identifier of a liquidity venue/adapter (SPEC §2, §4.3).",
+      "type": "string",
+      "minLength": 1
+    },
+    "Timestamp": {
+      "title": "Timestamp",
+      "description": "Absolute UTC instant, RFC 3339 / ISO 8601 date-time (SPEC §3: time is UTC; deadlines and validity are absolute timestamps).",
+      "type": "string",
+      "format": "date-time",
+      "minLength": 1
+    },
+    "Decimal": {
+      "title": "Decimal",
+      "description": "Exact decimal value carried as a string to avoid binary floating point for value math (SPEC §3). Canonical form: optional leading '-', no leading zeros (except '0'), optional fractional part with at least one digit. No exponent notation.",
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "Signature": {
+      "title": "Signature",
+      "description": "Opaque venue signature over a firm quote (SPEC §4.3). REQUIRED when a quote is firm. Encoding is venue/registry defined; SQSS treats it as an opaque non-empty token to be verified against the venue's key out of band / on-ledger.",
+      "type": "string",
+      "minLength": 1
+    },
+    "CommitmentRef": {
+      "title": "CommitmentRef",
+      "description": "Reference to an on-ledger commitment that backs a firm quote and can be honored during CIP-0056 settlement (SPEC §4.3, §6). REQUIRED when a quote is firm.",
+      "type": "string",
+      "minLength": 1
+    },
+    "AssetId": {
+      "title": "AssetId",
+      "description": "Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3: the issuing registry plus the instrument, never a symbol alone). `decimals` carries the instrument's defined precision; because Canton has no global readable state (ARCHITECTURE.md §1, invariant #2) the precision must travel with the asset reference so amounts can be validated off-ledger.",
+      "type": "object",
+      "properties": {
+        "registry": {
+          "$ref": "primitives.schema.json#/$defs/PartyId",
+          "description": "The issuing registry (a Canton party administering the instrument)."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Instrument identifier within the issuing registry."
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 38,
+          "description": "The instrument's defined decimal precision. Amounts of this asset MUST NOT carry more fractional digits than this."
+        }
+      },
+      "required": ["registry", "id", "decimals"]
+    }
+  }
+}

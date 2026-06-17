@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "route-plan.schema.json",
+  "title": "RoutePlan",
+  "description": "A selected/split route across venue legs (SPEC §4.4). Cross-field invariants (conservation, worstCaseReceive >= minReceive, slippage bound, maxVenues/allowList) are enforced by the constraint predicates in @synfin/spec, not by this shape alone.",
+  "type": "object",
+  "properties": {
+    "intentRef": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The originating SwapIntent.intentId (SPEC §4.4)."
+    },
+    "legs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "route-leg.schema.json" },
+      "description": "The legs. Σ legs[].give.amount MUST equal intent.give.amount (SPEC §4.4)."
+    },
+    "aggregateReceive": {
+      "$ref": "primitives.schema.json#/$defs/Decimal",
+      "description": "Sum of expected leg receipts (SPEC §4.4)."
+    },
+    "worstCaseReceive": {
+      "$ref": "primitives.schema.json#/$defs/Decimal",
+      "description": "Lower bound on delivered output given quote firmness/slippage. A plan whose worstCaseReceive < intent.want.minReceive MUST NOT be submitted (SPEC §4.4, §6)."
+    },
+    "slippageBps": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Slippage vs reference, in basis points; MUST satisfy intent.maxSlippageBps (SPEC §4.4)."
+    }
+  },
+  "required": [
+    "intentRef",
+    "legs",
+    "aggregateReceive",
+    "worstCaseReceive",
+    "slippageBps"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "swap-intent.schema.json",
+  "title": "SwapIntent",
+  "description": "What a taker wants to swap (SPEC §4.1). `minReceive` is authoritative; `maxSlippageBps` is an additional guard that MUST NOT relax `minReceive`.",
+  "type": "object",
+  "properties": {
+    "intentId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique intent identifier; replay/idempotency key (SPEC §4.1, §6, §8)."
+    },
+    "taker": {
+      "$ref": "primitives.schema.json#/$defs/PartyId",
+      "description": "The taker's Canton party."
+    },
+    "give": {
+      "type": "object",
+      "description": "The asset and total amount the taker offers.",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
+      },
+      "required": ["asset", "amount"]
+    },
+    "want": {
+      "type": "object",
+      "description": "The asset the taker wants and the floor it will accept.",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "minReceive": {
+          "$ref": "primitives.schema.json#/$defs/Decimal",
+          "description": "Authoritative floor: a settlement delivering less than this MUST fail (SPEC §4.1, §6)."
+        }
+      },
+      "required": ["asset", "minReceive"]
+    },
+    "maxSlippageBps": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Additional slippage protection relative to an agreed reference, in basis points (SPEC §4.1). MUST be >= 0 and MUST NOT relax minReceive."
+    },
+    "deadline": {
+      "$ref": "primitives.schema.json#/$defs/Timestamp",
+      "description": "Absolute expiry; settlement MUST NOT occur after this (SPEC §4.1, §6)."
+    },
+    "constraints": {
+      "$ref": "intent-constraints.schema.json"
+    }
+  },
+  "required": [
+    "intentId",
+    "taker",
+    "give",
+    "want",
+    "maxSlippageBps",
+    "deadline"
+  ]
+}
