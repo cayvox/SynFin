@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+
+# Editor / OS
+.DS_Store
+*.log
+
+# Secrets — never commit (see ENGINEERING.md §6). Only .env.example is tracked.
+.env
+.env.*
+!.env.example

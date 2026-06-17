@@ -1,0 +1,77 @@
+name: CI
+
+# Blocking gates per ENGINEERING.md §8. A red gate blocks merge.
+# Daml and e2e (Canton testnet) jobs are intentionally stubbed below until the
+# settlement library and adapters land (TESTING.md §3, §6).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: build · gen-sync · lint · typecheck · test · coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Verify generated types are in sync
+        # Fails if `gen` produces a diff against committed output.
+        run: pnpm gen:check
+
+      - name: Lint + format check
+        run: |
+          pnpm -w lint
+          pnpm -w format:check
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit + property tests with coverage thresholds
+        # Coverage thresholds are enforced inside each package's vitest config
+        # (TESTING.md §7). A threshold miss fails this job.
+        run: pnpm test
+
+  # --- Stubbed gates (enable as the corresponding code lands) -----------------
+  #
+  # daml-test:
+  #   name: daml build + daml test (settlement library) — TESTING.md §3
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: echo "TODO: daml build && daml test once daml/synfin-settlement exists"
+  #
+  # conformance:
+  #   name: adapter/venue conformance suite — TESTING.md §5
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: echo "TODO: run conformance suite once adapters exist"
+  #
+  # e2e:
+  #   name: e2e atomic split swap (Canton testnet) — TESTING.md §6
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: echo "TODO: scheduled/pre-release only"
