@@ -1,0 +1,9 @@
+**/dist/**
+**/coverage/**
+**/node_modules/**
+pnpm-lock.yaml
+packages/*/src/generated/**
+
+# Hand-written prose (normative spec, ADRs, repo docs) is not auto-formatted;
+# we do not impose code formatting on Markdown authored by humans.
+**/*.md
