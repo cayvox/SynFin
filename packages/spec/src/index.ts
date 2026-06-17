@@ -56,6 +56,8 @@ export type {
   VenueAdapter,
   QuoteRejection,
   Router,
+  RouteResult,
+  NoViableRouteReason,
   Settlement,
   AllocationRequest,
   SettlementOutcome,
