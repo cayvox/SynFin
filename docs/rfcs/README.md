@@ -16,3 +16,4 @@ conformance‑test impact, so no normative change is made silently (the zero‑a
 | --- | --- | --- | --- |
 | [0001](0001-assetid-minreceive-quote-linkage.md) | Lock the `AssetId`, `minReceive`, and quote↔leg contracts | Accepted | 0.2.0 |
 | [0002](0002-router-port-now-and-result.md) | Fix the `Router` port — per‑call `now` and a typed `RouteResult` | Accepted | 0.3.0 |
+| [0003](0003-privacy-model.md) | Synfin privacy model — per‑leg confidential settlement | Accepted | 0.4.0 (proposed) |
