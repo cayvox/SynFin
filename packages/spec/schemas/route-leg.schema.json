@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "route-leg.schema.json",
+  "title": "RouteLeg",
+  "description": "One venue leg of a RoutePlan (SPEC §4.4).",
+  "type": "object",
+  "properties": {
+    "venueId": { "$ref": "primitives.schema.json#/$defs/VenueId" },
+    "give": {
+      "type": "object",
+      "description": "The portion of the intent's give routed to this venue.",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
+      },
+      "required": ["asset", "amount"]
+    },
+    "receive": {
+      "type": "object",
+      "description": "The expected output from this venue for this leg.",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
+      },
+      "required": ["asset", "amount"]
+    },
+    "quoteRef": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Reference to the Quote this leg is built from (SPEC §4.4)."
+    }
+  },
+  "required": ["venueId", "give", "receive", "quoteRef"]
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quote-request.schema.json",
+  "title": "QuoteRequest",
+  "description": "A request to a venue for a quote on a single size bucket (SPEC §4.2). A venue MUST treat each request independently and MUST NOT be able to derive the taker's total intent from it (SPEC §4.2, §7).",
+  "type": "object",
+  "properties": {
+    "intentRef": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The originating SwapIntent.intentId (SPEC §4.2)."
+    },
+    "give": {
+      "type": "object",
+      "description": "The asset and the size for THIS request (a bucket), not the taker's total.",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
+        "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
+      },
+      "required": ["asset", "amount"]
+    },
+    "want": {
+      "type": "object",
+      "description": "The asset the taker wants in return.",
+      "properties": {
+        "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" }
+      },
+      "required": ["asset"]
+    },
+    "deadline": {
+      "$ref": "primitives.schema.json#/$defs/Timestamp",
+      "description": "Responses MUST be returned before this; late responses MUST be ignored (SPEC §5)."
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Replay protection for this request (SPEC §4.2, §8)."
+    }
+  },
+  "required": ["intentRef", "give", "want", "deadline", "nonce"]
+}
