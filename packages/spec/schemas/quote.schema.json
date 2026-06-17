@@ -5,6 +5,11 @@
   "description": "A venue's normalized answer to a QuoteRequest (SPEC §4.3). Fees are already reflected in `receive`. A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
   "type": "object",
   "properties": {
+    "quoteId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this quote, set by the venue/adapter; unique within the scope of an intent's quote-gathering round. A RouteLeg.quoteRef resolves to this (SPEC §4.3, §4.4; RFC-0001 Decision C)."
+    },
     "venueId": { "$ref": "primitives.schema.json#/$defs/VenueId" },
     "give": {
       "type": "object",
@@ -53,6 +58,7 @@
     }
   },
   "required": [
+    "quoteId",
     "venueId",
     "give",
     "receive",

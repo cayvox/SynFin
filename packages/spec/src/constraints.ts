@@ -1,6 +1,11 @@
 import { Decimal } from './decimal.js';
 import { type Result, type ValidationError, ok, err } from './result.js';
-import type { AssetId, RoutePlan, SwapIntent } from './generated/types.js';
+import type {
+  AssetId,
+  Quote,
+  RoutePlan,
+  SwapIntent,
+} from './generated/types.js';
 
 /**
  * Reusable predicates for the SQSS cross-field constraints on a {@link RoutePlan}
@@ -10,19 +15,28 @@ import type { AssetId, RoutePlan, SwapIntent } from './generated/types.js';
  * - **Worst-case floor** — worstCaseReceive >= intent.want.minReceive.
  * - **Slippage bound** — plan.slippageBps <= intent.maxSlippageBps.
  * - **Venue constraints** — legs respect `maxVenues` and `venueAllowList`.
+ * - **Quote linkage** — every leg's `quoteRef` resolves to a supplied quote
+ *   (SPEC §4.4, RFC-0001 Decision C).
+ * - **No overstatement (per leg)** — each leg's `receive` does not exceed its
+ *   referenced quote's `receive`, that quote is unexpired, and its assets match
+ *   the leg (SPEC §4.4, RFC-0001 Decision C).
  * - **Aggregate consistency** — worstCaseReceive <= aggregateReceive <= Σ legs
- *   receive (no overstatement of what the taker receives, SPEC §4.4 / §3).
+ *   receive (kept as an additional invariant, SPEC §4.4 / §3).
  *
  * Each predicate is pure and returns `ValidationError[]` (empty = satisfied).
- * {@link checkRoutePlan} composes them into a single {@link Result}. These
- * operate on already shape-valid data; pass plans through
- * `validateRoutePlan` first.
+ * The quote-linkage and per-leg no-overstatement checks need the set of source
+ * quotes (and the current time) the plan was built from. {@link checkRoutePlan}
+ * composes them into a single {@link Result}. These operate on already
+ * shape-valid data; pass plans/quotes through `validateRoutePlan`/`validateQuote`
+ * first.
  */
 
-/** Structural equality of two asset references (SPEC §3). */
+/** Structural equality of two asset references (SPEC §3, RFC-0001 Decision A). */
 export function assetEquals(a: AssetId, b: AssetId): boolean {
   return (
-    a.registry === b.registry && a.id === b.id && a.decimals === b.decimals
+    a.registry === b.registry &&
+    a.instrumentId === b.instrumentId &&
+    a.decimals === b.decimals
   );
 }
 
@@ -184,20 +198,116 @@ export function checkAggregateConsistency(plan: RoutePlan): ValidationError[] {
   return errors;
 }
 
+/** Index a quote set by `quoteId` for resolution (SPEC §4.3). */
+function indexByQuoteId(quotes: readonly Quote[]): Map<string, Quote> {
+  const byId = new Map<string, Quote>();
+  for (const q of quotes) byId.set(q.quoteId, q);
+  return byId;
+}
+
+/**
+ * Every `RouteLeg.quoteRef` MUST equal the `quoteId` of a supplied quote
+ * (SPEC §4.4, RFC-0001 Decision C). A plan referencing an unknown quote is
+ * rejected.
+ */
+export function checkQuoteLinkage(
+  plan: RoutePlan,
+  quotes: readonly Quote[],
+): ValidationError[] {
+  const byId = indexByQuoteId(quotes);
+  const errors: ValidationError[] = [];
+  plan.legs.forEach((leg, i) => {
+    if (!byId.has(leg.quoteRef)) {
+      errors.push({
+        code: 'unresolved_quote_ref',
+        message: 'leg quoteRef does not resolve to a supplied quote',
+        path: `/legs/${i}/quoteRef`,
+      });
+    }
+  });
+  return errors;
+}
+
+/**
+ * No overstatement, per leg (SPEC §4.4, RFC-0001 Decision C). For each leg,
+ * against the quote it references: `leg.receive.amount` MUST NOT exceed the
+ * quote's `receive.amount`; the quote MUST be unexpired at `now`
+ * (`now <= validUntil`); and the quote's give/receive assets MUST match the
+ * leg's. Legs whose `quoteRef` does not resolve are skipped here — that is
+ * reported by {@link checkQuoteLinkage}.
+ */
+export function checkNoOverstatement(
+  plan: RoutePlan,
+  quotes: readonly Quote[],
+  now: Date,
+): ValidationError[] {
+  const byId = indexByQuoteId(quotes);
+  const errors: ValidationError[] = [];
+  plan.legs.forEach((leg, i) => {
+    const quote = byId.get(leg.quoteRef);
+    if (quote === undefined) return; // linkage owns the unresolved case.
+    if (now.getTime() > new Date(quote.validUntil).getTime()) {
+      errors.push({
+        code: 'quote_expired',
+        message: 'leg references a quote that has expired',
+        path: `/legs/${i}/quoteRef`,
+      });
+    }
+    if (
+      !assetEquals(leg.give.asset, quote.give.asset) ||
+      !assetEquals(leg.receive.asset, quote.receive.asset)
+    ) {
+      errors.push({
+        code: 'leg_quote_asset_mismatch',
+        message: 'leg assets do not match the referenced quote',
+        path: `/legs/${i}`,
+      });
+    }
+    const legReceive = parseAmount(
+      leg.receive.amount,
+      `/legs/${i}/receive/amount`,
+      errors,
+    );
+    const quoteReceive = parseAmount(
+      quote.receive.amount,
+      `/legs/${i}/quoteRef`,
+      errors,
+    );
+    if (
+      legReceive !== null &&
+      quoteReceive !== null &&
+      legReceive.gt(quoteReceive)
+    ) {
+      errors.push({
+        code: 'leg_exceeds_quote',
+        message: 'leg receive exceeds the referenced quote receive',
+        path: `/legs/${i}/receive/amount`,
+      });
+    }
+  });
+  return errors;
+}
+
 /**
  * Compose all {@link RoutePlan} cross-field constraints against the originating
- * {@link SwapIntent}. A plan that fails any constraint MUST NOT be submitted for
- * settlement (SPEC §4.4, §6).
+ * {@link SwapIntent} and the set of source quotes the plan was built from. A
+ * plan that fails any constraint MUST NOT be submitted for settlement
+ * (SPEC §4.4, §6). `now` is used for the quote-expiry check (RFC-0001
+ * Decision C).
  */
 export function checkRoutePlan(
   plan: RoutePlan,
   intent: SwapIntent,
+  quotes: readonly Quote[],
+  now: Date,
 ): Result<RoutePlan> {
   const errors: ValidationError[] = [
     ...checkConservation(plan, intent),
     ...checkWorstCaseFloor(plan, intent),
     ...checkSlippageBound(plan, intent),
     ...checkVenueConstraints(plan, intent),
+    ...checkQuoteLinkage(plan, quotes),
+    ...checkNoOverstatement(plan, quotes, now),
     ...checkAggregateConsistency(plan),
   ];
   return errors.length > 0 ? err(errors) : ok(plan);
