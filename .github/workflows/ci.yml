@@ -59,6 +59,8 @@ jobs:
   daml:
     name: daml build + daml test (settlement library) — TESTING.md §3
     runs-on: ubuntu-latest
+    env:
+      TERM: dumb # silence harmless `tput: No value for $TERM` from the installer
     steps:
       - uses: actions/checkout@v4
 
@@ -68,10 +70,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Daml SDK (pinned; ADR-0008)
+      - name: Install Daml SDK 3.3.0-snapshot.20250507.0 (deterministic; no get.daml.com)
+        # get.daml.com's installer cannot resolve this snapshot in CI's headless
+        # shell (empty download URL -> "FAILED TO INSTALL"). Instead we install
+        # directly from the pinned GitHub release tarball: its bundled install.sh
+        # installs from the extracted dir (no network version resolution) under
+        # the version in daml_version.txt (= 3.3.0-snapshot.20250507.0), matching
+        # the daml.yaml pin. Source URL recorded in daml/dars/README.md.
         run: |
-          curl -sSL https://get.daml.com/ | sh -s 3.3.0-snapshot.20250507.0
+          set -euo pipefail
+          URL="https://github.com/digital-asset/daml/releases/download/v3.3.0-snapshot.20250507.0/daml-sdk-3.3.0-snapshot.20250502.13767.0.v2fc6c7e2-linux-x86_64.tar.gz"
+          curl -fL --retry 3 --retry-delay 5 "$URL" -o /tmp/daml-sdk.tar.gz
+          tar xzf /tmp/daml-sdk.tar.gz -C /tmp
+          /tmp/sdk-*/install.sh
           echo "$HOME/.daml/bin" >> "$GITHUB_PATH"
+
+      - name: Show Daml version
+        run: daml version
 
       - name: Build the settlement library against the real CIP-0056 DARs
         # Vendored DARs in daml/dars/ (provenance: daml/dars/README.md) — no
