@@ -14,8 +14,9 @@ Thank you for helping build neutral infrastructure for the Canton ecosystem. Thi
 Prerequisites:
 
 - **Node.js >= 20** and **pnpm >= 9** (`corepack enable`)
-- **Daml SDK** (pinned in `daml.yaml` once scaffolded; install via `daml install`)
-- A local Canton sandbox or access to Canton testnet (see ARCHITECTURE.md §Runtime)
+- **Daml SDK** pinned to `3.3.0-snapshot.20250507.0` (the Splice token‑standard's `3.3.0`
+  line; ADR‑0008): `daml install 3.3.0-snapshot.20250507.0`
+- **JDK 17** — `daml test`/`daml sandbox` need a JVM (`daml build` alone does not)
 - `git` with commit signing recommended (DCO sign‑off required — see below)
 
 ```bash
@@ -25,9 +26,20 @@ pnpm install         # JS/TS workspaces
 pnpm build           # build all packages
 pnpm test            # unit + property tests
 pnpm -w lint         # eslint + prettier check
-daml build           # build the Daml library (once daml/ exists)
-daml test            # Daml Script tests
 ```
+
+### On‑ledger (Daml) — `daml/synfin-settlement`
+
+The settlement library builds against the **real CIP‑0056** token‑standard DARs, vendored in
+[`daml/dars/`](daml/dars/) (provenance + regenerate script in
+[`daml/dars/README.md`](daml/dars/README.md)). With JDK 17 and the pinned SDK on `PATH`:
+
+```bash
+cd daml/synfin-settlement       && daml build          # library (real CIP-0056 data-deps)
+cd ../synfin-settlement-test    && daml build && daml test   # Daml Script matrix (Amulet)
+```
+
+To rebuild the vendored DARs from source: `daml/scripts/build-splice-dars.sh`.
 
 ## Repository layout
 

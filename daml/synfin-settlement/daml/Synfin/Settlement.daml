@@ -1,0 +1,199 @@
+-- Copyright (c) 2026 Cayvox Labs. SPDX-License-Identifier: Apache-2.0
+--
+-- | Synfin on-ledger atomic multi-leg settlement (SPEC §6; ADR-0008).
+--
+-- Composes an N-leg route into a SINGLE atomic Daml transaction using the real
+-- CIP-0056 token-standard allocation interfaces (Splice `Allocation` /
+-- `AllocationRequest`). Either every leg settles or none does (all-or-nothing,
+-- ARCHITECTURE.md §1 invariant #3). The taker's economic bounds
+-- (`minReceive`, `maxSlippageBps`, `deadline`) are enforced on-ledger, so a
+-- lying quote causes a safe abort, not a loss (SPEC §6 step 3).
+module Synfin.Settlement where
+
+import DA.List (dedup)
+import DA.TextMap (TextMap)
+import DA.TextMap qualified as TextMap
+
+import Splice.Api.Token.MetadataV1 (ChoiceExecutionMetadata (..), ExtraArgs, emptyMetadata)
+import Splice.Api.Token.HoldingV1 (InstrumentId)
+import Splice.Api.Token.AllocationV1
+import Splice.Api.Token.AllocationRequestV1
+
+-- | A single settlement leg: `sender` delivers `amount` of `instrument` to
+-- `receiver`. A Synfin route is expressed as give-legs (taker → venue, in the
+-- give asset) and receive-legs (venue → taker, in the want asset). We carry the
+-- Synfin shape and convert to the standard `TransferLeg` on demand, so the
+-- library reads naturally against `@synfin/spec` while composing the real
+-- standard.
+data Leg = Leg
+  with
+    sender : Party
+    receiver : Party
+    amount : Decimal
+    instrument : InstrumentId
+  deriving (Eq, Show)
+
+-- | The values of a `TextMap` (helper; avoids relying on optional std APIs).
+vals : TextMap a -> [a]
+vals m = map snd (TextMap.toList m)
+
+toTransferLeg : Leg -> TransferLeg
+toTransferLeg leg = TransferLeg with
+  sender = leg.sender
+  receiver = leg.receiver
+  amount = leg.amount
+  instrumentId = leg.instrument
+  meta = emptyMetadata
+
+-- | Total amount delivered to `taker` in `instrument` across the legs.
+deliveredTo : Party -> InstrumentId -> TextMap Leg -> Decimal
+deliveredTo taker instrument legs =
+  sum [ l.amount | l <- vals legs, l.receiver == taker, l.instrument == instrument ]
+
+-- | Total amount the `taker` spends in `instrument` across the legs.
+spentBy : Party -> InstrumentId -> TextMap Leg -> Decimal
+spentBy taker instrument legs =
+  sum [ l.amount | l <- vals legs, l.sender == taker, l.instrument == instrument ]
+
+-- | The slippage floor: the least the taker may receive given an agreed
+-- reference and `maxSlippageBps` (SPEC §4.1, §4.4). 1 bps = 0.01%.
+slippageFloor : Decimal -> Int -> Decimal
+slippageFloor referenceReceive maxSlippageBps =
+  referenceReceive * intToDecimal (10000 - maxSlippageBps) / 10000.0
+
+-- | The co-signed agreement that binds a Synfin route into one atomic
+-- settlement (SPEC §6). It is signed by the `executor` (settlement coordinator)
+-- and every party on the legs, mirroring the proven CIP-0056 OTC pattern: the
+-- atomic execution of each leg's `Allocation` requires that leg sender's
+-- authority in the settling transaction, which co-signing provides.
+--
+-- PRIVACY NOTE (SPEC §7; ADR-0008): co-signing means the aggregate route is
+-- visible to its signatories (the venues), so this reference template does NOT
+-- yet achieve per-venue leg privacy. The per-registry transfer mechanics remain
+-- private to each registry (the allocation model), but blinding each venue to
+-- the other legs needs sub-transaction privacy / selective disclosure (or an
+-- executor-only authority model) — documented as a known limitation and a
+-- candidate RFC in ADR-0008.
+template SwapSettlement
+  with
+    intentId : Text
+      -- ^ Replay/idempotency key (SPEC §4.1, §6, §8). Carried in the CIP-0056
+      -- settlement reference; the consuming `SwapSettlement_Settle` choice makes
+      -- a retry a no-op (the contract is gone after the first settle).
+    executor : Party
+      -- ^ The settlement coordinator; controls execution and is the CIP-0056
+      -- settlement `executor`.
+    taker : Party
+    giveInstrument : InstrumentId
+    wantInstrument : InstrumentId
+    giveAmount : Decimal
+      -- ^ Total the taker gives; Σ give-legs MUST equal this (conservation).
+    minReceive : Decimal
+      -- ^ Authoritative floor in the want instrument; settlement delivering less
+      -- MUST abort (SPEC §4.1, §6). MUST be > 0 (checked at create).
+    maxSlippageBps : Int
+    referenceReceive : Decimal
+      -- ^ The agreed reference the slippage bound is measured against (SPEC §4.1).
+    legs : TextMap Leg
+    createdAt : Time
+    prepareUntil : Time
+      -- ^ Allocations MUST be in place before this (CIP-0056 `allocateBefore`).
+    deadline : Time
+      -- ^ Settlement MUST NOT occur after this (SPEC §6; `settleBefore`).
+  where
+    signatory dedup (executor :: taker :: concatMap (\l -> [l.sender, l.receiver]) (vals legs))
+    ensure
+      minReceive > 0.0
+        && giveAmount > 0.0
+        && maxSlippageBps >= 0
+        && prepareUntil <= deadline
+
+    -- | Standard `AllocationRequest` view (CIP-0056). Only `executor`/`taker`
+    -- observe this contract, so the aggregate is never disclosed to a venue
+    -- (SPEC §7); a venue receives its single leg off-ledger and allocates it.
+    interface instance AllocationRequest for SwapSettlement where
+      view = AllocationRequestView with
+        settlement = settlementInfoOf this
+        transferLegs = TextMap.fromList
+          [ (k, toTransferLeg l) | (k, l) <- TextMap.toList this.legs ]
+        meta = emptyMetadata
+      allocationRequest_RejectImpl _self arg = do
+        assertMsg
+          "rejecting actor must be a sender on some leg"
+          (any (\l -> arg.actor == l.sender) (vals this.legs))
+        pure ChoiceExecutionMetadata with meta = emptyMetadata
+      allocationRequest_WithdrawImpl _self _extraArgs =
+        pure ChoiceExecutionMetadata with meta = emptyMetadata
+
+    -- | Atomically settle every leg in ONE transaction (SPEC §6 steps 2–4).
+    -- Enforces, on-ledger, all of the taker's economic bounds before executing;
+    -- any failure (timing, bound, missing/mismatched/expired allocation) aborts
+    -- the whole transaction so no leg settles (all-or-nothing). The per-leg
+    -- `Allocation`s are single-use: `Allocation_ExecuteTransfer` consumes them.
+    choice SwapSettlement_Settle : TextMap Allocation_ExecuteTransferResult
+      with
+        allocationsWithContext : TextMap (ContractId Allocation, ExtraArgs)
+          -- ^ One entry per leg: the funded allocation plus the registry choice
+          -- context the executor must pass (obtained off-ledger from the wallet).
+      controller executor
+      do
+        now <- getTime
+        assertMsg "settlement deadline has not passed" (now < deadline)
+
+        -- On-ledger economic bound enforcement (SPEC §6 step 3).
+        let delivered = deliveredTo taker wantInstrument legs
+        let spent = spentBy taker giveInstrument legs
+        assertMsg "conservation: give-legs must sum to giveAmount" (spent == giveAmount)
+        assertMsg "delivered must meet minReceive floor" (delivered >= minReceive)
+        assertMsg
+          "delivered must satisfy maxSlippageBps vs reference"
+          (delivered >= slippageFloor referenceReceive maxSlippageBps)
+
+        -- Execute every leg's allocation atomically. A missing leg, an
+        -- allocation that does not match its expected spec, or any failing
+        -- transfer aborts the entire transaction.
+        results <- forA (TextMap.toList (expectedAllocationsOf this)) $ \(legId, expectedSpec) -> do
+          (allocCid, extraArgs) <- case TextMap.lookup legId allocationsWithContext of
+            Some x -> pure x
+            None -> abort ("missing allocation for leg " <> legId)
+          alloc <- fetch @Allocation allocCid
+          assertMsg
+            ("allocation does not match expected leg " <> legId)
+            ((view alloc).allocation == expectedSpec)
+          res <- exercise allocCid (Allocation_ExecuteTransfer with extraArgs)
+          pure (legId, res)
+        pure (TextMap.fromList results)
+
+    -- | Cancel the settlement, releasing every supplied allocation (their funds
+    -- return to the senders). Used when a route is abandoned before its deadline.
+    choice SwapSettlement_Cancel : TextMap Allocation_CancelResult
+      with
+        allocationsWithContext : TextMap (ContractId Allocation, ExtraArgs)
+      controller executor
+      do
+        results <- forA (TextMap.toList allocationsWithContext) $ \(legId, (allocCid, extraArgs)) -> do
+          res <- exercise allocCid (Allocation_Cancel with extraArgs)
+          pure (legId, res)
+        pure (TextMap.fromList results)
+
+-- | The CIP-0056 settlement descriptor shared by every leg's allocation.
+settlementInfoOf : SwapSettlement -> SettlementInfo
+settlementInfoOf s = SettlementInfo with
+  executor = s.executor
+  settlementRef = Reference with id = s.intentId, cid = None
+  requestedAt = s.createdAt
+  allocateBefore = s.prepareUntil
+  settleBefore = s.deadline
+  meta = emptyMetadata
+
+-- | The allocation each leg's sender is expected to have created.
+expectedAllocationsOf : SwapSettlement -> TextMap AllocationSpecification
+expectedAllocationsOf s = TextMap.fromList
+  [ ( legId
+    , AllocationSpecification with
+        settlement = settlementInfoOf s
+        transferLegId = legId
+        transferLeg = toTransferLeg leg
+    )
+  | (legId, leg) <- TextMap.toList s.legs
+  ]
