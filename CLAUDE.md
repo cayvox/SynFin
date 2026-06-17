@@ -26,6 +26,8 @@ Never violate these. If a task seems to require violating one, stop and surface 
 
 - **Work on a short‑lived branch and open a Pull Request. NEVER push to `main`.** A human (Anıl) reviews and merges. After working, report what you changed, why, and what you did not do.
 - Use **Conventional Commits** and **DCO sign‑off** (`git commit -s`). (CONTRIBUTING.md, ENGINEERING.md)
+- **Every PR MUST have a complete, professional description following `.github/PULL_REQUEST_TEMPLATE.md`.** At minimum: a one‑paragraph summary of *what changed and why*; the spec section / ADR / RFC it implements; the key design decisions and any surfaced limitations; *how it was tested* (exact commands + results); and the **filled Definition‑of‑Done checklist**. A terse or templated‑but‑empty description is not acceptable.
+- **No Claude / AI attribution anywhere** — not in the PR title or body, not in commit messages, trailers, or co‑authors. Commits carry only the DCO `Signed‑off‑by`. (See also the `commit-msg` hook that strips such trailers.)
 - Every behavioural change ships with tests. Settlement‑critical paths require Daml Script tests. Do not lower coverage gates. (TESTING.md)
 - Satisfy the **Definition of Done** (ENGINEERING.md §4) before marking work complete.
 
