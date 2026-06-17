@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
 import { MockVenueAdapter } from '@synfin/adapters';
-import { route } from '@synfin/router-ref';
+import { referenceRouter } from '@synfin/router-ref';
 import type { AssetId, QuoteRequest } from '@synfin/spec';
 import { runAdapterConformance, runRouterConformance } from '../src/index.js';
 
@@ -57,6 +57,6 @@ describe('adapter conformance (MockVenueAdapter is the first subject)', () => {
 
 describe('router conformance (the reference router is the first subject)', () => {
   it('@synfin/router-ref passes the router conformance suite', () => {
-    runRouterConformance(route, { runs: 300 });
+    runRouterConformance(referenceRouter, { runs: 300 });
   });
 });

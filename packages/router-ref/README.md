@@ -32,20 +32,24 @@ output — no clock, I/O, or randomness.
 
 ## Usage
 
-```ts
-import { route, createReferenceRouter } from '@synfin/router-ref';
+It implements the `Router` port directly (SPEC §4.5; RFC-0002): `now` is a
+**per-call** parameter and the result is a typed `RouteResult` — it never throws
+for control flow.
 
-// Primary API — typed result:
-const result = route(intent, quotes, new Date());
+```ts
+import { route, referenceRouter } from '@synfin/router-ref';
+
+const result = route(intent, quotes, new Date()); // or referenceRouter.route(...)
 if (result.ok) {
   // result.plan is guaranteed to pass checkRoutePlan
 } else {
-  // result.reason: 'no_eligible_quotes' | 'insufficient_depth' | 'min_receive_unmet' | ...
+  // result.reason: 'no-eligible-quotes' | 'min-receive-unreachable' | 'slippage-exceeded'
 }
-
-// Router-port adapter (binds `now`); throws NoViableRouteError on no route:
-const router = createReferenceRouter(new Date());
-const plan = router.route(intent, quotes);
 ```
+
+`referenceRouter` is a `Router`-typed value for wherever the port is expected.
+The reference router adds zero slippage, so it returns only `'no-eligible-quotes'`
+or `'min-receive-unreachable'`; `'slippage-exceeded'` is part of the port contract
+for routers that model slippage.
 
 Apache-2.0. Pre-alpha: interfaces are unstable until `v1.0.0`.

@@ -5,14 +5,11 @@ import type {
   QuoteRejection,
   QuoteRequest,
   RoutePlan,
+  Router,
   SwapIntent,
   VenueAdapter,
 } from '@synfin/spec';
-import {
-  runAdapterConformance,
-  runRouterConformance,
-  type ConformanceRouteResult,
-} from '../src/index.js';
+import { runAdapterConformance, runRouterConformance } from '../src/index.js';
 
 const USD: AssetId = { registry: 'reg::usd', instrumentId: 'USD', decimals: 2 };
 const BTC: AssetId = { registry: 'reg::btc', instrumentId: 'BTC', decimals: 8 };
@@ -88,23 +85,32 @@ describe('harness catches non-conformant adapters', () => {
 describe('harness catches non-conformant routers', () => {
   it('rejects a router whose plan fails checkRoutePlan', () => {
     // Always returns a plan referencing a non-existent quote -> linkage fails.
-    const badRoute = (intent: SwapIntent): ConformanceRouteResult => {
-      const plan: RoutePlan = {
-        intentRef: intent.intentId,
-        legs: [
-          {
-            venueId: 'ghost',
-            give: { asset: USD, amount: intent.give.amount },
-            receive: { asset: BTC, amount: '999.00000000' },
-            quoteRef: 'does-not-exist',
-          },
-        ],
-        aggregateReceive: '999.00000000',
-        worstCaseReceive: '999.00000000',
-        slippageBps: 0,
-      };
-      return { ok: true, plan };
+    const badRouter: Router = {
+      route(intent: SwapIntent) {
+        const plan: RoutePlan = {
+          intentRef: intent.intentId,
+          legs: [
+            {
+              venueId: 'ghost',
+              give: { asset: USD, amount: intent.give.amount },
+              receive: { asset: BTC, amount: '999.00000000' },
+              quoteRef: 'does-not-exist',
+            },
+          ],
+          aggregateReceive: '999.00000000',
+          worstCaseReceive: '999.00000000',
+          slippageBps: 0,
+        };
+        return { ok: true, plan };
+      },
     };
-    expect(() => runRouterConformance(badRoute, { runs: 5 })).toThrow();
+    expect(() => runRouterConformance(badRouter, { runs: 5 })).toThrow();
+  });
+
+  it('rejects a router that never routes (now caught by the must-route invariant)', () => {
+    const neverRoutes: Router = {
+      route: () => ({ ok: false, reason: 'no-eligible-quotes' }),
+    };
+    expect(() => runRouterConformance(neverRoutes, { runs: 25 })).toThrow();
   });
 });
