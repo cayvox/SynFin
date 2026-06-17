@@ -18,8 +18,10 @@ Amulet**, exactly which privacy properties Synfin can provide, and finds that **
 confidentiality IS achievable** without giving up atomicity. It recommends a concrete settlement
 model (per‑leg authorizations + executor‑only coordinator) and proposes honest SPEC §7 wording.
 
-The experiments live in [`spikes/privacy-model`](../../spikes/privacy-model) (throwaway evidence,
-not production). All three pass (`daml test`).
+The experiments were first run in a throwaway spike (`spikes/privacy-model`, all three `daml test`
+scripts passing); that spike has since been **removed** and the model is now the production
+implementation in `daml/synfin-settlement` (Task 003.6), proven by the `daml test` matrix incl.
+`testPerLegVisibility`.
 
 ## Privacy properties Synfin actually provides
 
@@ -160,17 +162,19 @@ provides per‑leg confidentiality (it does not — this RFC is the fix).
 
 ## Follow‑up plan
 
-1. **Production library task:** refactor `daml/synfin-settlement` from the co‑signed `SwapSettlement`
-   to the per‑leg `LegAuth` + executor‑only coordinator model; extend the Daml Script matrix with a
-   3‑party visibility test (a venue does not see another venue's leg). Keep all ADR‑0008
-   bound‑enforcement/atomicity/expiry/idempotency guarantees.
-2. **SPEC task (→ 0.4.0):** apply the §7 edits above via the normal change flow.
-3. ADR‑0008's known‑limitation note is cross‑linked to this RFC.
+1. ~~**Production library task:** refactor `daml/synfin-settlement` to the per‑leg `LegAuth` +
+   executor‑only coordinator model; add a 3‑party visibility test.~~ **Done (Task 003.6):** the
+   production library now implements this model; `testPerLegVisibility` proves per‑leg
+   confidentiality; the full prior matrix stays green.
+2. ~~**SPEC task (→ 0.4.0):** apply the §7 edits.~~ **Done (Task 003.6):** SPEC §7 updated to 0.4.0.
+3. ADR‑0008's note is cross‑linked to this RFC (and updated to reflect the implemented model).
 
 ## Evidence index
 
-- `spikes/privacy-model/daml/Synfin/Spike/Privacy.daml` — three `daml test` scripts (all pass):
-  `experimentExecutorOnlyFails`, `experimentPerLegVisibility`, `experimentDelegatedExecutorSettle`.
+- The model was first proven in a throwaway spike (since removed) and is now the production
+  implementation: `daml/synfin-settlement` + the `daml test` matrix in `daml/synfin-settlement-test`
+  (`Synfin.Tests.Settlement`), including `testPerLegVisibility` (a venue cannot see another venue's
+  leg) and the delegated executor‑only atomic settlement in `testHappyPath`.
 - Real interface: `splice-api-token-allocation-v1` `allocationControllers` /
   `Allocation_ExecuteTransfer`; `splice-amulet` `AmuletAllocation` signatory.
 - External: CIP‑0056 (canton/GSF), Canton Network "What is CIP‑56", Splice token‑standard docs,
