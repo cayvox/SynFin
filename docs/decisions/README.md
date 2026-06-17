@@ -16,3 +16,4 @@ We record significant architecture decisions as ADRs so the *why* is never lost 
 | [0003](0003-atomic-split-execution-on-cip56.md) | Atomic split execution on CIP‑0056 | Accepted |
 | [0004](0004-open-closed-boundary.md) | The open/closed boundary | Accepted |
 | [0005](0005-ports-and-adapters.md) | Ports & adapters (hexagonal) architecture | Accepted |
+| [0006](0006-competitive-design-study.md) | Competitive design study (what Synfin adopts and rejects) | Accepted |
