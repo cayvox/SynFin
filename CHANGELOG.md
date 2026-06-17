@@ -27,6 +27,23 @@ are versioned independently; each release records the spec version it targets.
   decimal and validation paths.
 - ADR‑0006: competitive design study (1inch, Jupiter, CoW, ParaSwap/Odos) — Accepted.
 
+- **`@synfin/router-ref` (0.1.0):** open reference implementation of the `Router` port
+  ([ADR‑0007](docs/decisions/0007-reference-router-scope.md)) — a correct, deterministic,
+  depth‑aware baseline (not the optimizer). Single‑hop multi‑venue split; ranks by net
+  `receive` rate; returns the better of a best‑single‑venue fill and a greedy split;
+  self‑validates with `checkRoutePlan`; returns a typed no‑viable‑route result rather than a
+  constraint‑violating plan. `createReferenceRouter(now)` adapts it to the `Router` port.
+- **`@synfin/adapters` (0.1.0):** `MockVenueAdapter` — a deterministic, config‑driven
+  `VenueAdapter` for development/tests (convex price‑impact curve, fees, firmness, expiry,
+  rejections), with receipts rounded in the taker's favour. Not a real venue.
+- **`@synfin/conformance` (0.1.0):** reusable conformance harness (TESTING.md §5) — adapter
+  and router runners that any implementation imports to claim conformance. Run in CI against
+  `MockVenueAdapter` and `@synfin/router-ref`.
+- **`@synfin/spec`:** added `Decimal.divide` (exact value‑math helper for proportional
+  receipts; rounding stays centralized per SPEC §3). Additive only — no wire/normative/spec
+  change.
+- ADR‑0007: reference router scope & competitive grounding — Accepted.
+
 ### Changed
 - **SQSS bumped to `0.2.0`, driven by [RFC‑0001](docs/rfcs/0001-assetid-minreceive-quote-linkage.md)** (Accepted; 14‑day review window waived under single‑steward governance, GOVERNANCE.md §5):
   - **AssetId (Decision A):** normatively `{ registry, instrumentId, decimals }`. The Task‑001 working field `id` is renamed to `instrumentId`. `decimals` is the off‑ledger echo of the CIP‑0056 token‑metadata precision (registry remains the source of truth); amounts inconsistent with `decimals` are rejected (SPEC §3, Appendix A).
