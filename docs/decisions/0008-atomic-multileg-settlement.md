@@ -1,9 +1,18 @@
 # ADR‑0008: On‑ledger atomic multi‑leg settlement on real CIP‑0056 interfaces
 
-- **Status:** Accepted
+- **Status:** Accepted (settlement model **updated** per [RFC‑0003](../rfcs/0003-privacy-model.md))
 - **Date:** 2026‑06‑17
 - **Deciders:** Cayvox Labs (steward)
-- **Spec impact:** none (realizes SPEC §6/§7; surfaces one privacy limitation noted below)
+- **Spec impact:** none directly (realizes SPEC §6/§7); the privacy follow‑up bumped SPEC to 0.4.0
+
+> **UPDATE (RFC‑0003, implemented):** the production library `daml/synfin-settlement` now uses the
+> **per‑leg‑authorization + executor‑only‑coordinator** model — each leg is co‑signed only by its
+> sender+receiver (`LegAuth`); the `SwapSettlement` coordinator is signed by **executor + taker
+> only** and settles by exercising each `LegAuth` in one atomic transaction. This **resolves the
+> privacy limitation** in §6 below (a venue no longer sees other legs; a 3‑party `daml test`
+> visibility test enforces it) while keeping every economic/atomicity guarantee. The co‑signed
+> `OTCTrade`‑style design described below was the interim baseline and is **superseded**; it is now
+> declared non‑conformant for multi‑venue routing (SPEC §7, 0.4.0).
 
 ## Context
 
@@ -109,8 +118,9 @@ multi‑synchronizer testnet testing lands (Task 005).
 > **Update:** [RFC‑0003](../rfcs/0003-privacy-model.md) (privacy spike) resolved this. Per‑leg
 > confidentiality **is** achievable on the real interfaces via **per‑leg authorizations**
 > (each leg co‑signed only by its sender+receiver) executed by an **executor‑only coordinator** —
-> proven by `daml test` in `spikes/privacy-model`. The production library will adopt that model
-> (RFC‑0003 follow‑up); the co‑signed design below is the interim baseline.
+> proven by `daml test` in the Task‑003.5 spike. The production library **has now adopted** that
+> model (Task 003.6; see the UPDATE at the top); the co‑signed design below is the superseded
+> interim baseline.
 
 SPEC §7 wants each venue to see **only its own leg**. The atomic execution of the per‑leg
 allocations requires **each leg sender's authority in the settling transaction**; the proven

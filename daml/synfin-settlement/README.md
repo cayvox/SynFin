@@ -9,17 +9,26 @@ all‑or‑nothing, with the taker's economic bounds enforced on‑ledger (SPEC 
 
 ## What it does
 
-`Synfin.Settlement.SwapSettlement` is a co‑signed agreement carrying the route `legs` plus the
-Synfin intent layer (`minReceive`, `maxSlippageBps`, `referenceReceive`, `deadline`,
-`giveAmount`, `intentId`). Its `SwapSettlement_Settle` choice (controller `executor`)
-exercises `Allocation_ExecuteTransfer` on every leg's allocation in one transaction and
-enforces, on‑ledger: `now < deadline`, conservation (Σ give‑legs == `giveAmount`),
-`delivered ≥ minReceive`, and the slippage floor. Any failure aborts the whole transaction
-(no leg settles). Allocations are single‑use; `intentId` makes settlement idempotent.
+It uses the **per‑leg‑authorization + executor‑only‑coordinator** privacy model (RFC‑0003;
+SPEC §7) so the route settles atomically **and** each venue stays blind to the other legs:
 
-See ADR‑0008 for the model, the same‑synchronizer property, and the **privacy limitation**
-(the co‑signed agreement currently reveals the route to its signatories — per‑venue leg
-privacy is a documented follow‑up).
+- **`LegAuth`** — a per‑leg authorization co‑signed by that leg's **sender + receiver** only,
+  referencing **only that leg**. It carries the leg's authority to the executor.
+- **`SwapSettlement`** — the coordinator, signed by **executor + taker only** (never the
+  venues), carrying the route `legs` plus the Synfin intent layer (`minReceive`,
+  `maxSlippageBps`, `referenceReceive`, `deadline`, `giveAmount`, `intentId`). Its
+  `SwapSettlement_Settle` choice (controller `executor`) exercises each leg's `LegAuth` —
+  which supplies that leg's sender+receiver authority for `Allocation_ExecuteTransfer`
+  (controllers `[executor, sender, receiver]`) — in **one** transaction, and enforces
+  on‑ledger: `now < deadline`, conservation (Σ give‑legs == `giveAmount`),
+  `delivered ≥ minReceive`, and the slippage floor. Any failure aborts the whole transaction
+  (no leg settles). Allocations are single‑use; `intentId` makes settlement idempotent.
+
+Privacy result (SPEC §7): only the **taker** and **executor** see the aggregate route; a
+**venue** is a stakeholder of only the leg(s) it participates in and never observes another
+venue's allocation or `LegAuth`. The `testPerLegVisibility` Daml Script asserts this (and fails
+if aggregate visibility regresses). See ADR‑0008 (updated) and RFC‑0003 for the model and the
+same‑synchronizer property (deferred for multi‑synchronizer testing).
 
 ## Build & test
 
@@ -35,7 +44,8 @@ cd ../synfin-settlement-test && daml build && daml test
 ```
 
 The Daml Script matrix (`Synfin.Tests.Settlement`) proves: happy‑path N‑leg split in one
-transaction, all‑or‑nothing, abort on expired deadline, executor‑only authorization,
+transaction, **per‑leg confidentiality** (`testPerLegVisibility` — a venue cannot see another
+venue's leg), all‑or‑nothing, abort on expired deadline, executor‑only authorization,
 no‑double‑spend, and `minReceive`/`maxSlippageBps` bound enforcement (TESTING.md §3),
 using Amulet as the test token.
 

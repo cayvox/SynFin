@@ -1,7 +1,12 @@
 # Synfin Quote & Swap‑Intent Standard (SQSS)
 
-`Spec version: 0.3.0 (draft)` · `Status: working draft — RFC required for normative changes`
+`Spec version: 0.4.0 (draft)` · `Status: working draft — RFC required for normative changes`
 
+> Changes in `0.4.0` are driven by [RFC‑0003](../rfcs/0003-privacy-model.md): §7 is scoped to the
+> per‑leg‑authorization + executor‑only‑coordinator settlement model (per‑leg confidentiality), the
+> co‑signed `OTCTrade` pattern is declared non‑conformant for multi‑venue routing, and MEV immunity
+> is distinguished from per‑leg confidentiality.
+>
 > Changes in `0.3.0` are driven by [RFC‑0002](../rfcs/0002-router-port-now-and-result.md): the
 > `Router` contract takes a per‑call `now` and returns a typed `RouteResult` (§4.5, §10) instead
 > of a bare `RoutePlan`.
@@ -189,10 +194,19 @@ Constraints:
 
 ## 7. Privacy model (normative)
 
-- A Venue MUST learn only its own leg: the assets and amounts of that leg. It MUST NOT learn the aggregate intent, other legs, or the route.
+SQSS provides two **distinct** privacy properties (RFC‑0003); implementations and claims MUST NOT conflate them:
+
+1. **MEV immunity** — because Canton has no public mempool and a transaction is visible only to its stakeholders, routes and amounts are never broadcast, so front‑running/sandwiching is structurally prevented. This holds for any conformant settlement, independent of the template. Implementations still MUST avoid leaking intent via timing or side channels.
+2. **Per‑leg confidentiality** — at settlement, a Venue MUST learn only its own leg(s); it MUST NOT learn the aggregate intent, other legs, or the route.
+
+Normative requirements for per‑leg confidentiality:
+
+- **Quote time.** A Venue answering a `QuoteRequest` MUST see only the single bucket it is asked to price (§4.2), never the taker's total intent or route.
+- **Settlement time.** Per‑leg confidentiality MUST be achieved by **per‑leg authorization**: each leg is authorized only by its own sender and receiver (a per‑leg authorization contract referencing only that leg), and the settlement is executed by an **executor‑only coordinator** in a single atomic transaction (§6). No party co‑signs an aggregate that reveals other legs. Only the **taker** and the **executor** may see the aggregate route; each **Venue** MUST be a stakeholder of only the leg(s) it participates in.
+- A reference settlement that **co‑signs all parties** (e.g. the CIP‑0056 `OTCTrade` pattern) makes the whole route visible to every venue and is therefore **NON‑CONFORMANT** for multi‑venue routing.
 - Implementations MUST NOT expose cross‑leg correlation to any venue or third party.
 - Settlement details MAY be disclosed to authorized parties (auditor/regulator) via **selective disclosure**; they MUST NOT be public.
-- *(note)* Because routing and amounts are not in a public mempool, front‑running/MEV is structurally mitigated. Implementations still MUST avoid leaking intent via timing or side channels.
+- *(note)* Per‑leg confidentiality is **not** counterparty anonymity on one's own leg: the two parties to a leg co‑authorize it and therefore see that leg's parties and amount. It hides *other* legs and the aggregate from a venue, not the venue's own leg from itself.
 
 ## 8. Firmness, validity, replay
 
