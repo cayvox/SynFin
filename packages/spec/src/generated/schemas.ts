@@ -55,15 +55,15 @@ export const primitivesSchema: Record<string, unknown> = {
     AssetId: {
       title: "AssetId",
       description:
-        "Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3: the issuing registry plus the instrument, never a symbol alone). `decimals` carries the instrument's defined precision; because Canton has no global readable state (ARCHITECTURE.md §1, invariant #2) the precision must travel with the asset reference so amounts can be validated off-ledger.",
+        "Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3, RFC-0001 Decision A: the issuing registry plus the instrument, never a symbol alone). Exactly three fields: registry, instrumentId, decimals.",
       type: "object",
       properties: {
         registry: {
           $ref: "primitives.schema.json#/$defs/PartyId",
           description:
-            "The issuing registry (a Canton party administering the instrument).",
+            "The issuing registry / token administrator identifier (the authority; a Canton party).",
         },
-        id: {
+        instrumentId: {
           type: "string",
           minLength: 1,
           description: "Instrument identifier within the issuing registry.",
@@ -73,10 +73,10 @@ export const primitivesSchema: Record<string, unknown> = {
           minimum: 0,
           maximum: 38,
           description:
-            "The instrument's defined decimal precision. Amounts of this asset MUST NOT carry more fractional digits than this.",
+            "The instrument's defined decimal precision (non-negative). NOT authoritative on its own: it MUST be consistent with the precision the issuing registry reports via the CIP-0056 token metadata API, and is carried here only so amounts can be validated off-ledger without global readable state (ARCHITECTURE.md §1 #2). Amounts of this asset MUST NOT carry more fractional digits than this.",
         },
       },
-      required: ["registry", "id", "decimals"],
+      required: ["registry", "instrumentId", "decimals"],
     },
   },
 };
@@ -115,7 +115,7 @@ export const swapIntentSchema: Record<string, unknown> = {
         minReceive: {
           $ref: "primitives.schema.json#/$defs/Decimal",
           description:
-            "Authoritative floor: a settlement delivering less than this MUST fail (SPEC §4.1, §6).",
+            "Authoritative floor: a settlement delivering less than this MUST fail (SPEC §4.1, §6). MUST be strictly greater than 0 (RFC-0001 Decision B); enforced by the validator since JSON Schema cannot express it on a decimal string.",
         },
       },
       required: ["asset", "minReceive"],
@@ -213,6 +213,12 @@ export const quoteSchema: Record<string, unknown> = {
     "A venue's normalized answer to a QuoteRequest (SPEC §4.3). Fees are already reflected in `receive`. A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
   type: "object",
   properties: {
+    quoteId: {
+      type: "string",
+      minLength: 1,
+      description:
+        "Unique identifier for this quote, set by the venue/adapter; unique within the scope of an intent's quote-gathering round. A RouteLeg.quoteRef resolves to this (SPEC §4.3, §4.4; RFC-0001 Decision C).",
+    },
     venueId: { $ref: "primitives.schema.json#/$defs/VenueId" },
     give: {
       type: "object",
@@ -265,6 +271,7 @@ export const quoteSchema: Record<string, unknown> = {
     },
   },
   required: [
+    "quoteId",
     "venueId",
     "give",
     "receive",

@@ -17,9 +17,15 @@ import type { Quote, RoutePlan, SwapIntent } from '../generated/types.js';
  *   `worstCaseReceive >= minReceive`, the slippage bound, and
  *   `maxVenues`/`venueAllowList` (SPEC §4.4). Use the predicates in
  *   `constraints.ts` to enforce this.
- * - **No overstatement.** A plan's advertised receipts MUST NOT exceed what the
- *   chosen quotes support, and rounding MUST never favor the protocol (SPEC §3,
- *   §4.4).
+ * - **Quote linkage.** Every `RouteLeg.quoteRef` MUST equal the `quoteId` of one
+ *   of the supplied quotes (SPEC §4.3, §4.4; RFC-0001 Decision C).
+ * - **No overstatement.** For each leg, `leg.receive` MUST NOT exceed the
+ *   referenced quote's `receive`, that quote MUST be unexpired at
+ *   plan-construction time, and its assets MUST match the leg; additionally a
+ *   plan's `aggregateReceive` MUST NOT exceed Σ leg receipts, and rounding MUST
+ *   never favor the protocol (SPEC §3, §4.4; RFC-0001 Decision C). Use
+ *   `checkRoutePlan`/`checkNoOverstatement`, which take the source quote set, to
+ *   enforce this.
  * - **Monotonicity.** Given more or strictly better quotes, the result MUST NOT
  *   be worse (by worst-case receive) than a viable single-venue baseline
  *   (TESTING.md §2).

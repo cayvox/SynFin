@@ -30,7 +30,7 @@
         "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
         "minReceive": {
           "$ref": "primitives.schema.json#/$defs/Decimal",
-          "description": "Authoritative floor: a settlement delivering less than this MUST fail (SPEC §4.1, §6)."
+          "description": "Authoritative floor: a settlement delivering less than this MUST fail (SPEC §4.1, §6). MUST be strictly greater than 0 (RFC-0001 Decision B); enforced by the validator since JSON Schema cannot express it on a decimal string."
         }
       },
       "required": ["asset", "minReceive"]
