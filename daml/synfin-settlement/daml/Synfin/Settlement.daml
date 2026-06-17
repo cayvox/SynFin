@@ -1,16 +1,30 @@
 -- Copyright (c) 2026 Cayvox Labs. SPDX-License-Identifier: Apache-2.0
 --
--- | Synfin on-ledger atomic multi-leg settlement (SPEC §6; ADR-0008).
+-- | Synfin on-ledger atomic multi-leg settlement (SPEC §6, §7; ADR-0008; RFC-0003).
 --
--- Composes an N-leg route into a SINGLE atomic Daml transaction using the real
--- CIP-0056 token-standard allocation interfaces (Splice `Allocation` /
--- `AllocationRequest`). Either every leg settles or none does (all-or-nothing,
--- ARCHITECTURE.md §1 invariant #3). The taker's economic bounds
--- (`minReceive`, `maxSlippageBps`, `deadline`) are enforced on-ledger, so a
--- lying quote causes a safe abort, not a loss (SPEC §6 step 3).
+-- Composes an N-leg route into a SINGLE atomic Daml transaction on the real
+-- CIP-0056 token-standard allocation interfaces — all-or-nothing
+-- (ARCHITECTURE.md §1 invariant #3) — while keeping each venue blind to the
+-- other legs (SPEC §7). The taker's economic bounds (`minReceive`,
+-- `maxSlippageBps`, `deadline`) are enforced on-ledger, so a lying quote causes
+-- a safe abort, not a loss (SPEC §6 step 3).
+--
+-- PRIVACY MODEL (RFC-0003). Per-leg authorization + executor-only coordinator:
+--
+--   * Each leg's two parties (sender + receiver) co-sign a `LegAuth` that
+--     references ONLY that leg — never the aggregate route.
+--   * The `SwapSettlement` coordinator is signed by the `executor` and the
+--     `taker` ONLY (not the venues), and settles by exercising each `LegAuth`
+--     inside one transaction. Each `LegAuth_Execute` supplies its leg's
+--     sender+receiver authority, which `Allocation_ExecuteTransfer` requires
+--     (its controllers are [executor, sender, receiver]).
+--
+-- Result: only the taker and executor ever see the aggregate; a venue is a
+-- stakeholder only of its own leg(s) and never observes another venue's leg.
+-- This supersedes the co-signed OTCTrade-style pattern, which RFC-0003 found
+-- non-conformant for multi-venue routing.
 module Synfin.Settlement where
 
-import DA.List (dedup)
 import DA.TextMap (TextMap)
 import DA.TextMap qualified as TextMap
 
@@ -20,11 +34,8 @@ import Splice.Api.Token.AllocationV1
 import Splice.Api.Token.AllocationRequestV1
 
 -- | A single settlement leg: `sender` delivers `amount` of `instrument` to
--- `receiver`. A Synfin route is expressed as give-legs (taker → venue, in the
--- give asset) and receive-legs (venue → taker, in the want asset). We carry the
--- Synfin shape and convert to the standard `TransferLeg` on demand, so the
--- library reads naturally against `@synfin/spec` while composing the real
--- standard.
+-- `receiver`. A Synfin route is give-legs (taker → venue, in the give asset)
+-- and receive-legs (venue → taker, in the want asset).
 data Leg = Leg
   with
     sender : Party
@@ -61,19 +72,62 @@ slippageFloor : Decimal -> Int -> Decimal
 slippageFloor referenceReceive maxSlippageBps =
   referenceReceive * intToDecimal (10000 - maxSlippageBps) / 10000.0
 
--- | The co-signed agreement that binds a Synfin route into one atomic
--- settlement (SPEC §6). It is signed by the `executor` (settlement coordinator)
--- and every party on the legs, mirroring the proven CIP-0056 OTC pattern: the
--- atomic execution of each leg's `Allocation` requires that leg sender's
--- authority in the settling transaction, which co-signing provides.
---
--- PRIVACY NOTE (SPEC §7; ADR-0008): co-signing means the aggregate route is
--- visible to its signatories (the venues), so this reference template does NOT
--- yet achieve per-venue leg privacy. The per-registry transfer mechanics remain
--- private to each registry (the allocation model), but blinding each venue to
--- the other legs needs sub-transaction privacy / selective disclosure (or an
--- executor-only authority model) — documented as a known limitation and a
--- candidate RFC in ADR-0008.
+-- | A PER-LEG authorization co-signed by the leg's two parties (SPEC §7;
+-- RFC-0003). It carries exactly the sender's and receiver's authority forward to
+-- the `executor` so that `Allocation_ExecuteTransfer` / `Allocation_Cancel`
+-- (controllers [executor, sender, receiver]) can run, WITHOUT the parties
+-- co-signing the settling transaction. It references ONLY this leg's parties +
+-- the settlement reference, so its signatories never learn any other leg or the
+-- aggregate route. A venue co-signs only the `LegAuth`s for legs it is party to.
+template LegAuth
+  with
+    settlementRef : Reference
+      -- ^ Ties this authorization to one settlement (SPEC §6; CIP-0056 ref).
+    sender : Party
+    receiver : Party
+    executor : Party
+  where
+    signatory sender, receiver
+    observer executor
+
+    -- | Supply this leg's sender+receiver authority to execute its allocation.
+    nonconsuming choice LegAuth_Execute : Allocation_ExecuteTransferResult
+      with
+        allocCid : ContractId Allocation
+        extraArgs : ExtraArgs
+      controller executor
+      do
+        guardAllocationMatches this allocCid
+        exercise allocCid (Allocation_ExecuteTransfer with extraArgs)
+
+    -- | Supply this leg's authority to cancel/release its allocation.
+    nonconsuming choice LegAuth_Cancel : Allocation_CancelResult
+      with
+        allocCid : ContractId Allocation
+        extraArgs : ExtraArgs
+      controller executor
+      do
+        guardAllocationMatches this allocCid
+        exercise allocCid (Allocation_Cancel with extraArgs)
+
+-- | An allocation may only be acted on through the `LegAuth` of its own leg:
+-- its parties and settlement reference MUST match (defence in depth alongside
+-- the coordinator's full-spec check).
+guardAllocationMatches : LegAuth -> ContractId Allocation -> Update ()
+guardAllocationMatches auth allocCid = do
+  v <- view <$> fetch @Allocation allocCid
+  assertMsg
+    "allocation parties match this LegAuth"
+    (v.allocation.transferLeg.sender == auth.sender && v.allocation.transferLeg.receiver == auth.receiver)
+  assertMsg
+    "allocation belongs to this settlement"
+    (v.allocation.settlement.settlementRef == auth.settlementRef)
+
+-- | The coordinating agreement that binds a Synfin route into one atomic
+-- settlement (SPEC §6). Signed by the `executor` and the `taker` ONLY — venues
+-- are NOT signatories or observers and never see this contract or the aggregate
+-- `legs` (SPEC §7; RFC-0003). Venues participate solely through their own
+-- per-leg `Allocation` and `LegAuth`.
 template SwapSettlement
   with
     intentId : Text
@@ -101,7 +155,7 @@ template SwapSettlement
     deadline : Time
       -- ^ Settlement MUST NOT occur after this (SPEC §6; `settleBefore`).
   where
-    signatory dedup (executor :: taker :: concatMap (\l -> [l.sender, l.receiver]) (vals legs))
+    signatory executor, taker
     ensure
       minReceive > 0.0
         && giveAmount > 0.0
@@ -126,15 +180,18 @@ template SwapSettlement
         pure ChoiceExecutionMetadata with meta = emptyMetadata
 
     -- | Atomically settle every leg in ONE transaction (SPEC §6 steps 2–4).
-    -- Enforces, on-ledger, all of the taker's economic bounds before executing;
-    -- any failure (timing, bound, missing/mismatched/expired allocation) aborts
-    -- the whole transaction so no leg settles (all-or-nothing). The per-leg
-    -- `Allocation`s are single-use: `Allocation_ExecuteTransfer` consumes them.
+    -- Enforces, on-ledger, all of the taker's economic bounds before executing,
+    -- then exercises each leg's `LegAuth` (which supplies that leg's
+    -- sender+receiver authority). Any failure (timing, bound, missing/mismatched
+    -- allocation or auth) aborts the whole transaction so no leg settles
+    -- (all-or-nothing). Allocations are single-use (consumed by
+    -- `Allocation_ExecuteTransfer`); this choice is consuming, so a settlement
+    -- runs at most once (idempotency via `intentId`).
     choice SwapSettlement_Settle : TextMap Allocation_ExecuteTransferResult
       with
-        allocationsWithContext : TextMap (ContractId Allocation, ExtraArgs)
-          -- ^ One entry per leg: the funded allocation plus the registry choice
-          -- context the executor must pass (obtained off-ledger from the wallet).
+        legAllocations : TextMap (ContractId Allocation, ContractId LegAuth, ExtraArgs)
+          -- ^ One entry per leg: the funded allocation, that leg's `LegAuth`, and
+          -- the registry choice context (obtained off-ledger from the wallet).
       controller executor
       do
         now <- getTime
@@ -149,30 +206,30 @@ template SwapSettlement
           "delivered must satisfy maxSlippageBps vs reference"
           (delivered >= slippageFloor referenceReceive maxSlippageBps)
 
-        -- Execute every leg's allocation atomically. A missing leg, an
-        -- allocation that does not match its expected spec, or any failing
-        -- transfer aborts the entire transaction.
+        -- Execute every leg atomically via its per-leg authorization. The
+        -- allocation MUST match the expected leg exactly (amount/asset/parties),
+        -- and the `LegAuth` is what supplies the parties' authority.
         results <- forA (TextMap.toList (expectedAllocationsOf this)) $ \(legId, expectedSpec) -> do
-          (allocCid, extraArgs) <- case TextMap.lookup legId allocationsWithContext of
+          (allocCid, legAuthCid, extraArgs) <- case TextMap.lookup legId legAllocations of
             Some x -> pure x
             None -> abort ("missing allocation for leg " <> legId)
           alloc <- fetch @Allocation allocCid
           assertMsg
             ("allocation does not match expected leg " <> legId)
             ((view alloc).allocation == expectedSpec)
-          res <- exercise allocCid (Allocation_ExecuteTransfer with extraArgs)
+          res <- exercise legAuthCid (LegAuth_Execute with allocCid, extraArgs)
           pure (legId, res)
         pure (TextMap.fromList results)
 
-    -- | Cancel the settlement, releasing every supplied allocation (their funds
-    -- return to the senders). Used when a route is abandoned before its deadline.
+    -- | Cancel the settlement, releasing every supplied allocation (funds return
+    -- to the senders) via each leg's `LegAuth`. Used when a route is abandoned.
     choice SwapSettlement_Cancel : TextMap Allocation_CancelResult
       with
-        allocationsWithContext : TextMap (ContractId Allocation, ExtraArgs)
+        legAllocations : TextMap (ContractId Allocation, ContractId LegAuth, ExtraArgs)
       controller executor
       do
-        results <- forA (TextMap.toList allocationsWithContext) $ \(legId, (allocCid, extraArgs)) -> do
-          res <- exercise allocCid (Allocation_Cancel with extraArgs)
+        results <- forA (TextMap.toList legAllocations) $ \(legId, (allocCid, legAuthCid, extraArgs)) -> do
+          res <- exercise legAuthCid (LegAuth_Cancel with allocCid, extraArgs)
           pure (legId, res)
         pure (TextMap.fromList results)
 

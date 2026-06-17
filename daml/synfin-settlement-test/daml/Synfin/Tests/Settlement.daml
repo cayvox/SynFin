@@ -1,12 +1,13 @@
 -- Copyright (c) 2026 Cayvox Labs. SPDX-License-Identifier: Apache-2.0
 --
--- | Daml Script test matrix for the Synfin atomic multi-leg settlement library
--- (TESTING.md §3), driven against the REAL CIP-0056 interfaces with Amulet as
--- the test token (single registry available in this repo; the allocation/DvP
--- interface is asset-agnostic, so Amulet is a faithful stand-in for a cross-asset
--- swap — see ADR-0008). Proves: happy path (N-leg split, one transaction),
--- all-or-nothing, abort/expiry, authorization & no-double-spend, and on-ledger
--- bound enforcement (minReceive, maxSlippageBps).
+-- | Daml Script test matrix for the Synfin per-leg atomic multi-leg settlement
+-- (TESTING.md §3; SPEC §6, §7; RFC-0003), driven against the REAL CIP-0056
+-- interfaces with Amulet as the test token (single registry available; the
+-- allocation/DvP interface is asset-agnostic, so Amulet is a faithful stand-in
+-- for a cross-asset swap — ADR-0008). Proves: happy path (N-leg, one
+-- transaction), all-or-nothing, abort/expiry, authorization & no-double-spend,
+-- on-ledger bound enforcement, AND per-leg confidentiality (a venue cannot see
+-- another venue's leg — the privacy proof).
 module Synfin.Tests.Settlement where
 
 import Daml.Script
@@ -30,6 +31,9 @@ import Splice.Testing.TokenStandard.RegistryApi qualified as RegistryApi
 import Splice.Testing.TokenStandard.WalletClient qualified as WalletClient
 import Splice.Testing.Utils
 
+-- One entry per leg, ready to feed `SwapSettlement_Settle`.
+type LegAllocations = TextMap (ContractId Allocation, ContractId LegAuth, ExtraArgs)
+
 -- A fully-set-up route ready to settle.
 data Fixture = Fixture with
   registry : AmuletRegistry
@@ -38,12 +42,12 @@ data Fixture = Fixture with
   bob : Party     -- venue 1
   charlie : Party -- venue 2
   amuletId : InstrumentId
-  si : SettlementInfo
-  legs : TextMap Leg
+  ref : Reference
+  legAuths : TextMap (ContractId LegAuth)
   settlementCid : ContractId SwapSettlement
 
--- | The standard 2-venue route used by the tests: the taker (alice) gives 100
--- split 60/40 across venues bob/charlie, and receives 120 split 70/50 back.
+-- | The standard 2-venue route: the taker (alice) gives 100 split 60/40 across
+-- venues bob/charlie, and receives 120 split 70/50 back.
 standardLegs : Party -> Party -> Party -> InstrumentId -> TextMap Leg
 standardLegs alice bob charlie amuletId = TextMap.fromList
   [ ("give-bob", Leg with sender = alice, receiver = bob, amount = 60.0, instrument = amuletId)
@@ -52,16 +56,14 @@ standardLegs alice bob charlie amuletId = TextMap.fromList
   , ("recv-charlie", Leg with sender = charlie, receiver = alice, amount = 50.0, instrument = amuletId)
   ]
 
--- | Create one CIP-0056 allocation for a leg, submitted by that leg's sender
--- (mirrors how a venue/taker wallet funds its single leg — no aggregate seen).
--- | Only a party's UNLOCKED holdings can fund a new allocation. (A party that
--- sends on more than one leg locks funds per allocation, so subsequent
--- allocations must draw from the remaining unlocked change.)
+-- | Only a party's UNLOCKED holdings can fund a new allocation (a party that
+-- sends on >1 leg locks funds per allocation, so later ones draw from change).
 unlockedHoldingCids : Party -> InstrumentId -> Script [ContractId Holding]
 unlockedHoldingCids p instrumentId = do
   hs <- WalletClient.listHoldings p instrumentId
   pure [cid | (cid, v) <- hs, isNone v.lock]
 
+-- | A leg's sender creates its CIP-0056 allocation (sees only its own leg).
 allocateLeg : AmuletRegistry -> SettlementInfo -> Time -> Text -> Leg -> Script ()
 allocateLeg registry si requestedAt legId leg = do
   inputHoldingCids <- unlockedHoldingCids leg.sender registry.instrumentId
@@ -78,25 +80,30 @@ allocateLeg registry si requestedAt legId leg = do
     exerciseCmd enriched.factoryCid enriched.arg
   pure ()
 
--- | Executor-side: collect every funded allocation for this settlement and the
--- registry transfer context needed to execute each (mirrors the app backend).
-gatherAllocations :
-  AmuletRegistry -> Party -> Reference
-  -> Script (TextMap (ContractId Allocation, ExtraArgs), Disclosures')
-gatherAllocations registry executor ref = do
+-- | Executor-side: assemble the per-leg (allocation, LegAuth, context) entries
+-- for settlement, plus the registry disclosures (mirrors the app backend).
+gatherLegAllocations :
+  AmuletRegistry -> Party -> Reference -> TextMap (ContractId LegAuth)
+  -> Script (LegAllocations, Disclosures')
+gatherLegAllocations registry executor ref legAuths = do
   allocs <- queryInterface @Allocation executor
   entries <- forA allocs $ \(cid, mv) -> case mv of
     Some v | v.allocation.settlement.settlementRef == ref -> do
+      let legId = v.allocation.transferLegId
       ctx <- RegistryApi.getAllocation_TransferContext registry cid emptyMetadata
       let ea = ExtraArgs with context = ctx.choiceContext, meta = emptyMetadata
-      pure [(v.allocation.transferLegId, (cid, ea), ctx.disclosures)]
+      case TextMap.lookup legId legAuths of
+        Some authCid -> pure [(legId, (cid, authCid, ea), ctx.disclosures)]
+        None -> pure []
     _ -> pure []
   let flat = concat entries
-  let m = TextMap.fromList [(legId, ce) | (legId, ce, _) <- flat]
+  let m = TextMap.fromList [(legId, e) | (legId, e, _) <- flat]
   let disclosures = mconcat [d | (_, _, d) <- flat]
   pure (m, disclosures)
 
--- | Set up a funded 2-venue route and its allocations, with configurable bounds.
+-- | Set up a funded 2-venue route, its allocations, and per-leg LegAuths, with
+-- configurable bounds. The coordinator is co-signed by executor + taker ONLY;
+-- each LegAuth by that leg's sender + receiver ONLY.
 setupFixture : Decimal -> Int -> Decimal -> RelTime -> Script Fixture
 setupFixture minReceive maxSlippageBps referenceReceive deadlineIn = do
   registry <- AmuletRegistry.initialize AmuletRegistry.defaultAmuletRegistryConfig
@@ -110,9 +117,11 @@ setupFixture minReceive maxSlippageBps referenceReceive deadlineIn = do
   now <- getTime
   let legs = standardLegs alice bob charlie amuletId
   let deadline = now `addRelTime` deadlineIn
-  -- Allocations must be in place before `prepareUntil <= deadline` (ensure).
-  let prepareUntil = deadline
-  settlementCid <- submitMulti [executor, alice, bob, charlie] [] $ createCmd SwapSettlement with
+  let prepareUntil = deadline -- ensure: prepareUntil <= deadline
+  let ref = Reference with id = "intent-synfin-1", cid = None
+
+  -- coordinator: signed by executor + taker ONLY (venues never see it).
+  settlementCid <- submitMulti [executor, alice] [] $ createCmd SwapSettlement with
     intentId = "intent-synfin-1"
     executor
     taker = alice
@@ -126,104 +135,147 @@ setupFixture minReceive maxSlippageBps referenceReceive deadlineIn = do
     createdAt = now
     prepareUntil
     deadline
+
   let si = SettlementInfo with
         executor
-        settlementRef = Reference with id = "intent-synfin-1", cid = None
+        settlementRef = ref
         requestedAt = now
         allocateBefore = prepareUntil
         settleBefore = deadline
         meta = emptyMetadata
-  forA_ (TextMap.toList legs) $ \(legId, leg) -> allocateLeg registry si now legId leg
-  pure Fixture with ..
+
+  -- senders fund their own legs; each leg's two parties co-sign its LegAuth.
+  legAuthList <- forA (TextMap.toList legs) $ \(legId, leg) -> do
+    allocateLeg registry si now legId leg
+    authCid <- submitMulti [leg.sender, leg.receiver] [] $ createCmd LegAuth with
+      settlementRef = ref
+      sender = leg.sender
+      receiver = leg.receiver
+      executor
+    pure (legId, authCid)
+  pure Fixture with legAuths = TextMap.fromList legAuthList, ..
 
 -- | A standard, comfortably-satisfiable route (minReceive 100, slippage 10%).
 setupStandard : Script Fixture
 setupStandard = setupFixture 100.0 1000 120.0 (hours 2)
 
+settle : Fixture -> LegAllocations -> Disclosures' -> Script (TextMap Allocation_ExecuteTransferResult)
+settle f m disclosures =
+  submitWithDisclosures' f.executor disclosures $
+    exerciseCmd f.settlementCid SwapSettlement_Settle with legAllocations = m
+
 -- == Tests =================================================================
 
--- | Happy path: a 2-venue (4-leg) split settles in ONE transaction; the taker
--- receives both legs and each venue receives its give-leg.
+-- | Happy path: a 2-venue (4-leg) split settles in ONE transaction.
 testHappyPath : Script ()
 testHappyPath = script do
-  Fixture {..} <- setupStandard
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  f@Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
   TextMap.size m === 4
-  results <- submitWithDisclosures' executor disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  results <- settle f m disclosures
   TextMap.size results === 4
-  -- exact delivered amounts (receivers get the leg amount; senders pay fees)
   WalletClient.checkHoldingWithAmountExists alice amuletId 70.0
   WalletClient.checkHoldingWithAmountExists alice amuletId 50.0
   WalletClient.checkHoldingWithAmountExists bob amuletId 60.0
   WalletClient.checkHoldingWithAmountExists charlie amuletId 40.0
-  -- the settlement was consumed; all allocations executed (none left)
-  [] <- queryInterface @Allocation executor
+  [] <- queryInterface @Allocation executor -- all executed; none left
   pure ()
 
--- | All-or-nothing: if one leg's allocation is missing, the whole settlement
--- aborts and NO leg settles (the allocations remain, funds still locked).
+-- | PRIVACY PROOF (SPEC §7; RFC-0003): a venue sees ONLY its own leg; it CANNOT
+-- see another venue's allocation or LegAuth. This test has teeth — it FAILS if a
+-- change re-introduces aggregate visibility to venues (e.g. reverting to the
+-- co-signed pattern, which would make bob a stakeholder of charlie's leg).
+testPerLegVisibility : Script ()
+testPerLegVisibility = script do
+  Fixture {..} <- setupStandard
+
+  bobAllocs <- queryInterface @Allocation bob
+  charlieAllocs <- queryInterface @Allocation charlie
+  execAllocs <- queryInterface @Allocation executor
+  let allocSenders xs = [v.allocation.transferLeg.sender | (_, Some v) <- xs]
+
+  -- Each venue is a stakeholder ONLY of the allocation it created (its own leg).
+  allocSenders bobAllocs === [bob]
+  allocSenders charlieAllocs === [charlie]
+  -- The critical NEGATIVE assertion: a venue cannot observe another venue's leg.
+  assertMsg
+    "bob must NOT see charlie's allocation"
+    (not (any (\(_, mv) -> optional False (\v -> v.allocation.transferLeg.sender == charlie) mv) bobAllocs))
+  assertMsg
+    "charlie must NOT see bob's allocation"
+    (not (any (\(_, mv) -> optional False (\v -> v.allocation.transferLeg.sender == bob) mv) charlieAllocs))
+  -- The executor (coordinator) sees the whole route, as designed.
+  length execAllocs === 4
+
+  -- LegAuth visibility: a venue is signatory only of LegAuths for its own legs,
+  -- and never sees the other venue in any LegAuth visible to it.
+  bobAuths <- query @LegAuth bob
+  charlieAuths <- query @LegAuth charlie
+  let authParties xs = concat [[a.sender, a.receiver] | (_, a) <- xs]
+  assertMsg "bob is party to every LegAuth it sees"
+    (all (\(_, a) -> bob == a.sender || bob == a.receiver) bobAuths)
+  assertMsg "bob never sees charlie via any LegAuth" (charlie `notElem` authParties bobAuths)
+  assertMsg "charlie never sees bob via any LegAuth" (bob `notElem` authParties charlieAuths)
+
+-- | All-or-nothing: if one leg is missing, the whole settlement aborts and NO
+-- leg settles (all four allocations remain — funds still locked, balances
+-- unchanged). Retains its teeth: a partial settlement must be impossible.
 testAllOrNothing : Script ()
 testAllOrNothing = script do
-  Fixture {..} <- setupStandard
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
-  let partial = TextMap.delete "recv-charlie" m -- drop one leg
+  f@Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
+  let partial = TextMap.delete "recv-charlie" m
   submitWithDisclosuresMustFail' executor disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = partial
-  -- nothing moved: all four allocations still present, taker undelivered
+    exerciseCmd settlementCid SwapSettlement_Settle with legAllocations = partial
+  -- nothing moved: all four allocations still present (none executed)
   allocs <- queryInterface @Allocation executor
   length allocs === 4
   pure ()
 
--- | Bound enforcement: a settlement whose delivered total is below minReceive
--- is rejected on-ledger (SPEC §6 step 3).
+-- | Bound enforcement: delivered (120) below minReceive (200) is rejected.
 testBelowMinReceiveRejected : Script ()
 testBelowMinReceiveRejected = script do
-  -- delivered is 120, but require >= 200
-  Fixture {..} <- setupFixture 200.0 1000 120.0 (hours 2)
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  f@Fixture {..} <- setupFixture 200.0 1000 120.0 (hours 2)
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
   submitWithDisclosuresMustFail' executor disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+    exerciseCmd settlementCid SwapSettlement_Settle with legAllocations = m
   pure ()
 
--- | Bound enforcement: a settlement that would exceed maxSlippageBps vs the
--- agreed reference is rejected (delivered 120 < floor 200*(1-1%) = 198).
+-- | Bound enforcement: delivered (120) below slippage floor (200·(1−1%)=198) is rejected.
 testSlippageExceededRejected : Script ()
 testSlippageExceededRejected = script do
-  Fixture {..} <- setupFixture 1.0 100 200.0 (hours 2)
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  f@Fixture {..} <- setupFixture 1.0 100 200.0 (hours 2)
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
   submitWithDisclosuresMustFail' executor disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+    exerciseCmd settlementCid SwapSettlement_Settle with legAllocations = m
   pure ()
 
 -- | Abort/expiry: settlement after the deadline fails (SPEC §6 step 3).
 testDeadlinePassedRejected : Script ()
 testDeadlinePassedRejected = script do
-  Fixture {..} <- setupFixture 100.0 1000 120.0 (minutes 1)
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
-  passTime (minutes 2) -- now past the deadline
+  f@Fixture {..} <- setupFixture 100.0 1000 120.0 (minutes 1)
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
+  passTime (minutes 2)
   submitWithDisclosuresMustFail' executor disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+    exerciseCmd settlementCid SwapSettlement_Settle with legAllocations = m
   pure ()
 
 -- | Authorization: only the executor may settle (the choice controller).
 testOnlyExecutorCanSettle : Script ()
 testOnlyExecutorCanSettle = script do
   Fixture {..} <- setupStandard
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
   submitWithDisclosuresMustFail' bob disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+    exerciseCmd settlementCid SwapSettlement_Settle with legAllocations = m
   pure ()
 
--- | No double-spend / idempotency: once settled, the settlement is consumed and
--- cannot be settled again (the allocations are single-use too).
+-- | No double-spend / idempotency: once settled, the coordinator is consumed and
+-- cannot settle again (allocations are single-use too).
 testNoDoubleSpend : Script ()
 testNoDoubleSpend = script do
-  Fixture {..} <- setupStandard
-  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
-  _ <- submitWithDisclosures' executor disclosures $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
-  -- second attempt: the settlement contract no longer exists
+  f@Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherLegAllocations registry executor ref legAuths
+  _ <- settle f m disclosures
   submitMustFail executor $
-    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+    exerciseCmd settlementCid SwapSettlement_Settle with legAllocations = m
   pure ()
