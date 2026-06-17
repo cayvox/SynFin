@@ -13,6 +13,26 @@ build/tests and CI are reproducible without re‑cloning the Splice monorepo. Se
   `3.3.0-snapshot.20250502.13767.0.v2fc6c7e2` is an internal Artifactory build not published
   as an installable SDK — see ADR‑0008).
 
+### Installing the pinned SDK (CI and local)
+
+The `get.daml.com` installer cannot resolve this snapshot in a headless/CI shell. Install
+deterministically from the pinned **GitHub release tarball** instead — its bundled `install.sh`
+installs from the extracted directory (no network version resolution) under the version in its
+`daml_version.txt` (= `3.3.0-snapshot.20250507.0`), matching every `daml.yaml` pin:
+
+- **Version:** `3.3.0-snapshot.20250507.0`
+- **Source URL (linux/amd64):**
+  `https://github.com/digital-asset/daml/releases/download/v3.3.0-snapshot.20250507.0/daml-sdk-3.3.0-snapshot.20250502.13767.0.v2fc6c7e2-linux-x86_64.tar.gz`
+  (the release tag is `v3.3.0-snapshot.20250507.0`; the tarball's internal build id is
+  `…20250502.13767.0.v2fc6c7e2`. macOS: swap `linux-x86_64` for `macos-x86_64`.)
+
+```sh
+curl -fL "$URL" -o /tmp/daml-sdk.tar.gz && tar xzf /tmp/daml-sdk.tar.gz -C /tmp && /tmp/sdk-*/install.sh
+```
+
+A JDK 17 (e.g. Temurin) is required for `daml test` / sandbox (the Daml Script service needs a
+JVM); `daml build` alone does not. The CI `daml` job uses exactly this install path.
+
 | DAR | Version | Used by |
 | --- | --- | --- |
 | `splice-api-token-metadata-v1` | 1.0.0 | library + tests |
