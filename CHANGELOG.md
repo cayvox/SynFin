@@ -45,6 +45,12 @@ are versioned independently; each release records the spec version it targets.
 - ADR‑0007: reference router scope & competitive grounding — Accepted.
 
 ### Changed
+- **SQSS bumped to `0.3.0`, driven by [RFC‑0002](docs/rfcs/0002-router-port-now-and-result.md)** (Accepted; 14‑day review window waived under single‑steward governance, GOVERNANCE.md §5): the `Router` port becomes `route(intent, quotes, now): RouteResult` (SPEC §4.5, §10).
+  - **Per‑call `now`** — the evaluation time is a parameter, not bound to a long‑lived instance or an internal clock; keeps routing pure and able to enforce the time‑dependent no‑overstatement rule.
+  - **Typed `RouteResult`** — `{ ok: true, plan } | { ok: false, reason: NoViableRouteReason }`; no throwing for control flow. `NoViableRouteReason` = `'no-eligible-quotes' | 'min-receive-unreachable' | 'slippage-exceeded'`.
+  - **`@synfin/spec` → `0.3.0`:** added `Router`/`RouteResult`/`NoViableRouteReason` (TS interface types only — no wire/JSON‑Schema/validator/generated‑type change; `gen:check` confirms).
+  - **`@synfin/router-ref` → `0.2.0`:** implements the corrected port directly; **removed** `createReferenceRouter(now)` binding and the `NoViableRouteError` throwing path; exports `referenceRouter: Router` and `route`. Allocation algorithm unchanged.
+  - **`@synfin/conformance` → `0.2.0`:** the router runner takes a `Router` directly and adds the positive **must‑route** invariant (a demonstrably satisfiable intent MUST route), closing the Task‑002b gap where a never‑routing router was uncatchable.
 - **SQSS bumped to `0.2.0`, driven by [RFC‑0001](docs/rfcs/0001-assetid-minreceive-quote-linkage.md)** (Accepted; 14‑day review window waived under single‑steward governance, GOVERNANCE.md §5):
   - **AssetId (Decision A):** normatively `{ registry, instrumentId, decimals }`. The Task‑001 working field `id` is renamed to `instrumentId`. `decimals` is the off‑ledger echo of the CIP‑0056 token‑metadata precision (registry remains the source of truth); amounts inconsistent with `decimals` are rejected (SPEC §3, Appendix A).
   - **minReceive (Decision B):** `SwapIntent.want.minReceive` MUST be strictly > 0; non‑positive floors are rejected (SPEC §4.1).
