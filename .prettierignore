@@ -11,3 +11,6 @@ packages/*/src/generated/**
 # On-ledger (Daml) tree: Daml sources, pinned daml.yaml configs, vendored
 # third-party DARs/harness — not governed by the JS/TS Prettier config.
 daml/**
+
+# Throwaway research spikes (evidence, not production)
+spikes/**

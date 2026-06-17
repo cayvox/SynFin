@@ -1,0 +1,221 @@
+-- Copyright (c) 2026 Cayvox Labs. SPDX-License-Identifier: Apache-2.0
+--
+-- | THROWAWAY privacy spike (Task 003.5 / RFC-0003) — EVIDENCE, not production.
+-- Empirically answers, against the real CIP-0056 interfaces + Amulet:
+--   * baseline: can the executor alone execute a leg's allocation? (RQ#2)
+--   * delegated: can the executor atomically settle pre-authorized allocations
+--     using per-leg RECEIVER authorizations, with no aggregate co-sign? (RQ#2/#5)
+--   * visibility: does a venue see another venue's allocation? (RQ#1)
+module Synfin.Spike.Privacy where
+
+import Daml.Script
+import DA.Time (addRelTime, hours)
+import DA.Foldable (forA_)
+
+import Splice.Api.Token.MetadataV1 (ExtraArgs (..), emptyMetadata)
+import Splice.Api.Token.HoldingV1 (Holding, InstrumentId)
+import Splice.Api.Token.AllocationV1
+import Splice.Api.Token.AllocationInstructionV1 (AllocationFactory_Allocate (..))
+
+import Splice.Testing.Registries.AmuletRegistry (AmuletRegistry)
+import Splice.Testing.Registries.AmuletRegistry qualified as AmuletRegistry
+import Splice.Testing.TokenStandard.RegistryApi qualified as RegistryApi
+import Splice.Testing.TokenStandard.WalletClient qualified as WalletClient
+import Splice.Testing.Utils
+
+-- | A PER-LEG authorization co-signed by the leg's two parties (sender +
+-- receiver). Exercising `Allocation_ExecuteTransfer` needs
+-- [executor, sender, receiver] authority in the enclosing context (the
+-- allocation being signed by the sender does NOT authorize its own choice
+-- exercise). This contract carries exactly the sender's and receiver's
+-- authority forward to the executor — and references ONLY this leg, so its two
+-- parties never see any other leg or the aggregate route (privacy, SPEC §7).
+template LegAuth
+  with
+    sender : Party
+    receiver : Party
+    executor : Party
+    settlementRef : Reference
+  where
+    signatory sender, receiver
+    observer executor
+
+    nonconsuming choice LegAuth_Execute : Allocation_ExecuteTransferResult
+      with
+        allocCid : ContractId Allocation
+        extraArgs : ExtraArgs
+      controller executor
+      do
+        alloc <- fetch allocCid
+        let v = view alloc
+        assertMsg
+          "auth matches the leg's parties"
+          (v.allocation.transferLeg.sender == sender && v.allocation.transferLeg.receiver == receiver)
+        assertMsg "auth is for this settlement" (v.allocation.settlement.settlementRef == settlementRef)
+        exercise allocCid (Allocation_ExecuteTransfer with extraArgs)
+
+-- | Executor-only coordinator: settles N legs atomically by exercising each
+-- leg's `LegAuth` (which supplies that leg's sender+receiver authority). Signed
+-- by the executor ALONE — venues are not signatories and never see this
+-- contract or any leg other than their own.
+template SpikeCoordinator
+  with
+    executor : Party
+  where
+    signatory executor
+
+    choice SpikeCoordinator_Settle : [Allocation_ExecuteTransferResult]
+      with
+        items : [(ContractId Allocation, ContractId LegAuth, ExtraArgs)]
+      controller executor
+      do
+        forA items $ \(allocCid, authCid, extraArgs) ->
+          exercise authCid (LegAuth_Execute with allocCid, extraArgs)
+
+-- helpers -------------------------------------------------------------------
+
+unlockedHoldingCids : Party -> InstrumentId -> Script [ContractId Holding]
+unlockedHoldingCids p instrumentId = do
+  hs <- WalletClient.listHoldings p instrumentId
+  pure [cid | (cid, v) <- hs, optional True (const False) v.lock]
+
+-- | The sender of a leg creates its allocation via the registry factory.
+createAlloc : AmuletRegistry -> SettlementInfo -> Text -> TransferLeg -> Time -> Script ()
+createAlloc registry si legId leg now = do
+  inputHoldingCids <- unlockedHoldingCids leg.sender registry.instrumentId
+  enriched <- RegistryApi.getAllocationFactory registry AllocationFactory_Allocate with
+    expectedAdmin = registry.dso
+    allocation = AllocationSpecification with settlement = si, transferLegId = legId, transferLeg = leg
+    requestedAt = now
+    inputHoldingCids
+    extraArgs = emptyExtraArgs
+  _ <- submitWithDisclosures' leg.sender enriched.disclosures $
+    exerciseCmd enriched.factoryCid enriched.arg
+  pure ()
+
+-- | Find an allocation (as seen by `viewer`) by settlement ref + leg id.
+findAlloc : Party -> Reference -> Text -> Script (ContractId Allocation)
+findAlloc viewer ref legId = do
+  allocs <- queryInterface @Allocation viewer
+  let matches =
+        [ cid
+        | (cid, Some v) <- allocs
+        , v.allocation.settlement.settlementRef == ref
+        , v.allocation.transferLegId == legId
+        ]
+  case matches of
+    (cid :: _) -> pure cid
+    [] -> abort ("no allocation found for leg " <> legId)
+
+-- | Get the registry transfer context (choice context + disclosures) to execute.
+ctxFor : AmuletRegistry -> ContractId Allocation -> Script (ExtraArgs, Disclosures')
+ctxFor registry allocCid = do
+  ctx <- RegistryApi.getAllocation_TransferContext registry allocCid emptyMetadata
+  let ea = ExtraArgs with context = ctx.choiceContext, meta = emptyMetadata
+  pure (ea, ctx.disclosures)
+
+mkSettlement : Party -> Text -> Time -> Time -> SettlementInfo
+mkSettlement executor refId now deadline = SettlementInfo with
+  executor
+  settlementRef = Reference with id = refId, cid = None
+  requestedAt = now
+  allocateBefore = deadline
+  settleBefore = deadline
+  meta = emptyMetadata
+
+mkLeg : Party -> Party -> Decimal -> InstrumentId -> TransferLeg
+mkLeg sender receiver amount instrumentId =
+  TransferLeg with sender, receiver, amount, instrumentId, meta = emptyMetadata
+
+-- == Experiment A: baseline — executor alone CANNOT execute a leg ============
+-- Confirms `Allocation_ExecuteTransfer` needs the receiver's authority too.
+experimentExecutorOnlyFails : Script ()
+experimentExecutorOnlyFails = script do
+  registry <- AmuletRegistry.initialize AmuletRegistry.defaultAmuletRegistryConfig
+  let amuletId = registry.instrumentId
+  executor <- allocateParty "executor"
+  alice <- allocateParty "alice"
+  bob <- allocateParty "bob"
+  AmuletRegistry.tapFaucet registry alice 1000.0
+  now <- getTime
+  let deadline = now `addRelTime` hours 2
+  let si = mkSettlement executor "spike-A" now deadline
+  createAlloc registry si "leg" (mkLeg alice bob 100.0 amuletId) now
+  cid <- findAlloc executor si.settlementRef "leg"
+  (ea, disclosures) <- ctxFor registry cid
+  -- executor (alone) tries to execute alice's allocation → missing receiver (bob) authority.
+  submitWithDisclosuresMustFail' executor disclosures $
+    exerciseCmd cid (Allocation_ExecuteTransfer with extraArgs = ea)
+
+-- == Experiment B: delegated executor-only atomic settlement =================
+-- Two pre-authorized allocations settle atomically, submitted by the EXECUTOR
+-- ALONE, using per-leg RECEIVER auths. No aggregate contract is co-signed.
+experimentDelegatedExecutorSettle : Script ()
+experimentDelegatedExecutorSettle = script do
+  registry <- AmuletRegistry.initialize AmuletRegistry.defaultAmuletRegistryConfig
+  let amuletId = registry.instrumentId
+  executor <- allocateParty "executor"
+  alice <- allocateParty "alice"
+  bob <- allocateParty "bob"
+  forA_ [alice, bob] $ \p -> AmuletRegistry.tapFaucet registry p 1000.0
+  now <- getTime
+  let deadline = now `addRelTime` hours 2
+  let si = mkSettlement executor "spike-B" now deadline
+  let ref = si.settlementRef
+
+  -- senders create their allocations (each sees only its own leg)
+  createAlloc registry si "leg1" (mkLeg alice bob 100.0 amuletId) now -- alice -> bob
+  createAlloc registry si "leg2" (mkLeg bob alice 30.0 amuletId) now   -- bob -> alice
+
+  -- each leg's two parties co-sign a per-leg auth (referencing only their leg)
+  auth1 <- submitMulti [alice, bob] [] $
+    createCmd LegAuth with sender = alice, receiver = bob, executor, settlementRef = ref
+  auth2 <- submitMulti [bob, alice] [] $
+    createCmd LegAuth with sender = bob, receiver = alice, executor, settlementRef = ref
+  coord <- submit executor $ createCmd SpikeCoordinator with executor
+
+  cid1 <- findAlloc executor ref "leg1"
+  cid2 <- findAlloc executor ref "leg2"
+  (ea1, d1) <- ctxFor registry cid1
+  (ea2, d2) <- ctxFor registry cid2
+
+  -- SETTLED BY THE EXECUTOR ALONE (no alice/bob in the submitter set).
+  _ <- submitWithDisclosures' executor (d1 <> d2) $
+    exerciseCmd coord SpikeCoordinator_Settle with
+      items = [(cid1, auth1, ea1), (cid2, auth2, ea2)]
+
+  WalletClient.checkHoldingWithAmountExists bob amuletId 100.0
+  WalletClient.checkHoldingWithAmountExists alice amuletId 30.0
+
+-- == Experiment C: per-leg visibility (Canton stakeholder privacy) ===========
+-- A venue does NOT see another venue's allocation.
+experimentPerLegVisibility : Script ()
+experimentPerLegVisibility = script do
+  registry <- AmuletRegistry.initialize AmuletRegistry.defaultAmuletRegistryConfig
+  let amuletId = registry.instrumentId
+  executor <- allocateParty "executor"
+  alice <- allocateParty "alice"     -- taker
+  bob <- allocateParty "bob"         -- venue 1
+  charlie <- allocateParty "charlie" -- venue 2
+  forA_ [alice, bob, charlie] $ \p -> AmuletRegistry.tapFaucet registry p 1000.0
+  now <- getTime
+  let deadline = now `addRelTime` hours 2
+  let si = mkSettlement executor "spike-C" now deadline
+
+  createAlloc registry si "give-bob" (mkLeg alice bob 60.0 amuletId) now
+  createAlloc registry si "give-charlie" (mkLeg alice charlie 40.0 amuletId) now
+  createAlloc registry si "recv-bob" (mkLeg bob alice 70.0 amuletId) now
+  createAlloc registry si "recv-charlie" (mkLeg charlie alice 50.0 amuletId) now
+
+  -- What each party SEES (queryInterface returns only contracts they're a stakeholder of):
+  bobAllocs <- queryInterface @Allocation bob
+  charlieAllocs <- queryInterface @Allocation charlie
+  execAllocs <- queryInterface @Allocation executor
+
+  let sendersSeenBy allocs = [v.allocation.transferLeg.sender | (_, Some v) <- allocs]
+  -- bob is signatory only of the allocation he created (recv-bob); he does NOT
+  -- see alice's or charlie's allocations.
+  assertMsg "bob sees only his own allocation" (sendersSeenBy bobAllocs == [bob])
+  assertMsg "charlie sees only his own allocation" (sendersSeenBy charlieAllocs == [charlie])
+  -- the executor (observer of all) sees every leg — it is the coordinator.
+  assertMsg "executor sees all four legs" (length execAllocs == 4)
