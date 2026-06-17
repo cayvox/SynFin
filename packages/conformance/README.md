@@ -24,19 +24,20 @@ typed rejection or a valid quote).
 
 ```ts
 import { runRouterConformance } from '@synfin/conformance';
-import { route } from '@synfin/router-ref';
+import { referenceRouter } from '@synfin/router-ref';
 
-runRouterConformance(route); // route(intent, quotes, now) => { ok, plan } | { ok: false }
+runRouterConformance(referenceRouter); // any Router: route(intent, quotes, now) => RouteResult
 ```
 
-Generates intents + quote sets and asserts the SPEC §4.4 invariants on the
+Generates intents + quote sets and asserts the SPEC §4.4/§4.5 invariants on the
 router's output: `checkRoutePlan` passes (conservation, per-leg no-overstatement
 vs the referenced quotes, slippage bound, quote linkage, aggregate consistency),
-and **monotonicity** — the plan is never worse than the best single-venue
-baseline (computed by running the same router per venue).
+**monotonicity** (never worse than the best single-venue baseline, computed by
+running the same router per venue), and the positive **must-route** invariant —
+a quote set that demonstrably satisfies the intent MUST yield a plan (RFC-0002).
 
-> The router runner takes a `now`-aware route function because RFC-0001 made
-> no-overstatement time-dependent; a bare `Router` port can be adapted by binding
-> `now` (see `createReferenceRouter` in `@synfin/router-ref`).
+> The runner takes a `Router` directly. Per RFC-0002 the port is
+> `route(intent, quotes, now): RouteResult` — `now` is per-call and no-route is a
+> typed value, so the runner needs no adapter.
 
 Apache-2.0. Pre-alpha.

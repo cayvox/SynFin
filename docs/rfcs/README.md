@@ -15,3 +15,4 @@ conformance‑test impact, so no normative change is made silently (the zero‑a
 | RFC | Title | Status | Spec version |
 | --- | --- | --- | --- |
 | [0001](0001-assetid-minreceive-quote-linkage.md) | Lock the `AssetId`, `minReceive`, and quote↔leg contracts | Accepted | 0.2.0 |
+| [0002](0002-router-port-now-and-result.md) | Fix the `Router` port — per‑call `now` and a typed `RouteResult` | Accepted | 0.3.0 |

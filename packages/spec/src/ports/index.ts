@@ -5,7 +5,7 @@
  */
 export type { VenueAdapter, QuoteRejection } from './venue-adapter.js';
 export { isQuoteRejection } from './venue-adapter.js';
-export type { Router } from './router.js';
+export type { Router, RouteResult, NoViableRouteReason } from './router.js';
 export type {
   Settlement,
   AllocationRequest,

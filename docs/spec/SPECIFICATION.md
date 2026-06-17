@@ -1,7 +1,11 @@
 # Synfin Quote & Swap‑Intent Standard (SQSS)
 
-`Spec version: 0.2.0 (draft)` · `Status: working draft — RFC required for normative changes`
+`Spec version: 0.3.0 (draft)` · `Status: working draft — RFC required for normative changes`
 
+> Changes in `0.3.0` are driven by [RFC‑0002](../rfcs/0002-router-port-now-and-result.md): the
+> `Router` contract takes a per‑call `now` and returns a typed `RouteResult` (§4.5, §10) instead
+> of a bare `RoutePlan`.
+>
 > Changes in `0.2.0` are driven by [RFC‑0001](../rfcs/0001-assetid-minreceive-quote-linkage.md):
 > the `AssetId` shape (§3), `minReceive > 0` (§4.1), the `Quote.quoteId` field (§4.3), and the
 > redefined no‑overstatement + quote‑linkage rules (§4.4).
@@ -26,7 +30,7 @@ SQSS does **not** define: the routing optimization algorithm (pluggable; MAY be 
 
 - **Taker** — expresses a `SwapIntent`.
 - **Venue** — a liquidity source that answers `QuoteRequest`s with `Quote`s and, for firm quotes, participates in settlement via CIP‑0056 allocations.
-- **Router** — selects/splits quotes into a `RoutePlan`. Implements the `Router` port. The reference router is open; alternatives MAY be proprietary but MUST consume/produce the standard types.
+- **Router** — selects/splits quotes into a `RoutePlan`, returning a typed `RouteResult` (§4.5). Implements the `Router` port. The reference router is open; alternatives MAY be proprietary but MUST consume/produce the standard types.
 - **Settlement coordinator** — the Daml application that drives the single atomic settlement transaction using CIP‑0056 allocation APIs.
 
 ## 3. Conventions
@@ -131,6 +135,27 @@ RouteLeg {
   - the quote's `give.asset` and `receive.asset` MUST match the leg's.
   In addition (kept from prior versions), `aggregateReceive` MUST NOT exceed the sum of `legs[].receive.amount`, and rounding MUST never favor the protocol over the taker (§3). Checking these requires access to the set of source quotes and the current time.
 
+### 4.5 Router contract and RouteResult (RFC‑0002)
+
+A `Router` consumes a `SwapIntent`, the `Quote`s gathered for it, and the current time, and produces either a `RoutePlan` or a typed no‑viable‑route outcome:
+
+```
+route(intent: SwapIntent, quotes: Quote[], now: Timestamp) -> RouteResult
+
+RouteResult =
+  | { ok: true,  plan: RoutePlan }
+  | { ok: false, reason: NoViableRouteReason }
+
+NoViableRouteReason =
+  | "no-eligible-quotes"       // no quote matched the intent's assets / was unexpired at now / allowed
+  | "min-receive-unreachable"  // no plan reaches want.minReceive (includes insufficient depth)
+  | "slippage-exceeded"        // the best plan would exceed intent.maxSlippageBps
+```
+
+- `now` MUST be a **per‑call** parameter. A Router MUST NOT bind the evaluation time to a long‑lived instance or read an internal clock; this keeps routing pure and deterministic (ARCHITECTURE.md §1 invariant #5) and lets it enforce the time‑dependent no‑overstatement rule of §4.4 (a leg's referenced quote MUST be unexpired at `now`).
+- A Router MUST signal the absence of a viable plan by returning `{ ok: false, reason }`. It MUST NOT throw to signal no‑route, and it MUST NOT return a `RoutePlan` that violates the §4.4 constraints. When `ok` is `true`, the `plan` MUST satisfy every §4.4 constraint.
+- `RouteResult` and `NoViableRouteReason` are off‑ledger interface types; they are **not** wire messages and are not defined by JSON Schema. *(note)* `RouteResult` is expressed as a TypeScript type in `@synfin/spec`.
+
 ## 5. Off‑ledger quote API (Venue interface)
 
 A Venue exposes a quote endpoint. Normatively:
@@ -186,7 +211,7 @@ Constraints:
 An implementation is **SQSS‑conformant** if:
 
 - (Venue/adapter) it implements §5 and §4.3 and passes the adapter conformance suite (golden + fuzz);
-- (Router) it consumes §4.3 and produces §4.4 honoring all §4 constraints;
+- (Router) it implements the §4.5 contract — `route(intent, quotes, now)` returning a typed `RouteResult` — consuming §4.3 quotes and producing §4.4 plans that honor all §4 constraints, and signaling no‑viable‑route as a typed value (never by throwing). It MUST route when a quote set demonstrably satisfies the intent;
 - (Settlement) it implements §6 and passes the Daml Script settlement suite (§ all‑or‑nothing, abort/expiry, single‑use, bound enforcement);
 - (Wallet) it can create allocations per CIP‑0056 in response to SQSS allocation requests.
 
