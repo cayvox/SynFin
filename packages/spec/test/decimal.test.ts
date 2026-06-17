@@ -105,6 +105,48 @@ describe('Decimal.quantize', () => {
   });
 });
 
+describe('Decimal.divide', () => {
+  it('divides exactly when it terminates', () => {
+    expect(dec('1').divide(dec('4'), 2, 'floor').toString()).toBe('0.25');
+    expect(dec('1.00').divide(dec('2'), 2, 'floor').toString()).toBe('0.50');
+    expect(dec('6').divide(dec('3'), 0, 'floor').toString()).toBe('2');
+  });
+
+  it('rounds the discarded digit per mode (positive)', () => {
+    expect(dec('1').divide(dec('3'), 2, 'floor').toString()).toBe('0.33');
+    expect(dec('1').divide(dec('3'), 2, 'ceil').toString()).toBe('0.34');
+    expect(dec('1').divide(dec('3'), 2, 'trunc').toString()).toBe('0.33');
+    expect(dec('1').divide(dec('3'), 2, 'away').toString()).toBe('0.34');
+  });
+
+  it('rounds the discarded digit per mode (negative)', () => {
+    expect(dec('-1').divide(dec('3'), 2, 'floor').toString()).toBe('-0.34');
+    expect(dec('-1').divide(dec('3'), 2, 'ceil').toString()).toBe('-0.33');
+    expect(dec('-1').divide(dec('3'), 2, 'away').toString()).toBe('-0.34');
+    expect(dec('-1').divide(dec('3'), 2, 'trunc').toString()).toBe('-0.33');
+  });
+
+  it('throws on division by zero or a negative scale', () => {
+    expect(() => dec('1').divide(dec('0'), 2, 'floor')).toThrow(RangeError);
+    expect(() => dec('1').divide(dec('2'), -1, 'floor')).toThrow(RangeError);
+  });
+
+  it('property: floor quotient never exceeds the true quotient', () => {
+    fc.assert(
+      fc.property(
+        fc.bigInt({ min: 0n, max: 10n ** 12n }),
+        fc.bigInt({ min: 1n, max: 10n ** 12n }),
+        fc.nat(6),
+        (a, b, scale) => {
+          const q = dec(a.toString()).divide(dec(b.toString()), scale, 'floor');
+          // q <= a/b  <=>  q*b <= a
+          expect(q.mul(dec(b.toString())).lte(dec(a.toString()))).toBe(true);
+        },
+      ),
+    );
+  });
+});
+
 describe('roundTakerFavorable (SPEC §3)', () => {
   it('rounds receive down and give up at instrument precision', () => {
     expect(roundTakerFavorable(dec('1.259'), 2, 'receive').toString()).toBe(

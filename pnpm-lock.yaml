@@ -27,6 +27,69 @@ importers:
         specifier: 8.18.1
         version: 8.18.1(eslint@9.17.0)(typescript@5.7.2)
 
+  packages/adapters:
+    dependencies:
+      '@synfin/spec':
+        specifier: workspace:*
+        version: link:../spec
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 2.1.8
+        version: 2.1.8(vitest@2.1.8)
+      fast-check:
+        specifier: 3.23.1
+        version: 3.23.1
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+      vitest:
+        specifier: 2.1.8
+        version: 2.1.8
+
+  packages/conformance:
+    dependencies:
+      '@synfin/spec':
+        specifier: workspace:*
+        version: link:../spec
+      fast-check:
+        specifier: 3.23.1
+        version: 3.23.1
+    devDependencies:
+      '@synfin/adapters':
+        specifier: workspace:*
+        version: link:../adapters
+      '@synfin/router-ref':
+        specifier: workspace:*
+        version: link:../router-ref
+      '@vitest/coverage-v8':
+        specifier: 2.1.8
+        version: 2.1.8(vitest@2.1.8)
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+      vitest:
+        specifier: 2.1.8
+        version: 2.1.8
+
+  packages/router-ref:
+    dependencies:
+      '@synfin/spec':
+        specifier: workspace:*
+        version: link:../spec
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 2.1.8
+        version: 2.1.8(vitest@2.1.8)
+      fast-check:
+        specifier: 3.23.1
+        version: 3.23.1
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+      vitest:
+        specifier: 2.1.8
+        version: 2.1.8
+
   packages/spec:
     dependencies:
       ajv:
