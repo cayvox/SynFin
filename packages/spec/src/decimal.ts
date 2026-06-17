@@ -183,6 +183,51 @@ export class Decimal {
     return new Decimal(adjusted, targetScale);
   }
 
+  /**
+   * Divide by `divisor`, returning the quotient rounded to `targetScale`
+   * fractional digits with the given mode. Exact division is performed on the
+   * integer coefficients (no binary floating point); only the final digit is
+   * subject to `mode`. Throws on division by zero or a negative scale.
+   *
+   * Used for proportional value math (e.g. scaling a quote's receipt to a
+   * partial fill). Rounding stays centralized here per SPEC §3; pair with
+   * `'floor'`/`'ceil'` (or {@link roundTakerFavorable}'s direction) so receipts
+   * are never overstated.
+   */
+  divide(divisor: Decimal, targetScale: number, mode: RoundingMode): Decimal {
+    if (divisor.#coefficient === 0n) {
+      throw new RangeError('division by zero');
+    }
+    if (targetScale < 0) {
+      throw new RangeError('targetScale must be >= 0');
+    }
+    // this/divisor = (c1/10^s1)/(c2/10^s2) = (c1·10^s2)/(c2·10^s1).
+    // Scale the numerator by 10^targetScale so the integer quotient carries
+    // `targetScale` fractional digits.
+    const num = this.#coefficient * pow10(divisor.#scale + targetScale);
+    const den = divisor.#coefficient * pow10(this.#scale);
+    const q = num / den; // truncates toward zero.
+    const r = num % den;
+    if (r === 0n) return new Decimal(q, targetScale);
+
+    const negativeResult = num < 0n !== den < 0n;
+    let adjusted = q;
+    switch (mode) {
+      case 'floor':
+        if (negativeResult) adjusted = q - 1n;
+        break;
+      case 'ceil':
+        if (!negativeResult) adjusted = q + 1n;
+        break;
+      case 'away':
+        adjusted = negativeResult ? q - 1n : q + 1n;
+        break;
+      case 'trunc':
+        break;
+    }
+    return new Decimal(adjusted, targetScale);
+  }
+
   /** Canonical string form, preserving the value's scale (trailing zeros kept). */
   toString(): string {
     const negative = this.#coefficient < 0n;
