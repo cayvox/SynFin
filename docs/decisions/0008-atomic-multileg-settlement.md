@@ -104,7 +104,13 @@ construction are co‑located. **Full cross‑synchronizer behaviour cannot be e
 single‑domain sandbox and is deferred** (honest scope limit); it will be covered when
 multi‑synchronizer testnet testing lands (Task 005).
 
-### 6. Privacy (SPEC §7) — known limitation, candidate RFC
+### 6. Privacy (SPEC §7) — known limitation, **resolved by [RFC‑0003](../rfcs/0003-privacy-model.md)**
+
+> **Update:** [RFC‑0003](../rfcs/0003-privacy-model.md) (privacy spike) resolved this. Per‑leg
+> confidentiality **is** achievable on the real interfaces via **per‑leg authorizations**
+> (each leg co‑signed only by its sender+receiver) executed by an **executor‑only coordinator** —
+> proven by `daml test` in `spikes/privacy-model`. The production library will adopt that model
+> (RFC‑0003 follow‑up); the co‑signed design below is the interim baseline.
 
 SPEC §7 wants each venue to see **only its own leg**. The atomic execution of the per‑leg
 allocations requires **each leg sender's authority in the settling transaction**; the proven
