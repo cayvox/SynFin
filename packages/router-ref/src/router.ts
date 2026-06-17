@@ -2,12 +2,13 @@ import {
   Decimal,
   assetEquals,
   checkRoutePlan,
+  type NoViableRouteReason,
   type Quote,
-  type Router,
   type RouteLeg,
   type RoutePlan,
+  type RouteResult,
+  type Router,
   type SwapIntent,
-  type ValidationError,
 } from '@synfin/spec';
 
 /**
@@ -34,38 +35,17 @@ import {
  * no-viable-route result is returned — never a constraint-violating plan.
  *
  * Determinism (ARCHITECTURE.md §1 invariant #5): pure; no clock, I/O, or
- * randomness. `now` is supplied by the caller; ties break by a stable rule
- * (higher net rate, then lower `venueId`, then larger `give`, then lower
+ * randomness. `now` is a per-call parameter (RFC-0002); ties break by a stable
+ * rule (higher net rate, then lower `venueId`, then larger `give`, then lower
  * `quoteId`), so identical inputs yield identical output.
+ *
+ * It returns the standard {@link RouteResult} (SPEC §4.5; RFC-0002): a
+ * self-validated plan, or a typed no-route reason. It never throws for
+ * control flow. The reference router introduces zero extra slippage
+ * (`slippageBps = 0`), so it only ever returns `'no-eligible-quotes'` or
+ * `'min-receive-unreachable'` — never `'slippage-exceeded'` (that reason is
+ * part of the port contract for routers that model slippage).
  */
-
-/** Why the reference router could not produce a viable plan. */
-export type NoRouteReason =
-  /** No supplied quote matched the intent's assets / was unexpired / allowed. */
-  | 'no_eligible_quotes'
-  /** Eligible quotes exist but cannot fill the full give within maxVenues/allow-list. */
-  | 'insufficient_depth'
-  /** A plan was assembled but its receipt is below the intent's minReceive. */
-  | 'min_receive_unmet'
-  /** Defensive: the assembled plan failed self-validation (should not happen). */
-  | 'constraint_violation';
-
-/** The result of a routing attempt: a self-validated plan, or a typed no-route. */
-export type RouteResult =
-  | { readonly ok: true; readonly plan: RoutePlan }
-  | {
-      readonly ok: false;
-      readonly reason: NoRouteReason;
-      readonly errors?: readonly ValidationError[];
-    };
-
-/** Thrown by the {@link Router}-port adapter ({@link createReferenceRouter}) when no route exists. */
-export class NoViableRouteError extends Error {
-  constructor(readonly reason: NoRouteReason) {
-    super(`reference router: no viable route (${reason})`);
-    this.name = 'NoViableRouteError';
-  }
-}
 
 interface Candidate {
   readonly venueId: string;
@@ -241,8 +221,8 @@ function preferred(a: PlanCandidate, b: PlanCandidate): PlanCandidate {
 
 /**
  * Produce a {@link RouteResult} for `intent` from the gathered `quotes`,
- * evaluated at `now`. This is the reference router's primary, richer API: it
- * returns a typed no-viable-route rather than throwing.
+ * evaluated at `now` (the SQSS `Router` contract, SPEC §4.5; RFC-0002). Returns
+ * a typed no-viable-route rather than throwing.
  */
 export function route(
   intent: SwapIntent,
@@ -251,13 +231,14 @@ export function route(
 ): RouteResult {
   const candidates = eligibleCandidates(intent, quotes, now);
   if (candidates.length === 0) {
-    return { ok: false, reason: 'no_eligible_quotes' };
+    return { ok: false, reason: 'no-eligible-quotes' };
   }
 
   const total = Decimal.parse(intent.give.amount);
   const minReceive = Decimal.parse(intent.want.minReceive);
   if (total === undefined || minReceive === undefined) {
-    return { ok: false, reason: 'constraint_violation' };
+    // Defensive: a shape-valid intent always has parseable amounts.
+    return { ok: false, reason: 'min-receive-unreachable' };
   }
   const ctx: RouteContext = {
     giveAsset: intent.give.asset,
@@ -267,46 +248,35 @@ export function route(
     intentRef: intent.intentId,
   };
 
+  // No fillable plan (insufficient depth) or none reaching the floor both mean
+  // the taker's minReceive is unreachable from these quotes.
   const filled = [
     bestSingleVenue(candidates, ctx),
     greedySplit(candidates, intent, ctx),
   ].filter((c): c is PlanCandidate => c !== undefined);
-  if (filled.length === 0) {
-    return { ok: false, reason: 'insufficient_depth' };
-  }
-
   const meeting = filled.filter((c) => c.worst.gte(minReceive));
   if (meeting.length === 0) {
-    return { ok: false, reason: 'min_receive_unmet' };
+    return { ok: false, reason: 'min-receive-unreachable' };
   }
   const best = meeting.reduce(preferred);
 
   const checked = checkRoutePlan(best.plan, intent, quotes, now);
   if (!checked.ok) {
-    return {
-      ok: false,
-      reason: 'constraint_violation',
-      errors: checked.errors,
-    };
+    // Defensive: the router self-validates, so this is unreachable for the
+    // current algorithm (which adds no slippage). Map a slippage failure to the
+    // contract reason, anything else to min-receive-unreachable.
+    const reason: NoViableRouteReason = checked.errors.some(
+      (e) => e.code === 'slippage_exceeded',
+    )
+      ? 'slippage-exceeded'
+      : 'min-receive-unreachable';
+    return { ok: false, reason };
   }
   return { ok: true, plan: checked.value };
 }
 
 /**
- * Adapt the reference router to the synchronous {@link Router} port by binding
- * `now`. The port's `route` returns a `RoutePlan`; since that type cannot carry
- * a no-route outcome, this adapter throws {@link NoViableRouteError} when no
- * viable plan exists. Prefer the richer {@link route} for a typed result.
- *
- * `now` is bound explicitly (not read from a clock) so the resulting `Router`
- * stays pure and deterministic.
+ * The reference router as a {@link Router} port value (SPEC §4.5). Pure: `now`
+ * is passed per call (RFC-0002), never bound here.
  */
-export function createReferenceRouter(now: Date): Router {
-  return {
-    route(intent: SwapIntent, quotes: readonly Quote[]): RoutePlan {
-      const result = route(intent, quotes, now);
-      if (!result.ok) throw new NoViableRouteError(result.reason);
-      return result.plan;
-    },
-  };
-}
+export const referenceRouter: Router = { route };
