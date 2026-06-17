@@ -12,6 +12,4 @@ export {
 export {
   runRouterConformance,
   type RouterConformanceOptions,
-  type ConformanceRouteFn,
-  type ConformanceRouteResult,
 } from './router-conformance.js';
