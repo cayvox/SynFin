@@ -100,10 +100,19 @@ describe('internal amount checks', () => {
   });
 });
 
-describe('validateAssetId / validateIntentConstraints', () => {
+describe('validateAssetId / validateIntentConstraints (RFC-0001 Decision A)', () => {
   it('accepts valid and rejects invalid', () => {
     expect(validateAssetId(USD).ok).toBe(true);
-    expect(validateAssetId({ registry: 'r', id: 'X' }).ok).toBe(false); // missing decimals
+    // missing decimals
+    expect(validateAssetId({ registry: 'r', instrumentId: 'X' }).ok).toBe(
+      false,
+    );
+    // missing instrumentId
+    expect(validateAssetId({ registry: 'r', decimals: 2 }).ok).toBe(false);
+    // negative decimals
+    expect(
+      validateAssetId({ registry: 'r', instrumentId: 'X', decimals: -1 }).ok,
+    ).toBe(false);
     expect(validateIntentConstraints({ maxVenues: 2 }).ok).toBe(true);
     expect(validateIntentConstraints({ maxVenues: 0 }).ok).toBe(false); // minimum 1
   });
@@ -126,6 +135,27 @@ describe('validateSwapIntent (SPEC §4.1)', () => {
     );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(codes(r)).toContain('non_positive_amount');
+  });
+
+  it('rejects minReceive == 0 and < 0 (RFC-0001 Decision B)', () => {
+    const zero = validateSwapIntent(
+      validIntent({ want: { asset: BTC, minReceive: '0.00000000' } }),
+    );
+    expect(zero.ok).toBe(false);
+    if (!zero.ok) expect(codes(zero)).toContain('non_positive_amount');
+    const neg = validateSwapIntent(
+      validIntent({ want: { asset: BTC, minReceive: '-0.00000001' } }),
+    );
+    expect(neg.ok).toBe(false);
+    if (!neg.ok) expect(codes(neg)).toContain('non_positive_amount');
+  });
+
+  it('rejects an amount with more fractional digits than the asset decimals', () => {
+    const r = validateSwapIntent(
+      validIntent({ give: { asset: USD, amount: '100.001' } }), // USD has 2 decimals
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(codes(r)).toContain('excess_precision');
   });
 
   it('ignores unknown optional fields (forward compatibility, SPEC §9)', () => {
@@ -155,6 +185,12 @@ describe('validateQuote (SPEC §4.3, §8)', () => {
   it('accepts indicative and firm quotes', () => {
     expect(validateQuote(validIndicativeQuote()).ok).toBe(true);
     expect(validateQuote(validFirmQuote()).ok).toBe(true);
+  });
+
+  it('rejects a quote missing quoteId (RFC-0001 Decision C)', () => {
+    const { quoteId, ...rest } = validIndicativeQuote();
+    void quoteId;
+    expect(validateQuote(rest).ok).toBe(false);
   });
 
   it('rejects a firm quote without commitment+signature', () => {

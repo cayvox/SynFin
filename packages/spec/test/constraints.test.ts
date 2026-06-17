@@ -4,6 +4,8 @@ import {
   assetEquals,
   checkAggregateConsistency,
   checkConservation,
+  checkNoOverstatement,
+  checkQuoteLinkage,
   checkRoutePlan,
   checkSlippageBound,
   checkVenueConstraints,
@@ -11,15 +13,24 @@ import {
   compareByWorstCase,
 } from '../src/index.js';
 import type { AssetId, RouteLeg, RoutePlan, SwapIntent } from '../src/index.js';
-import { BTC, USD, validIntent, validRoutePlan } from './fixtures.js';
+import {
+  BTC,
+  NOW,
+  PAST,
+  USD,
+  validIntent,
+  validIndicativeQuote,
+  validQuotesForPlan,
+  validRoutePlan,
+} from './fixtures.js';
 
 const code0 = (errs: { code: string }[]): string | undefined => errs[0]?.code;
 
-describe('assetEquals', () => {
-  it('compares registry, id and decimals', () => {
+describe('assetEquals (RFC-0001 Decision A)', () => {
+  it('compares registry, instrumentId and decimals', () => {
     expect(assetEquals(USD, { ...USD })).toBe(true);
     expect(assetEquals(USD, { ...USD, registry: 'other' })).toBe(false);
-    expect(assetEquals(USD, { ...USD, id: 'EUR' })).toBe(false);
+    expect(assetEquals(USD, { ...USD, instrumentId: 'EUR' })).toBe(false);
     expect(assetEquals(USD, { ...USD, decimals: 6 })).toBe(false);
   });
 });
@@ -161,11 +172,110 @@ describe('checkAggregateConsistency (SPEC §4.4, §3)', () => {
   });
 });
 
+describe('quote linkage + per-leg no-overstatement (RFC-0001 Decision C)', () => {
+  it('checkQuoteLinkage rejects a leg whose quoteRef is unknown', () => {
+    expect(checkQuoteLinkage(validRoutePlan(), validQuotesForPlan())).toEqual(
+      [],
+    );
+    expect(
+      code0(
+        checkQuoteLinkage(
+          validRoutePlan({
+            legs: [{ ...validRoutePlan().legs[0], quoteRef: 'nope' }],
+          }),
+          validQuotesForPlan(),
+        ),
+      ),
+    ).toBe('unresolved_quote_ref');
+  });
+
+  it('checkNoOverstatement accepts a leg within its referenced quote', () => {
+    expect(
+      checkNoOverstatement(validRoutePlan(), validQuotesForPlan(), NOW),
+    ).toEqual([]);
+  });
+
+  it('rejects a leg whose receive exceeds its referenced quote', () => {
+    const plan = validRoutePlan({
+      legs: [
+        {
+          ...validRoutePlan().legs[0],
+          receive: { asset: BTC, amount: '0.00130000' }, // quote offers 0.00120000
+        },
+      ],
+    });
+    expect(code0(checkNoOverstatement(plan, validQuotesForPlan(), NOW))).toBe(
+      'leg_exceeds_quote',
+    );
+  });
+
+  it('rejects a leg referencing an expired quote', () => {
+    const quotes = [
+      validIndicativeQuote({ quoteId: 'quote-1', validUntil: PAST }),
+    ];
+    expect(code0(checkNoOverstatement(validRoutePlan(), quotes, NOW))).toBe(
+      'quote_expired',
+    );
+  });
+
+  it('rejects a leg whose assets mismatch the referenced quote', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        receive: { asset: USD, amount: '0.00120000' }, // wrong receive asset
+      }),
+    ];
+    expect(code0(checkNoOverstatement(validRoutePlan(), quotes, NOW))).toBe(
+      'leg_quote_asset_mismatch',
+    );
+  });
+
+  it('skips unresolved legs (left to checkQuoteLinkage)', () => {
+    const plan = validRoutePlan({
+      legs: [{ ...validRoutePlan().legs[0], quoteRef: 'nope' }],
+    });
+    expect(checkNoOverstatement(plan, validQuotesForPlan(), NOW)).toEqual([]);
+  });
+
+  it('flags an unparseable leg/quote amount', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        receive: { asset: BTC, amount: 'abc' },
+      }),
+    ];
+    expect(code0(checkNoOverstatement(validRoutePlan(), quotes, NOW))).toBe(
+      'invalid_decimal',
+    );
+  });
+});
+
 describe('checkRoutePlan + compareByWorstCase', () => {
   it('accepts a valid plan and rejects a violating one', () => {
-    expect(checkRoutePlan(validRoutePlan(), validIntent()).ok).toBe(true);
     expect(
-      checkRoutePlan(validRoutePlan({ slippageBps: 9999 }), validIntent()).ok,
+      checkRoutePlan(validRoutePlan(), validIntent(), validQuotesForPlan(), NOW)
+        .ok,
+    ).toBe(true);
+    expect(
+      checkRoutePlan(
+        validRoutePlan({ slippageBps: 9999 }),
+        validIntent(),
+        validQuotesForPlan(),
+        NOW,
+      ).ok,
+    ).toBe(false);
+  });
+
+  it('rejects a plan whose leg quoteRef is not in the supplied quote set', () => {
+    expect(
+      checkRoutePlan(
+        validRoutePlan({
+          legs: [{ ...validRoutePlan().legs[0], quoteRef: 'nope' }],
+        }),
+        validIntent(),
+        validQuotesForPlan(),
+        NOW,
+      ).ok,
     ).toBe(false);
   });
 
@@ -189,8 +299,16 @@ describe('checkRoutePlan + compareByWorstCase', () => {
 
 // --- Property-based invariants (TESTING.md §2) -----------------------------
 
-const ASSET0: AssetId = { registry: 'r::give', id: 'GIVE', decimals: 0 };
-const ASSET_OUT: AssetId = { registry: 'r::want', id: 'WANT', decimals: 0 };
+const ASSET0: AssetId = {
+  registry: 'r::give',
+  instrumentId: 'GIVE',
+  decimals: 0,
+};
+const ASSET_OUT: AssetId = {
+  registry: 'r::want',
+  instrumentId: 'WANT',
+  decimals: 0,
+};
 
 function planFrom(
   gives: number[],

@@ -27,12 +27,16 @@ are versioned independently; each release records the spec version it targets.
   decimal and validation paths.
 - ADR‑0006: competitive design study (1inch, Jupiter, CoW, ParaSwap/Odos) — Accepted.
 
+### Changed
+- **SQSS bumped to `0.2.0`, driven by [RFC‑0001](docs/rfcs/0001-assetid-minreceive-quote-linkage.md)** (Accepted; 14‑day review window waived under single‑steward governance, GOVERNANCE.md §5):
+  - **AssetId (Decision A):** normatively `{ registry, instrumentId, decimals }`. The Task‑001 working field `id` is renamed to `instrumentId`. `decimals` is the off‑ledger echo of the CIP‑0056 token‑metadata precision (registry remains the source of truth); amounts inconsistent with `decimals` are rejected (SPEC §3, Appendix A).
+  - **minReceive (Decision B):** `SwapIntent.want.minReceive` MUST be strictly > 0; non‑positive floors are rejected (SPEC §4.1).
+  - **Quote↔leg linkage + no‑overstatement (Decision C):** `Quote` gains a required `quoteId`; each `RouteLeg.quoteRef` MUST resolve to a supplied quote; each leg's `receive` MUST NOT exceed its referenced quote's `receive`, which MUST be unexpired and asset‑matched. The prior `aggregateReceive ≤ Σ leg receipts` invariant is kept. `checkRoutePlan`/`checkNoOverstatement`/`checkQuoteLinkage` now take the source quote set (and `now`) (SPEC §4.3, §4.4).
+- **`@synfin/spec` → `0.2.0`** implementing RFC‑0001: schemas, generated types, validators, and constraint predicates updated; new edge‑case tests; coverage gates held (100% on validation/decimal paths).
+
 ### Notes
 - Pre‑alpha. All interfaces are unstable until `v1.0.0`. Spec changes follow the RFC process
   in GOVERNANCE.md.
-- `@synfin/spec` carries the instrument's `decimals` on `AssetId` so amounts can be
-  validated off‑ledger without global state (ARCHITECTURE.md §1 #2); this is a modeling
-  decision pending confirmation. Multi‑hop routing remains a FUTURE spec extension
-  (ADR‑0006) requiring its own RFC.
+- Multi‑hop routing remains a FUTURE spec extension (ADR‑0006) requiring its own RFC.
 
 [Unreleased]: https://example.com/synfin/commits/main

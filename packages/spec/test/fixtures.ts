@@ -6,13 +6,23 @@ import type {
   SwapIntent,
 } from '../src/index.js';
 
-/** Valid, reusable fixtures for the SQSS wire types (SPEC §4). */
+/** Valid, reusable fixtures for the SQSS wire types (SPEC §4, RFC-0001). */
 
-export const USD: AssetId = { registry: 'reg::usd', id: 'USD', decimals: 2 };
-export const BTC: AssetId = { registry: 'reg::btc', id: 'BTC', decimals: 8 };
+export const USD: AssetId = {
+  registry: 'reg::usd',
+  instrumentId: 'USD',
+  decimals: 2,
+};
+export const BTC: AssetId = {
+  registry: 'reg::btc',
+  instrumentId: 'BTC',
+  decimals: 8,
+};
 
 export const FUTURE = '2099-01-01T00:00:00Z';
 export const PAST = '2000-01-01T00:00:00Z';
+/** A clock before FUTURE and after PAST, for expiry checks. */
+export const NOW = new Date('2030-01-01T00:00:00Z');
 
 export function validIntent(overrides: Partial<SwapIntent> = {}): SwapIntent {
   return {
@@ -41,6 +51,7 @@ export function validQuoteRequest(
 
 export function validIndicativeQuote(overrides: Partial<Quote> = {}): Quote {
   return {
+    quoteId: 'quote-1',
     venueId: 'venue-1',
     give: { asset: USD, amount: '100.00' },
     receive: { asset: BTC, amount: '0.00120000' },
@@ -78,4 +89,9 @@ export function validRoutePlan(overrides: Partial<RoutePlan> = {}): RoutePlan {
     slippageBps: 20,
     ...overrides,
   };
+}
+
+/** The source quotes the default {@link validRoutePlan} is built from. */
+export function validQuotesForPlan(): Quote[] {
+  return [validIndicativeQuote({ quoteId: 'quote-1' })];
 }

@@ -44,6 +44,8 @@ export {
   checkWorstCaseFloor,
   checkSlippageBound,
   checkVenueConstraints,
+  checkQuoteLinkage,
+  checkNoOverstatement,
   checkAggregateConsistency,
   checkRoutePlan,
   compareByWorstCase,
