@@ -1,6 +1,10 @@
 # Synfin Quote & Swap‑Intent Standard (SQSS)
 
-`Spec version: 0.1.0 (draft)` · `Status: working draft — RFC required for normative changes`
+`Spec version: 0.2.0 (draft)` · `Status: working draft — RFC required for normative changes`
+
+> Changes in `0.2.0` are driven by [RFC‑0001](../rfcs/0001-assetid-minreceive-quote-linkage.md):
+> the `AssetId` shape (§3), `minReceive > 0` (§4.1), the `Quote.quoteId` field (§4.3), and the
+> redefined no‑overstatement + quote‑linkage rules (§4.4).
 
 This is the **normative** specification. The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are to be interpreted as in RFC 2119. This document builds directly on the **Canton Network Token Standard (CIP‑0056)** and does not redefine anything CIP‑0056 already provides; it composes it.
 
@@ -27,8 +31,12 @@ SQSS does **not** define: the routing optimization algorithm (pluggable; MAY be 
 
 ## 3. Conventions
 
-- **Asset identification.** An asset MUST be identified by a registry‑qualified instrument identifier consistent with CIP‑0056 (the issuing registry plus the instrument), never by symbol alone.
-- **Amounts** are exact decimals with the instrument's defined precision. Implementations MUST NOT use binary floating point for value math.
+- **Asset identification.** An asset MUST be identified by a registry‑qualified instrument identifier consistent with CIP‑0056 (the issuing registry plus the instrument), never by symbol alone. An `AssetId` has exactly three fields:
+  - `registry` — the issuing registry / token administrator identifier (the authority).
+  - `instrumentId` — the instrument identifier within that registry.
+  - `decimals` — a non‑negative integer, the instrument's precision.
+  - `decimals` is **not authoritative on its own**: it MUST be consistent with the precision the issuing registry reports via the CIP‑0056 **token metadata API** (Appendix A). It is carried in `AssetId` only so off‑ledger validation works without global readable state (ARCHITECTURE.md §1, invariant #2); the registry remains the source of truth and `decimals` is its off‑ledger echo. Implementations SHOULD verify `decimals` against the registry's token metadata when available, and MUST reject quotes/intents whose amounts are inconsistent with the stated `decimals`.
+- **Amounts** are exact decimals with the instrument's defined precision. Implementations MUST NOT use binary floating point for value math. An amount MUST NOT carry more fractional digits than its asset's `decimals`.
 - **Rounding** MUST never overstate what the taker receives or understate what the taker gives. Where rounding is required, it MUST be applied in the taker's favor or rejected.
 - **Time** is UTC. Deadlines and validity are absolute timestamps.
 - **Basis points (bps):** 1 bps = 0.01%.
@@ -44,7 +52,7 @@ SwapIntent {
   intentId:        string         // unique; replay/idempotency key
   taker:           PartyId        // Canton party
   give:            { asset: AssetId, amount: Decimal }
-  want:            { asset: AssetId, minReceive: Decimal }   // floor the taker accepts
+  want:            { asset: AssetId, minReceive: Decimal }   // floor the taker accepts; MUST be > 0
   maxSlippageBps:  integer        // additional protection vs reference; >= 0
   deadline:        Timestamp      // absolute expiry; settlement MUST NOT occur after
   constraints?:    IntentConstraints
@@ -56,7 +64,7 @@ IntentConstraints {
 }
 ```
 
-- `minReceive` is authoritative. `maxSlippageBps` is an additional guard relative to an agreed reference; it MUST NOT relax `minReceive`.
+- `minReceive` is authoritative and MUST be strictly greater than 0; a non‑positive floor is invalid and MUST be rejected at validation (RFC‑0001 Decision B). `maxSlippageBps` is an additional guard relative to an agreed reference; it MUST NOT relax `minReceive`.
 - A settlement that would deliver less than `minReceive` MUST fail.
 
 ### 4.2 QuoteRequest
@@ -78,6 +86,7 @@ QuoteRequest {
 
 ```
 Quote {
+  quoteId:     string             // unique id set by the venue/adapter; unique within an intent's quote round
   venueId:     VenueId
   give:        { asset: AssetId, amount: Decimal }   // echoes requested size
   receive:     { asset: AssetId, amount: Decimal }   // offered output
@@ -90,6 +99,7 @@ Quote {
 }
 ```
 
+- `quoteId` MUST be present and unique within the scope of an intent's quote‑gathering round; it is the identifier a `RouteLeg.quoteRef` resolves to (§4.4, RFC‑0001 Decision C).
 - An **indicative** quote is non‑binding. A **firm** quote MUST be backed by a `commitment` that can be honored on‑ledger during settlement, and MUST be signed by the venue.
 - Consumers MUST reject quotes where `validUntil` has passed, where amounts are non‑positive, where decimals/units are inconsistent with the instrument, or (for firm) where the signature/commitment does not verify.
 
@@ -107,13 +117,19 @@ RouteLeg {
   venueId:  VenueId
   give:     { asset: AssetId, amount: Decimal }
   receive:  { asset: AssetId, amount: Decimal }
-  quoteRef: string
+  quoteRef: string               // MUST equal the quoteId of a Quote returned for this intent
 }
 ```
 
 - The sum of `legs[].give.amount` MUST equal `intent.give.amount` (conservation).
 - No `RouteLeg` may reference a venue excluded by `venueAllowList`, and `legs.length` MUST respect `maxVenues`.
 - A `RoutePlan` whose `worstCaseReceive` < `intent.want.minReceive` MUST NOT be submitted for settlement.
+- **Quote linkage (RFC‑0001 Decision C).** Each `RouteLeg.quoteRef` MUST equal the `quoteId` of an actual `Quote` returned for the same intent. A `RoutePlan` MUST NOT contain a leg whose `quoteRef` does not resolve to a known quote.
+- **No overstatement (RFC‑0001 Decision C).** For every leg, against the quote it references:
+  - `leg.receive.amount` MUST NOT exceed that quote's `receive.amount`;
+  - the referenced quote MUST be unexpired at plan‑construction time (`now <= quote.validUntil`);
+  - the quote's `give.asset` and `receive.asset` MUST match the leg's.
+  In addition (kept from prior versions), `aggregateReceive` MUST NOT exceed the sum of `legs[].receive.amount`, and rounding MUST never favor the protocol over the taker (§3). Checking these requires access to the set of source quotes and the current time.
 
 ## 5. Off‑ledger quote API (Venue interface)
 
@@ -188,4 +204,4 @@ Routing optimization algorithm, pricing/oracles, custody, hosted services, and a
 
 ### Appendix A — Relationship to CIP‑0056
 
-SQSS uses, and does not replace, CIP‑0056's six APIs — chiefly **holdings** (inventory), **allocation**, **allocation request**, and **allocation instruction** (atomic DvP). SQSS adds the **quote/intent** layer above them and the **multi‑leg atomic composition** pattern. Any conflict between this document and CIP‑0056 is resolved in favor of CIP‑0056, and is a bug in this spec to be fixed via RFC.
+SQSS uses, and does not replace, CIP‑0056's six APIs — chiefly **holdings** (inventory), **allocation**, **allocation request**, and **allocation instruction** (atomic DvP). It also relies on CIP‑0056's **token metadata API** as the source of truth for an instrument's precision: an `AssetId.decimals` (§3) is the off‑ledger echo of that metadata and MUST be consistent with it. SQSS adds the **quote/intent** layer above these and the **multi‑leg atomic composition** pattern. Any conflict between this document and CIP‑0056 is resolved in favor of CIP‑0056, and is a bug in this spec to be fixed via RFC.
