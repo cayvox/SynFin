@@ -8,6 +8,15 @@ are versioned independently; each release records the spec version it targets.
 ## [Unreleased]
 
 ### Added
+- **RFC-0003 — privacy model (spike).** Established with experiments against the real CIP-0056
+  interfaces + Amulet (`spikes/privacy-model`, all `daml test` green) that **per-leg settlement
+  confidentiality is achievable**: each leg is authorized only by its own sender+receiver
+  (`LegAuth`) and executed atomically by an executor-only coordinator — no aggregate co-sign, so a
+  venue never sees another venue's leg or the route. Separates the properties Synfin provides
+  (quote-time privacy + MEV immunity, held in all models; per-leg confidentiality via the
+  recommended model). Resolves the ADR-0008 limitation (cross-linked); proposes honest SPEC §7
+  edits (→ 0.4.0, applied in a follow-up) and recommends the production library adopt the model.
+  No production code changed in this spike.
 - **`daml/synfin-settlement` — on-ledger atomic multi-leg settlement (ADR-0008).** Composes an
   N-leg route into a SINGLE atomic Daml transaction on the **real CIP-0056** token-standard
   allocation interfaces (`hyperledger-labs/splice@canton-3.4`, depended on as DARs — not
