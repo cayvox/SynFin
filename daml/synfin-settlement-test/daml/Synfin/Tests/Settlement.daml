@@ -1,0 +1,229 @@
+-- Copyright (c) 2026 Cayvox Labs. SPDX-License-Identifier: Apache-2.0
+--
+-- | Daml Script test matrix for the Synfin atomic multi-leg settlement library
+-- (TESTING.md §3), driven against the REAL CIP-0056 interfaces with Amulet as
+-- the test token (single registry available in this repo; the allocation/DvP
+-- interface is asset-agnostic, so Amulet is a faithful stand-in for a cross-asset
+-- swap — see ADR-0008). Proves: happy path (N-leg split, one transaction),
+-- all-or-nothing, abort/expiry, authorization & no-double-spend, and on-ledger
+-- bound enforcement (minReceive, maxSlippageBps).
+module Synfin.Tests.Settlement where
+
+import Daml.Script
+import DA.Assert ((===))
+import DA.Time (RelTime, addRelTime, hours, minutes)
+import DA.TextMap (TextMap)
+import DA.TextMap qualified as TextMap
+import DA.Foldable (forA_)
+import DA.Optional (isNone)
+
+import Splice.Api.Token.MetadataV1 (ExtraArgs (..), emptyMetadata)
+import Splice.Api.Token.HoldingV1 (Holding, InstrumentId)
+import Splice.Api.Token.AllocationV1
+import Splice.Api.Token.AllocationInstructionV1 (AllocationFactory_Allocate (..))
+
+import Synfin.Settlement
+
+import Splice.Testing.Registries.AmuletRegistry (AmuletRegistry)
+import Splice.Testing.Registries.AmuletRegistry qualified as AmuletRegistry
+import Splice.Testing.TokenStandard.RegistryApi qualified as RegistryApi
+import Splice.Testing.TokenStandard.WalletClient qualified as WalletClient
+import Splice.Testing.Utils
+
+-- A fully-set-up route ready to settle.
+data Fixture = Fixture with
+  registry : AmuletRegistry
+  executor : Party
+  alice : Party   -- taker
+  bob : Party     -- venue 1
+  charlie : Party -- venue 2
+  amuletId : InstrumentId
+  si : SettlementInfo
+  legs : TextMap Leg
+  settlementCid : ContractId SwapSettlement
+
+-- | The standard 2-venue route used by the tests: the taker (alice) gives 100
+-- split 60/40 across venues bob/charlie, and receives 120 split 70/50 back.
+standardLegs : Party -> Party -> Party -> InstrumentId -> TextMap Leg
+standardLegs alice bob charlie amuletId = TextMap.fromList
+  [ ("give-bob", Leg with sender = alice, receiver = bob, amount = 60.0, instrument = amuletId)
+  , ("give-charlie", Leg with sender = alice, receiver = charlie, amount = 40.0, instrument = amuletId)
+  , ("recv-bob", Leg with sender = bob, receiver = alice, amount = 70.0, instrument = amuletId)
+  , ("recv-charlie", Leg with sender = charlie, receiver = alice, amount = 50.0, instrument = amuletId)
+  ]
+
+-- | Create one CIP-0056 allocation for a leg, submitted by that leg's sender
+-- (mirrors how a venue/taker wallet funds its single leg — no aggregate seen).
+-- | Only a party's UNLOCKED holdings can fund a new allocation. (A party that
+-- sends on more than one leg locks funds per allocation, so subsequent
+-- allocations must draw from the remaining unlocked change.)
+unlockedHoldingCids : Party -> InstrumentId -> Script [ContractId Holding]
+unlockedHoldingCids p instrumentId = do
+  hs <- WalletClient.listHoldings p instrumentId
+  pure [cid | (cid, v) <- hs, isNone v.lock]
+
+allocateLeg : AmuletRegistry -> SettlementInfo -> Time -> Text -> Leg -> Script ()
+allocateLeg registry si requestedAt legId leg = do
+  inputHoldingCids <- unlockedHoldingCids leg.sender registry.instrumentId
+  enriched <- RegistryApi.getAllocationFactory registry AllocationFactory_Allocate with
+    expectedAdmin = registry.dso
+    allocation = AllocationSpecification with
+      settlement = si
+      transferLegId = legId
+      transferLeg = toTransferLeg leg
+    requestedAt
+    inputHoldingCids
+    extraArgs = emptyExtraArgs
+  _ <- submitWithDisclosures' leg.sender enriched.disclosures $
+    exerciseCmd enriched.factoryCid enriched.arg
+  pure ()
+
+-- | Executor-side: collect every funded allocation for this settlement and the
+-- registry transfer context needed to execute each (mirrors the app backend).
+gatherAllocations :
+  AmuletRegistry -> Party -> Reference
+  -> Script (TextMap (ContractId Allocation, ExtraArgs), Disclosures')
+gatherAllocations registry executor ref = do
+  allocs <- queryInterface @Allocation executor
+  entries <- forA allocs $ \(cid, mv) -> case mv of
+    Some v | v.allocation.settlement.settlementRef == ref -> do
+      ctx <- RegistryApi.getAllocation_TransferContext registry cid emptyMetadata
+      let ea = ExtraArgs with context = ctx.choiceContext, meta = emptyMetadata
+      pure [(v.allocation.transferLegId, (cid, ea), ctx.disclosures)]
+    _ -> pure []
+  let flat = concat entries
+  let m = TextMap.fromList [(legId, ce) | (legId, ce, _) <- flat]
+  let disclosures = mconcat [d | (_, _, d) <- flat]
+  pure (m, disclosures)
+
+-- | Set up a funded 2-venue route and its allocations, with configurable bounds.
+setupFixture : Decimal -> Int -> Decimal -> RelTime -> Script Fixture
+setupFixture minReceive maxSlippageBps referenceReceive deadlineIn = do
+  registry <- AmuletRegistry.initialize AmuletRegistry.defaultAmuletRegistryConfig
+  let amuletId = registry.instrumentId
+  executor <- allocateParty "synfin-executor"
+  alice <- allocateParty "alice"
+  bob <- allocateParty "bob"
+  charlie <- allocateParty "charlie"
+  forA_ [alice, bob, charlie] $ \p -> AmuletRegistry.tapFaucet registry p 1000.0
+
+  now <- getTime
+  let legs = standardLegs alice bob charlie amuletId
+  let deadline = now `addRelTime` deadlineIn
+  -- Allocations must be in place before `prepareUntil <= deadline` (ensure).
+  let prepareUntil = deadline
+  settlementCid <- submitMulti [executor, alice, bob, charlie] [] $ createCmd SwapSettlement with
+    intentId = "intent-synfin-1"
+    executor
+    taker = alice
+    giveInstrument = amuletId
+    wantInstrument = amuletId
+    giveAmount = 100.0
+    minReceive
+    maxSlippageBps
+    referenceReceive
+    legs
+    createdAt = now
+    prepareUntil
+    deadline
+  let si = SettlementInfo with
+        executor
+        settlementRef = Reference with id = "intent-synfin-1", cid = None
+        requestedAt = now
+        allocateBefore = prepareUntil
+        settleBefore = deadline
+        meta = emptyMetadata
+  forA_ (TextMap.toList legs) $ \(legId, leg) -> allocateLeg registry si now legId leg
+  pure Fixture with ..
+
+-- | A standard, comfortably-satisfiable route (minReceive 100, slippage 10%).
+setupStandard : Script Fixture
+setupStandard = setupFixture 100.0 1000 120.0 (hours 2)
+
+-- == Tests =================================================================
+
+-- | Happy path: a 2-venue (4-leg) split settles in ONE transaction; the taker
+-- receives both legs and each venue receives its give-leg.
+testHappyPath : Script ()
+testHappyPath = script do
+  Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  TextMap.size m === 4
+  results <- submitWithDisclosures' executor disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  TextMap.size results === 4
+  -- exact delivered amounts (receivers get the leg amount; senders pay fees)
+  WalletClient.checkHoldingWithAmountExists alice amuletId 70.0
+  WalletClient.checkHoldingWithAmountExists alice amuletId 50.0
+  WalletClient.checkHoldingWithAmountExists bob amuletId 60.0
+  WalletClient.checkHoldingWithAmountExists charlie amuletId 40.0
+  -- the settlement was consumed; all allocations executed (none left)
+  [] <- queryInterface @Allocation executor
+  pure ()
+
+-- | All-or-nothing: if one leg's allocation is missing, the whole settlement
+-- aborts and NO leg settles (the allocations remain, funds still locked).
+testAllOrNothing : Script ()
+testAllOrNothing = script do
+  Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  let partial = TextMap.delete "recv-charlie" m -- drop one leg
+  submitWithDisclosuresMustFail' executor disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = partial
+  -- nothing moved: all four allocations still present, taker undelivered
+  allocs <- queryInterface @Allocation executor
+  length allocs === 4
+  pure ()
+
+-- | Bound enforcement: a settlement whose delivered total is below minReceive
+-- is rejected on-ledger (SPEC §6 step 3).
+testBelowMinReceiveRejected : Script ()
+testBelowMinReceiveRejected = script do
+  -- delivered is 120, but require >= 200
+  Fixture {..} <- setupFixture 200.0 1000 120.0 (hours 2)
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  submitWithDisclosuresMustFail' executor disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  pure ()
+
+-- | Bound enforcement: a settlement that would exceed maxSlippageBps vs the
+-- agreed reference is rejected (delivered 120 < floor 200*(1-1%) = 198).
+testSlippageExceededRejected : Script ()
+testSlippageExceededRejected = script do
+  Fixture {..} <- setupFixture 1.0 100 200.0 (hours 2)
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  submitWithDisclosuresMustFail' executor disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  pure ()
+
+-- | Abort/expiry: settlement after the deadline fails (SPEC §6 step 3).
+testDeadlinePassedRejected : Script ()
+testDeadlinePassedRejected = script do
+  Fixture {..} <- setupFixture 100.0 1000 120.0 (minutes 1)
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  passTime (minutes 2) -- now past the deadline
+  submitWithDisclosuresMustFail' executor disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  pure ()
+
+-- | Authorization: only the executor may settle (the choice controller).
+testOnlyExecutorCanSettle : Script ()
+testOnlyExecutorCanSettle = script do
+  Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  submitWithDisclosuresMustFail' bob disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  pure ()
+
+-- | No double-spend / idempotency: once settled, the settlement is consumed and
+-- cannot be settled again (the allocations are single-use too).
+testNoDoubleSpend : Script ()
+testNoDoubleSpend = script do
+  Fixture {..} <- setupStandard
+  (m, disclosures) <- gatherAllocations registry executor si.settlementRef
+  _ <- submitWithDisclosures' executor disclosures $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  -- second attempt: the settlement contract no longer exists
+  submitMustFail executor $
+    exerciseCmd settlementCid SwapSettlement_Settle with allocationsWithContext = m
+  pure ()
