@@ -7,6 +7,20 @@ are versioned independently; each release records the spec version it targets.
 
 ## [Unreleased]
 
+### Changed
+- **SQSS bumped to `0.4.0`, driven by [RFC-0003](docs/rfcs/0003-privacy-model.md):** the
+  settlement library `daml/synfin-settlement` is refactored from the co-signed `OTCTrade`-style
+  pattern to the **per-leg-authorization + executor-only-coordinator** model — each leg is
+  co-signed only by its sender+receiver (`LegAuth`); the `SwapSettlement` coordinator is signed by
+  **executor + taker only** and settles by exercising each `LegAuth` in one atomic transaction.
+  This delivers **per-leg confidentiality** (a venue is a stakeholder of only its own leg and never
+  sees another venue's leg or the aggregate) while retaining every economic/atomicity guarantee
+  (deadline, conservation, minReceive, slippage, single-use, idempotency, all-or-nothing). New
+  `testPerLegVisibility` Daml Script proves it (and fails if aggregate visibility regresses); the
+  full prior matrix stays green. **SPEC §7** is scoped to this model and declares the co-signed
+  pattern **non-conformant** for multi-venue routing, distinguishing MEV immunity from per-leg
+  confidentiality. ADR-0008 updated; superseded Task-003.5 spike removed.
+
 ### Added
 - **RFC-0003 — privacy model (spike).** Established with experiments against the real CIP-0056
   interfaces + Amulet (`spikes/privacy-model`, all `daml test` green) that **per-leg settlement
