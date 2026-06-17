@@ -17,3 +17,4 @@ We record significant architecture decisions as ADRs so the *why* is never lost 
 | [0004](0004-open-closed-boundary.md) | The open/closed boundary | Accepted |
 | [0005](0005-ports-and-adapters.md) | Ports & adapters (hexagonal) architecture | Accepted |
 | [0006](0006-competitive-design-study.md) | Competitive design study (what Synfin adopts and rejects) | Accepted |
+| [0007](0007-reference-router-scope.md) | Reference router scope & competitive grounding | Accepted |
