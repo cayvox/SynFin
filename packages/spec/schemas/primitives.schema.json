@@ -43,14 +43,14 @@
     },
     "AssetId": {
       "title": "AssetId",
-      "description": "Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3: the issuing registry plus the instrument, never a symbol alone). `decimals` carries the instrument's defined precision; because Canton has no global readable state (ARCHITECTURE.md §1, invariant #2) the precision must travel with the asset reference so amounts can be validated off-ledger.",
+      "description": "Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3, RFC-0001 Decision A: the issuing registry plus the instrument, never a symbol alone). Exactly three fields: registry, instrumentId, decimals.",
       "type": "object",
       "properties": {
         "registry": {
           "$ref": "primitives.schema.json#/$defs/PartyId",
-          "description": "The issuing registry (a Canton party administering the instrument)."
+          "description": "The issuing registry / token administrator identifier (the authority; a Canton party)."
         },
-        "id": {
+        "instrumentId": {
           "type": "string",
           "minLength": 1,
           "description": "Instrument identifier within the issuing registry."
@@ -59,10 +59,10 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 38,
-          "description": "The instrument's defined decimal precision. Amounts of this asset MUST NOT carry more fractional digits than this."
+          "description": "The instrument's defined decimal precision (non-negative). NOT authoritative on its own: it MUST be consistent with the precision the issuing registry reports via the CIP-0056 token metadata API, and is carried here only so amounts can be validated off-ledger without global readable state (ARCHITECTURE.md §1 #2). Amounts of this asset MUST NOT carry more fractional digits than this."
         }
       },
-      "required": ["registry", "id", "decimals"]
+      "required": ["registry", "instrumentId", "decimals"]
     }
   }
 }
