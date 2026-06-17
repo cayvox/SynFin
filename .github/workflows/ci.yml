@@ -56,13 +56,36 @@ jobs:
         # (TESTING.md §7). A threshold miss fails this job.
         run: pnpm test
 
+  daml:
+    name: daml build + daml test (settlement library) — TESTING.md §3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Daml Script / sandbox need a JVM)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Daml SDK (pinned; ADR-0008)
+        run: |
+          curl -sSL https://get.daml.com/ | sh -s 3.3.0-snapshot.20250507.0
+          echo "$HOME/.daml/bin" >> "$GITHUB_PATH"
+
+      - name: Build the settlement library against the real CIP-0056 DARs
+        # Vendored DARs in daml/dars/ (provenance: daml/dars/README.md) — no
+        # Splice clone needed in CI.
+        working-directory: daml/synfin-settlement
+        run: daml build
+
+      - name: Build + run the Daml Script test matrix (Amulet)
+        working-directory: daml/synfin-settlement-test
+        run: |
+          daml build
+          daml test
+
   # --- Stubbed gates (enable as the corresponding code lands) -----------------
-  #
-  # daml-test:
-  #   name: daml build + daml test (settlement library) — TESTING.md §3
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - run: echo "TODO: daml build && daml test once daml/synfin-settlement exists"
   #
   # conformance:
   #   name: adapter/venue conformance suite — TESTING.md §5

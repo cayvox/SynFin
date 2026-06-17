@@ -7,3 +7,7 @@ packages/*/src/generated/**
 # Hand-written prose (normative spec, ADRs, repo docs) is not auto-formatted;
 # we do not impose code formatting on Markdown authored by humans.
 **/*.md
+
+# On-ledger (Daml) tree: Daml sources, pinned daml.yaml configs, vendored
+# third-party DARs/harness — not governed by the JS/TS Prettier config.
+daml/**

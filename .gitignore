@@ -5,6 +5,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Daml build output (the .daml/ dir per package). Vendored DARs in daml/dars/
+# are committed deliberately (see daml/dars/README.md).
+**/.daml/
+
 # Test / coverage
 coverage/
 
