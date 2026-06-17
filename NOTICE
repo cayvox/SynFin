@@ -1,0 +1,10 @@
+Synfin
+Copyright 2026 Cayvox Labs
+
+This product includes software developed as open, neutral infrastructure
+for the Canton Network. The Synfin Quote & Swap-Intent Standard (SQSS) and
+the reference implementation are licensed under the Apache License 2.0.
+
+Synfin builds on the Canton Network Token Standard (CIP-0056). CIP-0056 and
+the Canton Network are projects of their respective owners and are referenced
+for interoperability only.

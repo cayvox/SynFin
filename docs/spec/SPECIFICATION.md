@@ -1,0 +1,191 @@
+# Synfin Quote & Swap‑Intent Standard (SQSS)
+
+`Spec version: 0.1.0 (draft)` · `Status: working draft — RFC required for normative changes`
+
+This is the **normative** specification. The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are to be interpreted as in RFC 2119. This document builds directly on the **Canton Network Token Standard (CIP‑0056)** and does not redefine anything CIP‑0056 already provides; it composes it.
+
+> Non‑normative material is marked *(note)*. Everything else is normative.
+
+## 1. Scope & goals
+
+SQSS defines a vendor‑neutral way to:
+
+1. express a **swap intent** (what a taker wants),
+2. request and represent **quotes** from venues, and
+3. compose an **atomic, all‑or‑nothing settlement** of a multi‑leg route on Canton.
+
+SQSS does **not** define: the routing optimization algorithm (pluggable; MAY be proprietary), pricing/oracles, custody, or any hosted service.
+
+*(note)* The optimizer is intentionally out of scope so the standard stays neutral; an open reference router is provided in `@synfin/router-ref`.
+
+## 2. Roles
+
+- **Taker** — expresses a `SwapIntent`.
+- **Venue** — a liquidity source that answers `QuoteRequest`s with `Quote`s and, for firm quotes, participates in settlement via CIP‑0056 allocations.
+- **Router** — selects/splits quotes into a `RoutePlan`. Implements the `Router` port. The reference router is open; alternatives MAY be proprietary but MUST consume/produce the standard types.
+- **Settlement coordinator** — the Daml application that drives the single atomic settlement transaction using CIP‑0056 allocation APIs.
+
+## 3. Conventions
+
+- **Asset identification.** An asset MUST be identified by a registry‑qualified instrument identifier consistent with CIP‑0056 (the issuing registry plus the instrument), never by symbol alone.
+- **Amounts** are exact decimals with the instrument's defined precision. Implementations MUST NOT use binary floating point for value math.
+- **Rounding** MUST never overstate what the taker receives or understate what the taker gives. Where rounding is required, it MUST be applied in the taker's favor or rejected.
+- **Time** is UTC. Deadlines and validity are absolute timestamps.
+- **Basis points (bps):** 1 bps = 0.01%.
+
+## 4. Data model (normative shapes)
+
+*(note)* Types are shown in TypeScript‑like form for clarity. The authoritative schemas are JSON Schema in `@synfin/spec`; on‑ledger shapes are Daml interfaces. Off‑ledger HTTP shapes are described with OpenAPI, mirroring CIP‑0056's "Daml interface + OpenAPI" convention.
+
+### 4.1 SwapIntent
+
+```
+SwapIntent {
+  intentId:        string         // unique; replay/idempotency key
+  taker:           PartyId        // Canton party
+  give:            { asset: AssetId, amount: Decimal }
+  want:            { asset: AssetId, minReceive: Decimal }   // floor the taker accepts
+  maxSlippageBps:  integer        // additional protection vs reference; >= 0
+  deadline:        Timestamp      // absolute expiry; settlement MUST NOT occur after
+  constraints?:    IntentConstraints
+}
+IntentConstraints {
+  maxVenues?:      integer        // optional cap on number of legs
+  venueAllowList?: VenueId[]      // optional restriction
+  privacy?:        "strict"       // default strict: no leg may learn the aggregate
+}
+```
+
+- `minReceive` is authoritative. `maxSlippageBps` is an additional guard relative to an agreed reference; it MUST NOT relax `minReceive`.
+- A settlement that would deliver less than `minReceive` MUST fail.
+
+### 4.2 QuoteRequest
+
+```
+QuoteRequest {
+  intentRef:   string        // intentId
+  give:        { asset: AssetId, amount: Decimal }   // size for THIS request (a bucket)
+  want:        { asset: AssetId }
+  deadline:    Timestamp
+  nonce:       string        // replay protection
+}
+```
+
+- A Router MAY issue multiple `QuoteRequest`s per intent at different sizes ("buckets") to estimate depth. A Venue MUST treat each request independently.
+- A Venue MUST NOT be able to derive the taker's total intent from a single `QuoteRequest` (privacy, §7).
+
+### 4.3 Quote
+
+```
+Quote {
+  venueId:     VenueId
+  give:        { asset: AssetId, amount: Decimal }   // echoes requested size
+  receive:     { asset: AssetId, amount: Decimal }   // offered output
+  feeBps:      integer            // fees already reflected in `receive`; declared for transparency
+  sourceKind:  "AMM" | "CLOB" | "RFQ"
+  firmness:    "indicative" | "firm"
+  validUntil:  Timestamp
+  commitment?: CommitmentRef      // REQUIRED if firmness == "firm"
+  signature?:  Signature          // REQUIRED if firmness == "firm"
+}
+```
+
+- An **indicative** quote is non‑binding. A **firm** quote MUST be backed by a `commitment` that can be honored on‑ledger during settlement, and MUST be signed by the venue.
+- Consumers MUST reject quotes where `validUntil` has passed, where amounts are non‑positive, where decimals/units are inconsistent with the instrument, or (for firm) where the signature/commitment does not verify.
+
+### 4.4 RoutePlan
+
+```
+RoutePlan {
+  intentRef:        string
+  legs:             RouteLeg[]
+  aggregateReceive: Decimal       // sum of expected leg receipts
+  worstCaseReceive: Decimal       // lower bound given quote firmness/slippage
+  slippageBps:      integer       // vs reference; MUST satisfy intent.maxSlippageBps
+}
+RouteLeg {
+  venueId:  VenueId
+  give:     { asset: AssetId, amount: Decimal }
+  receive:  { asset: AssetId, amount: Decimal }
+  quoteRef: string
+}
+```
+
+- The sum of `legs[].give.amount` MUST equal `intent.give.amount` (conservation).
+- No `RouteLeg` may reference a venue excluded by `venueAllowList`, and `legs.length` MUST respect `maxVenues`.
+- A `RoutePlan` whose `worstCaseReceive` < `intent.want.minReceive` MUST NOT be submitted for settlement.
+
+## 5. Off‑ledger quote API (Venue interface)
+
+A Venue exposes a quote endpoint. Normatively:
+
+- `POST /quote` accepts a `QuoteRequest` and returns a `Quote` (or a typed rejection).
+- Responses MUST be returned before `QuoteRequest.deadline`; late responses MUST be ignored by the consumer.
+- The endpoint MUST be stateless with respect to taker identity beyond what is required to price the requested size.
+
+*(note)* Adapters in `@synfin/adapters` wrap each venue's native API into this interface. An adapter MUST be pure/deterministic in normalization and MUST pass the conformance suite.
+
+## 6. On‑ledger settlement (atomic split execution)
+
+Settlement composes the route into CIP‑0056 allocation workflows.
+
+1. For each `RouteLeg`, the settlement coordinator creates an **allocation request** (CIP‑0056 `allocation request` API) for the taker's `give` on that leg and for the venue's corresponding `receive`.
+2. Once **all** allocations for all legs are in place, the coordinator executes a **single Daml transaction** that settles every leg (CIP‑0056 DvP). Either all legs settle or none do.
+3. The settlement transaction MUST enforce, on‑ledger:
+   - total delivered to the taker ≥ `intent.want.minReceive`;
+   - `intent.maxSlippageBps` not exceeded;
+   - current time ≤ `intent.deadline`.
+4. If any condition fails or any allocation is missing/expired, the transaction MUST abort and no leg settles.
+
+Constraints:
+
+- **Same synchronizer.** All input contracts in the settlement transaction MUST be on the same synchronizer (CIP‑0056 requirement). A route that would require legs on different synchronizers MUST NOT be settled atomically; it MUST be rejected.
+- **Allocation expiry.** Allocations carry a validity window; expired allocations MUST be released and MUST NOT settle.
+- **Single‑use.** An allocation MUST NOT be reusable across settlements (no double‑spend).
+- **Idempotency.** `intentId` makes settlement idempotent; a retry MUST NOT cause a second settlement.
+
+*(note)* This mirrors the proven pattern from CIP‑0056 (e.g., CantonSwap's first cross‑issuer atomic swap, Oct 2025) — SQSS generalizes it to N legs across multiple venues.
+
+## 7. Privacy model (normative)
+
+- A Venue MUST learn only its own leg: the assets and amounts of that leg. It MUST NOT learn the aggregate intent, other legs, or the route.
+- Implementations MUST NOT expose cross‑leg correlation to any venue or third party.
+- Settlement details MAY be disclosed to authorized parties (auditor/regulator) via **selective disclosure**; they MUST NOT be public.
+- *(note)* Because routing and amounts are not in a public mempool, front‑running/MEV is structurally mitigated. Implementations still MUST avoid leaking intent via timing or side channels.
+
+## 8. Firmness, validity, replay
+
+- Consumers MUST enforce `validUntil` and reject stale quotes.
+- `QuoteRequest.nonce` and `SwapIntent.intentId` provide replay protection; settlement MUST reject a replayed intent.
+- Firm quotes MUST be honored during their validity or the settlement aborts; a venue that fails to honor a firm commitment MUST be de‑prioritized by conformant routers *(note: enforcement/penalty policy is implementation‑defined)*.
+
+## 9. Versioning & capability negotiation
+
+- SQSS is versioned with SemVer. Wire messages carry the spec MAJOR.MINOR they target.
+- Consumers MUST ignore unknown optional fields (forward compatibility) and MUST NOT require fields introduced in a later MINOR.
+- Breaking changes (MAJOR) follow the RFC process (GOVERNANCE.md §5).
+
+## 10. Conformance
+
+An implementation is **SQSS‑conformant** if:
+
+- (Venue/adapter) it implements §5 and §4.3 and passes the adapter conformance suite (golden + fuzz);
+- (Router) it consumes §4.3 and produces §4.4 honoring all §4 constraints;
+- (Settlement) it implements §6 and passes the Daml Script settlement suite (§ all‑or‑nothing, abort/expiry, single‑use, bound enforcement);
+- (Wallet) it can create allocations per CIP‑0056 in response to SQSS allocation requests.
+
+Conformance is verified by the suite described in TESTING.md §5.
+
+## 11. Security considerations
+
+See [THREAT_MODEL.md](../../THREAT_MODEL.md). Summary of normative requirements: validate all quotes as untrusted input; enforce economic bounds on‑ledger; guarantee atomicity and single‑use allocations; preserve privacy; reject cross‑synchronizer atomic routes; protect against replay via nonce/intentId.
+
+## 12. Out of scope
+
+Routing optimization algorithm, pricing/oracles, custody, hosted services, and any non‑Canton settlement. SQSS defines the interfaces these integrate with and the open reference behaviour only.
+
+---
+
+### Appendix A — Relationship to CIP‑0056
+
+SQSS uses, and does not replace, CIP‑0056's six APIs — chiefly **holdings** (inventory), **allocation**, **allocation request**, and **allocation instruction** (atomic DvP). SQSS adds the **quote/intent** layer above them and the **multi‑leg atomic composition** pattern. Any conflict between this document and CIP‑0056 is resolved in favor of CIP‑0056, and is a bug in this spec to be fixed via RFC.
