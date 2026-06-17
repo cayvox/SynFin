@@ -7,6 +7,19 @@ are versioned independently; each release records the spec version it targets.
 
 ## [Unreleased]
 
+### Added
+- **ADR-0009 — venue integration dual architecture (research + decision).** Confirmed from real
+  venue docs/testnet (read-only, no funds) that today's accessible Canton retail DEXs are
+  **deposit-based** (Mode B): **CantonSwap** (`POST /nswap/quote`; settle via `swapAddress`+`memo` /
+  `magicAddress`) and **OneSwap** (intent → pool party + transfer reference → deposit/detect/execute;
+  constant-product AMM, CC/USDCx, beta); CompassSwap is in limited preview; Cantex quotes + executes
+  via its own intent flow with no external CIP-0056 allocation interface. None are atomic-split
+  (Mode A) today. Decision (maintainer): **keep BOTH** — the CIP-0056 atomic split (Task 003.6,
+  unchanged) for Mode A counterparties, plus a **managed deposit path** for Mode B venues, behind one
+  `VenueAdapter`. ADR-0009 designs both, proposes a `settlementMode` capability (SPEC §5 edit flagged
+  as a follow-up RFC, not applied), states routing implications honestly (Mode B legs are not
+  co-settled atomically), and sets the Task-005 adapter plan. No production code/spec changed.
+
 ### Changed
 - **SQSS bumped to `0.4.0`, driven by [RFC-0003](docs/rfcs/0003-privacy-model.md):** the
   settlement library `daml/synfin-settlement` is refactored from the co-signed `OTCTrade`-style
