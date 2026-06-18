@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   CantonSwapAdapter,
   OneSwapAdapter,
@@ -12,28 +15,45 @@ import { aggregateQuotes, type AggregateResult } from './aggregate.js';
 import { formatReport } from './format.js';
 import { buildIntent } from './intent.js';
 import { resolveToken } from './tokens.js';
+import { runSettleDemo, type DemoRunResult } from './settle-demo.js';
 
 /**
- * Bin entry for `synfin quote` (Demo 1). Thin I/O shell: parse argv, build live
- * read-only adapters, aggregate, and print. On any failure to obtain live
- * quotes (unreachable / unconfigured / rate-limited), it falls back to the
- * committed golden fixtures and clearly labels the output as recorded sample
- * data. Read-only and fundless — it never deposits or settles. Excluded from
- * coverage (the logic it calls is unit-tested); exercised via the manual demo.
+ * Bin entry for the Synfin CLI. Thin I/O shell that orchestrates the two PoW
+ * demos and prints narrated, honestly-labelled output:
+ *
+ *   - `quote`        Demo 1 — cross-venue quote aggregation across REAL venues
+ *                    (CantonSwap, OneSwap). Read-only, no funds. Live + golden
+ *                    fallback.
+ *   - `settle-demo`  Demo 2 — atomic, per-leg-private split SETTLEMENT against
+ *                    our OWN CIP-0056 test venue (Amulet) on a local ledger.
+ *                    Drives the proven daml/synfin-settlement library; no funds,
+ *                    no mainnet.
+ *
+ * Excluded from coverage (the logic it calls is unit-tested); exercised via the
+ * documented manual demo runs and the Daml gate.
  */
 
-const USAGE = `Synfin CLI — Demo 1: cross-venue quote aggregation (read-only, no funds)
+const USAGE = `Synfin CLI — a unified quote layer across Canton venues, with atomic settlement.
+
+Two-demo proof of work:
+  • Demo 1 (quote)       unified quote aggregation across REAL venues — works today.
+  • Demo 2 (settle-demo) atomic, per-leg-private split settlement against our own
+                         CIP-0056 test venue (Amulet) — architecture proven; awaits
+                         Mode-A venues (ADR-0009).
 
 Usage:
   synfin quote <FROM> <TO> <AMOUNT> [--slippage-bps N] [--fixtures]
+  synfin settle-demo
 
 Examples:
   synfin quote CC USDCx 125
   synfin quote CC USDCx 125 --slippage-bps 50
+  synfin settle-demo
 
 Tokens: CC, USDCx, CBTC. CantonSwap needs no key. OneSwap quoting needs
 ONESWAP_API_KEY (and ONESWAP_BASE_URL); without them that venue is skipped and
-the command falls back to recorded fixtures.`;
+the command falls back to recorded fixtures. \`settle-demo\` needs the Daml SDK
+toolchain (local in-memory ledger; no funds, no mainnet).`;
 
 interface Args {
   from: string;
@@ -107,11 +127,11 @@ function fixtureAdapters(): VenueAdapter[] {
   ];
 }
 
-async function main(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
+async function runQuoteCommand(argv: readonly string[]): Promise<void> {
+  const args = parseArgs(argv);
   if (args === null) {
     console.log(USAGE);
-    process.exit(process.argv.length <= 2 ? 0 : 1);
+    process.exit(1);
   }
   const give = resolveToken(args.from);
   const want = resolveToken(args.to);
@@ -156,6 +176,61 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   console.log(formatReport(fixtureResult, 'fixtures'));
+}
+
+/**
+ * Default Demo 2 runner: drives the proven settlement library via its demo Daml
+ * Script on a local in-memory ledger. It builds the library DAR, then runs the
+ * demo script with `daml test`. If the Daml toolchain is absent it reports
+ * `available: false` (the CLI then fails gracefully — no fabricated result).
+ */
+function defaultDemoRunner(): Promise<DemoRunResult> {
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+  const lib = join(repoRoot, 'daml', 'synfin-settlement');
+  const test = join(repoRoot, 'daml', 'synfin-settlement-test');
+  const opts = { encoding: 'utf8' as const, maxBuffer: 32 * 1024 * 1024 };
+
+  const probe = spawnSync('daml', ['version'], opts);
+  if (probe.error && (probe.error as NodeJS.ErrnoException).code === 'ENOENT') {
+    return Promise.resolve({ available: false, exitCode: null, output: '' });
+  }
+
+  const build = spawnSync('daml', ['build'], { cwd: lib, ...opts });
+  const run = spawnSync(
+    'daml',
+    [
+      'test',
+      '--files',
+      join('daml', 'Synfin', 'Demo', 'AtomicSettlement.daml'),
+    ],
+    { cwd: test, ...opts },
+  );
+  const output = [build.stdout, build.stderr, run.stdout, run.stderr]
+    .filter((s): s is string => Boolean(s))
+    .join('\n');
+  const exitCode = build.status !== 0 ? build.status : run.status;
+  return Promise.resolve({ available: true, exitCode, output });
+}
+
+async function runSettleDemoCommand(): Promise<void> {
+  const { report, ok } = await runSettleDemo(defaultDemoRunner);
+  console.log(report);
+  if (!ok) process.exit(1);
+}
+
+async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  const command = argv[0];
+  if (command === 'settle-demo') {
+    await runSettleDemoCommand();
+    return;
+  }
+  if (command === 'quote') {
+    await runQuoteCommand(argv);
+    return;
+  }
+  console.log(USAGE);
+  process.exit(argv.length === 0 ? 0 : 1);
 }
 
 void main();
