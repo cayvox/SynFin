@@ -8,6 +8,19 @@ are versioned independently; each release records the spec version it targets.
 ## [Unreleased]
 
 ### Added
+- **Phase-0 price-divergence monitor (`tools/price-monitor`, `@synfin/price-monitor`).** A
+  read-only tool that collects cross-venue quotes (CantonSwap, OneSwap) for the same pairs/sizes
+  over time and quantifies the **cross-venue spread (bps)** — the evidence the Phase-0 decision gate
+  rests on. **No funds, no settlement, no side effects** (reuses `@synfin/adapters`' read-only quote
+  path; injectable fetcher). Observations are appended to a dependency-light JSONL store
+  (timestamp, source `live`/`fixture`, venue, pair, size, receive, rate, fee, rejection); each row
+  is labelled live vs fixture and untrusted responses are normalized (a non-quoting venue records a
+  typed rejection, never a fabricated number). Spread is computed with the spec's exact-decimal
+  helper (best vs worst per venue's most recent quote). Ships a `collect`/`report` CLI (cron- or
+  `--rounds/--interval`-driven; `--fixtures` for offline), a Markdown + CSV report, and a committed
+  deterministic **sample dataset + report** (`sample/`, from golden fixtures) showing a meaningful
+  spread. Deterministic fixture tests; **no live calls in CI**. (`tools/*` added to the pnpm
+  workspace.)
 - **Demo 2 — atomic, per-leg-private split settlement (`synfin settle-demo`).** A narrated,
   end-to-end demonstration of the hardest piece: atomic, all-or-nothing, per-leg-confidential split
   **settlement** (SPEC §6, §7; ADR-0008; RFC-0003), run against our **own CIP-0056 test venue
