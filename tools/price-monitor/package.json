@@ -1,0 +1,40 @@
+{
+  "name": "@synfin/price-monitor",
+  "version": "0.1.0",
+  "description": "Phase-0 price-divergence monitor: read-only collection of cross-venue quotes (CantonSwap, OneSwap) and cross-venue spread (bps) over time. No funds, no settlement.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "synfin-price-monitor": "./dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@synfin/adapters": "workspace:*",
+    "@synfin/spec": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@vitest/coverage-v8": "2.1.8",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}

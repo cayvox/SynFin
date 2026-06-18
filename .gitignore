@@ -20,3 +20,6 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Phase-0 price monitor runtime output (live dataset is generated, not committed)
+tools/price-monitor/data/
