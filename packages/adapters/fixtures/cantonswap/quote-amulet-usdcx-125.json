@@ -1,0 +1,12 @@
+{
+  "fromToken": "Amulet",
+  "toToken": "USDCx",
+  "fromAmount": "125",
+  "toAmount": "20.447269",
+  "minOutAmount": "20.345032",
+  "rate": "0.16357815",
+  "priceImpact": 0.0008,
+  "memo": "synfin-sample-memo-ignored-by-quote-layer",
+  "swapAddress": "swap-pool::1220sample0000000000000000000000000000000000000000000000000000",
+  "magicAddress": "magic::1220sample00000000000000000000000000000000000000000000000000000000"
+}

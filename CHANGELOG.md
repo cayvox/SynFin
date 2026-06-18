@@ -7,6 +7,26 @@ are versioned independently; each release records the spec version it targets.
 
 ## [Unreleased]
 
+### Added
+- **Real venue quote adapters — `CantonSwapAdapter` + `OneSwapAdapter`** (`@synfin/adapters`;
+  ADR-0009; RFC-0004). Both are **Mode B (`managed-deposit`)** venues — **quote layer only**, no
+  settlement/deposit/funds. Each separates an injectable HTTP `Fetcher` from a **pure, deterministic
+  normalizer** (`normalizeCantonSwapQuote` / `normalizeOneSwapQuote`) that turns the venue's real
+  response into a spec-valid `Quote` (taker-favorable rounding, `settlementMode='managed-deposit'`,
+  indicative firmness, typed `QuoteRejection`s, deposit details intentionally dropped — they belong
+  to the deferred managed-execution path). Verified read-only/fundless from live docs:
+  CantonSwap `POST /nswap/quote` (no auth); OneSwap `quotes.get` (read-only price preview, API key
+  via env). Tested against **committed golden fixtures** (`@synfin/adapters/fixtures`, sanitized,
+  with provenance) plus fuzz, and run through the `@synfin/conformance` adapter suite — **no live
+  network calls in CI**.
+- **`@synfin/cli` — Demo 1: cross-venue quote aggregation.** `synfin quote <FROM> <TO> <AMOUNT>`
+  gathers live read-only quotes from both venues, runs `@synfin/router-ref`, and prints each venue's
+  normalized quote, the chosen route, and the **edge vs the best single venue**. **Live + golden
+  fallback:** on any failure (unreachable / unconfigured / rate-limited) it falls back to the
+  committed fixtures and labels the output **RECORDED SAMPLE DATA (NOT live)**. Read-only and
+  fundless — it never deposits or settles. OneSwap's API key is read from `ONESWAP_API_KEY` (see
+  `.env.example`); never logged or committed.
+
 ### Changed
 - **SQSS bumped to `0.5.0`, driven by [RFC-0004](docs/rfcs/0004-settlement-mode-capability.md):** a
   Venue now declares a `settlementMode` capability — `atomic-allocation` | `managed-deposit` — that
