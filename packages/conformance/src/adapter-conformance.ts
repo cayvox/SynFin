@@ -56,6 +56,15 @@ export async function runAdapterConformance(
   adapter: VenueAdapter,
   options: AdapterConformanceOptions,
 ): Promise<void> {
+  // The adapter must declare a settlement mode the spec recognises (RFC-0004,
+  // SPEC §5). This capability is what a router/coordinator reads to decide
+  // whether a route can be settled atomically (SPEC §6).
+  ok(
+    adapter.settlementMode === 'atomic-allocation' ||
+      adapter.settlementMode === 'managed-deposit',
+    'adapter must declare a valid settlementMode',
+  );
+
   for (const req of options.requests) {
     const r1 = await adapter.quote(req);
     const r2 = await adapter.quote(req);
@@ -73,6 +82,11 @@ export async function runAdapterConformance(
       'issued quote must be spec-valid and unexpired at now',
     );
     equal(quote.venueId, adapter.venueId, 'quote venueId must match adapter');
+    equal(
+      quote.settlementMode,
+      adapter.settlementMode,
+      'quote settlementMode must match the adapter capability',
+    );
     ok(
       assetEquals(quote.give.asset, req.give.asset) &&
         quote.give.amount === req.give.amount,

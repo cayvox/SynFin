@@ -1,7 +1,12 @@
 # Synfin Quote & Swap‑Intent Standard (SQSS)
 
-`Spec version: 0.4.0 (draft)` · `Status: working draft — RFC required for normative changes`
+`Spec version: 0.5.0 (draft)` · `Status: working draft — RFC required for normative changes`
 
+> Changes in `0.5.0` are driven by [RFC‑0004](../rfcs/0004-settlement-mode-capability.md): a Venue
+> declares a `settlementMode` capability (`atomic-allocation` | `managed-deposit`) that is carried on
+> every `Quote` (§4.3) and on the Venue interface (§5); atomic settlement (§6) is normatively valid
+> **only when every leg is `atomic-allocation`**.
+>
 > Changes in `0.4.0` are driven by [RFC‑0003](../rfcs/0003-privacy-model.md): §7 is scoped to the
 > per‑leg‑authorization + executor‑only‑coordinator settlement model (per‑leg confidentiality), the
 > co‑signed `OTCTrade` pattern is declared non‑conformant for multi‑venue routing, and MEV immunity
@@ -101,6 +106,7 @@ Quote {
   receive:     { asset: AssetId, amount: Decimal }   // offered output
   feeBps:      integer            // fees already reflected in `receive`; declared for transparency
   sourceKind:  "AMM" | "CLOB" | "RFQ"
+  settlementMode: "atomic-allocation" | "managed-deposit"   // how the venue settles (§5, §6; RFC‑0004)
   firmness:    "indicative" | "firm"
   validUntil:  Timestamp
   commitment?: CommitmentRef      // REQUIRED if firmness == "firm"
@@ -110,7 +116,8 @@ Quote {
 
 - `quoteId` MUST be present and unique within the scope of an intent's quote‑gathering round; it is the identifier a `RouteLeg.quoteRef` resolves to (§4.4, RFC‑0001 Decision C).
 - An **indicative** quote is non‑binding. A **firm** quote MUST be backed by a `commitment` that can be honored on‑ledger during settlement, and MUST be signed by the venue.
-- Consumers MUST reject quotes where `validUntil` has passed, where amounts are non‑positive, where decimals/units are inconsistent with the instrument, or (for firm) where the signature/commitment does not verify.
+- `settlementMode` MUST be present and MUST equal the issuing Venue's declared settlement mode (§5). It states how this leg settles (RFC‑0004): `atomic-allocation` means the venue settles via a CIP‑0056 allocation, so the leg MAY be part of a single atomic Daml transaction (§6); `managed-deposit` means the venue settles out of band (e.g. against a managed deposit/balance), so the leg MUST NOT be co‑settled atomically with other legs. It is carried on the `Quote` (alongside `sourceKind`) so a Router operating on quotes (§4.5) can determine each leg's settlement mode without separate venue lookup.
+- Consumers MUST reject quotes where `validUntil` has passed, where amounts are non‑positive, where decimals/units are inconsistent with the instrument, where `settlementMode` is absent or unrecognized, or (for firm) where the signature/commitment does not verify.
 
 ### 4.4 RoutePlan
 
@@ -139,6 +146,7 @@ RouteLeg {
   - the referenced quote MUST be unexpired at plan‑construction time (`now <= quote.validUntil`);
   - the quote's `give.asset` and `receive.asset` MUST match the leg's.
   In addition (kept from prior versions), `aggregateReceive` MUST NOT exceed the sum of `legs[].receive.amount`, and rounding MUST never favor the protocol over the taker (§3). Checking these requires access to the set of source quotes and the current time.
+- **Atomic settleability (RFC‑0004).** A `RoutePlan` is atomically settleable (§6) **if and only if** every leg's referenced quote has `settlementMode == "atomic-allocation"`. A plan containing any `managed-deposit` leg is a valid plan but MUST NOT be presented or treated as an atomic route, and MUST NOT be submitted for the single‑transaction settlement of §6. Determining this requires the source quotes (the modes are carried there, §4.3).
 
 ### 4.5 Router contract and RouteResult (RFC‑0002)
 
@@ -168,12 +176,15 @@ A Venue exposes a quote endpoint. Normatively:
 - `POST /quote` accepts a `QuoteRequest` and returns a `Quote` (or a typed rejection).
 - Responses MUST be returned before `QuoteRequest.deadline`; late responses MUST be ignored by the consumer.
 - The endpoint MUST be stateless with respect to taker identity beyond what is required to price the requested size.
+- A Venue MUST declare a **settlement mode** capability — `atomic-allocation` or `managed-deposit` (RFC‑0004) — and every `Quote` it issues MUST carry that same `settlementMode` (§4.3). The mode is a property of the venue, not of an individual request: a conformant Venue MUST NOT vary it per quote. This is the capability a Router/coordinator reads to decide whether a route can be settled atomically (§4.4, §6).
 
-*(note)* Adapters in `@synfin/adapters` wrap each venue's native API into this interface. An adapter MUST be pure/deterministic in normalization and MUST pass the conformance suite.
+*(note)* `atomic-allocation` venues participate in the CIP‑0056 allocation settlement of §6; `managed-deposit` venues settle out of band and are integrated by a different (managed) execution path, which this version does not specify. Adapters in `@synfin/adapters` wrap each venue's native API into this interface, expose its `settlementMode`, and MUST be pure/deterministic in normalization and pass the conformance suite.
 
 ## 6. On‑ledger settlement (atomic split execution)
 
 Settlement composes the route into CIP‑0056 allocation workflows.
+
+- **Atomic settlement requires all‑atomic‑allocation legs (RFC‑0004).** The single‑transaction settlement described here is valid **only when every leg of the route is `atomic-allocation`** (§4.3, §4.4). If any leg is `managed-deposit`, the coordinator MUST NOT attempt the atomic settlement below; such a leg is settled by a separate managed‑execution path, which this version of the spec does **not** define (it is deferred to a future RFC). A coordinator MUST reject — never silently partial‑settle — a route that mixes settlement modes.
 
 1. For each `RouteLeg`, the settlement coordinator creates an **allocation request** (CIP‑0056 `allocation request` API) for the taker's `give` on that leg and for the venue's corresponding `receive`.
 2. Once **all** allocations for all legs are in place, the coordinator executes a **single Daml transaction** that settles every leg (CIP‑0056 DvP). Either all legs settle or none do.

@@ -7,7 +7,28 @@ are versioned independently; each release records the spec version it targets.
 
 ## [Unreleased]
 
+### Changed
+- **SQSS bumped to `0.5.0`, driven by [RFC-0004](docs/rfcs/0004-settlement-mode-capability.md):** a
+  Venue now declares a `settlementMode` capability — `atomic-allocation` | `managed-deposit` — that
+  is **required** on every `Quote` (SPEC §4.3) and on the Venue interface (§5). Atomic settlement
+  (§6) is normatively valid **only when every leg is `atomic-allocation`**; a route with any
+  `managed-deposit` leg is a valid plan but MUST NOT be treated as atomic or submitted for the
+  single-transaction settlement (§4.4). `@synfin/spec` is bumped to `0.4.0` for the wire change.
+  This adds **only the capability and the rule** — it does **not** define a Mode-B (`ManagedExecution`)
+  settlement path and ships **no real venue adapters** (both deferred).
+
 ### Added
+- **RFC-0004 — settlement-mode capability.** Surfaces the ADR-0009 dual architecture in the
+  contract: `settlementMode` on the `Quote` schema (regenerated type) and the `VenueAdapter` port
+  (`SettlementMode = Quote['settlementMode']`, so port and wire cannot drift); pure predicates
+  `isAtomicRoute(plan, quotes)` and `checkAtomicallySettleable(plan, quotes)` (kept separate from
+  `checkRoutePlan` — a managed route is economically valid, just not atomically settleable);
+  `validateQuote` rejects a missing/unknown mode. `MockVenueAdapter` gains a configurable
+  `settlementMode` (default `atomic-allocation`). The reference router needs **no algorithm change**
+  — atomicity is asserted downstream via `isAtomicRoute`; tests prove a managed/mixed route is never
+  flagged atomic and an all-Mode-A route is. Conformance now checks adapters declare a valid mode and
+  echo it on quotes, and that `isAtomicRoute` holds exactly when all legs are `atomic-allocation`.
+  `daml/synfin-settlement` unchanged (it already settles only Mode-A allocations).
 - **ADR-0009 — venue integration dual architecture (research + decision).** Confirmed from real
   venue docs/testnet (read-only, no funds) that today's accessible Canton retail DEXs are
   **deposit-based** (Mode B): **CantonSwap** (`POST /nswap/quote`; settle via `swapAddress`+`memo` /

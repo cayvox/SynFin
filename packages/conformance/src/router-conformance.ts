@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import {
   Decimal,
   checkRoutePlan,
+  isAtomicRoute,
   type AssetId,
   type Quote,
   type RoutePlan,
@@ -83,6 +84,7 @@ const scenarioArbitrary: fc.Arbitrary<Scenario> = fc
           receive: { asset: BTC, amount: satsToBtc(b.sats) },
           feeBps: 0,
           sourceKind: 'AMM',
+          settlementMode: 'atomic-allocation',
           firmness: 'indicative',
           validUntil: FAR_FUTURE,
         });
@@ -105,6 +107,33 @@ const routableScenarioArbitrary: fc.Arbitrary<Scenario> = fc
       receive: { asset: BTC, amount: satsToBtc(coverSats) },
       feeBps: 0,
       sourceKind: 'AMM',
+      settlementMode: 'atomic-allocation',
+      firmness: 'indicative',
+      validUntil: FAR_FUTURE,
+    };
+    return { intent: baseIntent(giveTotal), quotes: [cover] };
+  });
+
+/**
+ * Routable scenarios whose single covering venue settles via `managed-deposit`
+ * (RFC-0004, SPEC §6): the intent is still satisfiable, but any plan over these
+ * quotes references a non-atomic leg and so MUST NOT be treated as atomically
+ * settleable.
+ */
+const managedScenarioArbitrary: fc.Arbitrary<Scenario> = fc
+  .record({
+    giveTotal: fc.integer({ min: 1, max: 100_000 }),
+    coverSats: fc.bigInt({ min: 1n, max: 10n ** 11n }),
+  })
+  .map(({ giveTotal, coverSats }): Scenario => {
+    const cover: Quote = {
+      quoteId: 'cover',
+      venueId: 'v-cover',
+      give: { asset: USD, amount: String(giveTotal) },
+      receive: { asset: BTC, amount: satsToBtc(coverSats) },
+      feeBps: 0,
+      sourceKind: 'AMM',
+      settlementMode: 'managed-deposit',
       firmness: 'indicative',
       validUntil: FAR_FUTURE,
     };
@@ -181,6 +210,42 @@ export function runRouterConformance(
         result.ok,
         'must-route: a quote set that satisfies the intent must yield a plan',
       );
+    }),
+    { numRuns: runs },
+  );
+
+  // 3. Settlement-mode invariant (RFC-0004, SPEC §6): the atomicity of a plan is
+  //    determined solely by its legs' settlement modes. `isAtomicRoute` must be
+  //    true exactly when every referenced quote is `atomic-allocation`. In
+  //    particular, a route covered by a `managed-deposit` venue must NEVER be
+  //    flagged atomic — atomicity is asserted downstream over the quotes, so the
+  //    router needs no algorithm change for this to hold.
+  fc.assert(
+    fc.property(managedScenarioArbitrary, ({ intent, quotes }) => {
+      const result = router.route(intent, quotes, now);
+      if (result.ok) {
+        ok(
+          !isAtomicRoute(result.plan, quotes),
+          'a route over a managed-deposit venue must not be atomic',
+        );
+      }
+    }),
+    { numRuns: runs },
+  );
+  fc.assert(
+    fc.property(routableScenarioArbitrary, ({ intent, quotes }) => {
+      const result = router.route(intent, quotes, now);
+      if (result.ok) {
+        const allAtomic = result.plan.legs.every((leg) => {
+          const q = quotes.find((x) => x.quoteId === leg.quoteRef);
+          return q?.settlementMode === 'atomic-allocation';
+        });
+        equal(
+          isAtomicRoute(result.plan, quotes),
+          allAtomic,
+          'isAtomicRoute must be true exactly when all legs are atomic-allocation',
+        );
+      }
     }),
     { numRuns: runs },
   );

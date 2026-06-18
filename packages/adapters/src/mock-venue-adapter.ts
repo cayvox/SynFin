@@ -52,6 +52,12 @@ export interface MockVenueConfig {
   readonly firmness?: Quote['firmness'];
   /** Liquidity source kind (default 'AMM'). */
   readonly sourceKind?: Quote['sourceKind'];
+  /**
+   * How this mock venue settles (default `atomic-allocation`, i.e. a CIP-0056
+   * Mode-A venue usable in atomic settlement; RFC-0004). Set to
+   * `managed-deposit` to model a Mode-B deposit-based venue.
+   */
+  readonly settlementMode?: Quote['settlementMode'];
   /** Absolute `validUntil` for issued quotes (ISO 8601). Default far future. */
   readonly quoteValidUntil?: string;
   /** Optional per-request size cap (give-units); larger requests are rejected. */
@@ -65,10 +71,12 @@ const BPS_DENOM = Decimal.parse('10000') as Decimal;
 
 export class MockVenueAdapter implements VenueAdapter {
   readonly venueId: string;
+  readonly settlementMode: Quote['settlementMode'];
   readonly #config: MockVenueConfig;
 
   constructor(config: MockVenueConfig) {
     this.venueId = config.venueId;
+    this.settlementMode = config.settlementMode ?? 'atomic-allocation';
     this.#config = config;
   }
 
@@ -141,6 +149,7 @@ export class MockVenueAdapter implements VenueAdapter {
       receive: { asset: pair.want, amount: receive.toString() },
       feeBps: cfg.feeBps ?? 0,
       sourceKind: cfg.sourceKind ?? 'AMM',
+      settlementMode: this.settlementMode, // every quote carries the venue's mode
       firmness: cfg.firmness ?? 'indicative',
       validUntil: cfg.quoteValidUntil ?? DEFAULT_VALID_UNTIL,
     };

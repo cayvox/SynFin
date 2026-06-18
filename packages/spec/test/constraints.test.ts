@@ -11,6 +11,8 @@ import {
   checkVenueConstraints,
   checkWorstCaseFloor,
   compareByWorstCase,
+  isAtomicRoute,
+  checkAtomicallySettleable,
 } from '../src/index.js';
 import type { AssetId, RouteLeg, RoutePlan, SwapIntent } from '../src/index.js';
 import {
@@ -294,6 +296,64 @@ describe('checkRoutePlan + compareByWorstCase', () => {
         validRoutePlan(),
       ),
     ).toThrow();
+  });
+});
+
+describe('isAtomicRoute + checkAtomicallySettleable (RFC-0004, SPEC §6)', () => {
+  const leg = (quoteRef: string): RouteLeg => ({
+    venueId: 'venue-1',
+    give: { asset: USD, amount: '100.00' },
+    receive: { asset: BTC, amount: '0.00120000' },
+    quoteRef,
+  });
+
+  it('is atomic only when every leg references an atomic-allocation quote', () => {
+    const plan = validRoutePlan({ legs: [leg('q-a'), leg('q-b')] });
+    const allAtomic = [
+      validIndicativeQuote({
+        quoteId: 'q-a',
+        settlementMode: 'atomic-allocation',
+      }),
+      validIndicativeQuote({
+        quoteId: 'q-b',
+        settlementMode: 'atomic-allocation',
+      }),
+    ];
+    expect(isAtomicRoute(plan, allAtomic)).toBe(true);
+    expect(checkAtomicallySettleable(plan, allAtomic).ok).toBe(true);
+  });
+
+  it('is NOT atomic when any leg references a managed-deposit quote', () => {
+    const plan = validRoutePlan({ legs: [leg('q-a'), leg('q-b')] });
+    const mixed = [
+      validIndicativeQuote({
+        quoteId: 'q-a',
+        settlementMode: 'atomic-allocation',
+      }),
+      validIndicativeQuote({
+        quoteId: 'q-b',
+        settlementMode: 'managed-deposit',
+      }),
+    ];
+    expect(isAtomicRoute(plan, mixed)).toBe(false);
+    const r = checkAtomicallySettleable(plan, mixed);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(code0(r.errors)).toBe('not_atomically_settleable');
+      expect(r.errors[0]?.path).toBe('/legs/1');
+    }
+  });
+
+  it('is NOT atomic when a leg references a quote absent from the set', () => {
+    const plan = validRoutePlan({ legs: [leg('ghost')] });
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'q-a',
+        settlementMode: 'atomic-allocation',
+      }),
+    ];
+    expect(isAtomicRoute(plan, quotes)).toBe(false);
+    expect(checkAtomicallySettleable(plan, quotes).ok).toBe(false);
   });
 });
 

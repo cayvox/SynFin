@@ -250,6 +250,12 @@ export const quoteSchema: Record<string, unknown> = {
       enum: ["AMM", "CLOB", "RFQ"],
       description: "The kind of liquidity source (SPEC §4.3).",
     },
+    settlementMode: {
+      type: "string",
+      enum: ["atomic-allocation", "managed-deposit"],
+      description:
+        "How the venue settles (SPEC §4.3, §5; RFC-0004; ADR-0009). `atomic-allocation`: settles via a CIP-0056 allocation, so this leg CAN be part of a single atomic Daml transaction (SPEC §6). `managed-deposit`: the venue settles via its own deposit/detect/execute flow, so this leg CANNOT be atomically co-settled and is executed via the managed path. Carried on the Quote (alongside `sourceKind`) so a Router operating on quotes can determine each leg's settlement mode.",
+    },
     firmness: {
       type: "string",
       enum: ["indicative", "firm"],
@@ -277,6 +283,7 @@ export const quoteSchema: Record<string, unknown> = {
     "receive",
     "feeBps",
     "sourceKind",
+    "settlementMode",
     "firmness",
     "validUntil",
   ],

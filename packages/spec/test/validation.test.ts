@@ -213,6 +213,31 @@ describe('validateQuote (SPEC §4.3, §8)', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(codes(r)).toContain('non_positive_amount');
   });
+
+  it('accepts both settlement modes (RFC-0004, SPEC §4.3, §5)', () => {
+    expect(
+      validateQuote(
+        validIndicativeQuote({ settlementMode: 'atomic-allocation' }),
+      ).ok,
+    ).toBe(true);
+    expect(
+      validateQuote(validIndicativeQuote({ settlementMode: 'managed-deposit' }))
+        .ok,
+    ).toBe(true);
+  });
+
+  it('rejects a quote missing settlementMode (RFC-0004)', () => {
+    const { settlementMode, ...rest } = validIndicativeQuote();
+    void settlementMode;
+    expect(validateQuote(rest).ok).toBe(false);
+  });
+
+  it('rejects a quote with an unknown settlementMode (RFC-0004)', () => {
+    const r = validateQuote(
+      validIndicativeQuote({ settlementMode: 'escrow' as never }),
+    );
+    expect(r.ok).toBe(false);
+  });
 });
 
 describe('validateRouteLeg / validateRoutePlan (SPEC §4.4)', () => {
