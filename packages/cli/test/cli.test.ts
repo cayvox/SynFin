@@ -11,11 +11,13 @@ import {
   aggregateQuotes,
   buildIntent,
   formatReport,
+  formatSettleDemoReport,
   minUnit,
   resolveToken,
+  runSettleDemo,
 } from '../src/index.js';
 import { edgeBps, pickBestSingle } from '../src/aggregate.js';
-import type { AggregateResult } from '../src/index.js';
+import type { AggregateResult, DemoRunResult } from '../src/index.js';
 
 const CC: AssetId = {
   registry: 'DSO::1220sample',
@@ -242,5 +244,61 @@ describe('formatReport', () => {
     };
     const report = formatReport(synthetic, 'live');
     expect(report).toContain('no quote (no_quote)');
+  });
+});
+
+describe('settle-demo (Demo 2) orchestration', () => {
+  const runnerReturning = (r: DemoRunResult) => () => Promise.resolve(r);
+
+  it('always states the honest framing (own CIP-0056 test venue, not live venues)', () => {
+    const report = formatSettleDemoReport({
+      available: true,
+      exitCode: 0,
+      output: '',
+    });
+    expect(report).toContain('our OWN CIP-0056 test venue');
+    expect(report).toContain('atomic settlement against live');
+    expect(report).toContain('UNCHANGED');
+  });
+
+  it('reports PASS and the proven guarantees on a clean run', async () => {
+    const { report, ok } = await runSettleDemo(
+      runnerReturning({ available: true, exitCode: 0, output: 'demo: ok' }),
+    );
+    expect(ok).toBe(true);
+    expect(report).toContain(
+      'Atomic: all 4 legs settled in ONE Daml transaction',
+    );
+    expect(report).toContain('Per-leg privacy');
+    expect(report).toContain('DEMO 2 RESULT: PASS');
+  });
+
+  it('fails gracefully (no fabricated result) when the Daml toolchain is absent', async () => {
+    const { report, ok } = await runSettleDemo(
+      runnerReturning({ available: false, exitCode: null, output: '' }),
+    );
+    expect(ok).toBe(false);
+    expect(report).toContain('Daml SDK toolchain (`daml`) was not found');
+    expect(report).not.toContain('DEMO 2 RESULT: PASS');
+  });
+
+  it('surfaces the Daml output and a FAILED verdict on a non-zero run', async () => {
+    const { report, ok } = await runSettleDemo(
+      runnerReturning({
+        available: true,
+        exitCode: 1,
+        output: 'demoAtomicSettlement: FAILED assertion',
+      }),
+    );
+    expect(ok).toBe(false);
+    expect(report).toContain('DEMO 2 RESULT: FAILED');
+    expect(report).toContain('FAILED assertion');
+  });
+
+  it('handles empty output on failure without crashing', async () => {
+    const { report } = await runSettleDemo(
+      runnerReturning({ available: true, exitCode: 2, output: '   ' }),
+    );
+    expect(report).toContain('(no output captured)');
   });
 });
