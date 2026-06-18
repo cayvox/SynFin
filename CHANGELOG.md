@@ -8,6 +8,22 @@ are versioned independently; each release records the spec version it targets.
 ## [Unreleased]
 
 ### Added
+- **Demo 2 — atomic, per-leg-private split settlement (`synfin settle-demo`).** A narrated,
+  end-to-end demonstration of the hardest piece: atomic, all-or-nothing, per-leg-confidential split
+  **settlement** (SPEC §6, §7; ADR-0008; RFC-0003), run against our **own CIP-0056 test venue
+  (Amulet)** on a local in-memory ledger. It **reuses the `daml/synfin-settlement` library
+  unchanged** (the model proven by the Task-003.6 matrix) — no new settlement logic. A new demo
+  Daml Script `Synfin.Demo.AtomicSettlement` (in `synfin-settlement-test`, reusing the existing
+  test setup helpers) verifies, in one run: a 2-venue/4-leg split settles in **one transaction**
+  (all-or-nothing), on-ledger bound enforcement (conservation / minReceive / slippage / deadline),
+  single-use allocations, **and per-leg privacy** (venue A cannot see venue B's leg; taker +
+  executor see the aggregate). The `@synfin/cli` `settle-demo` command drives this script via the
+  Daml toolchain and prints a clean, **honestly-labelled** result — explicitly *our own Mode-A test
+  venue on a local ledger / no funds / no mainnet*, **not** a claim of atomic settlement against
+  live third-party venues (ADR-0009: today's accessible venues are Mode B). It fails gracefully if
+  the Daml SDK is absent (no fabricated result). The CLI holds **no settlement logic** — it
+  orchestrates the Daml library/script. This completes the **two-demo proof of work** (Demo 1 =
+  quote aggregation vs real venues; Demo 2 = atomic settlement vs our CIP-0056 test venue).
 - **Real venue quote adapters — `CantonSwapAdapter` + `OneSwapAdapter`** (`@synfin/adapters`;
   ADR-0009; RFC-0004). Both are **Mode B (`managed-deposit`)** venues — **quote layer only**, no
   settlement/deposit/funds. Each separates an injectable HTTP `Fetcher` from a **pure, deterministic

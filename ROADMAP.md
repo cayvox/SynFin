@@ -20,7 +20,9 @@ Synfin is built in deliberate phases. The open‑source layer (this repository) 
   - *2026‑06‑18:* ✅ **Real venue quote adapters delivered** — `CantonSwapAdapter` + `OneSwapAdapter` in `@synfin/adapters`, both **Mode B (`managed-deposit`)** (ADR‑0009), each with a pure normalizer + injectable HTTP fetcher and **passing the adapter conformance suite** against golden fixtures (no live calls in CI). Quote layer only; the Mode‑B managed‑execution path (deposit/detect/refund) and any Mode A (CIP‑0056) real adapter remain to do.
 - **Demo 1 — cross‑venue quote aggregation vs real venues.** ✅
   - *2026‑06‑18:* `@synfin/cli`’s `quote` command aggregates live read‑only quotes from CantonSwap + OneSwap, runs the reference router, and prints the chosen route + edge vs the best single venue, with a clearly‑labelled golden‑fixture fallback. Read‑only, no funds.
-- **Reference CLI.** 🟡 `quote` (Demo 1) done; a settlement‑demo command (Demo 2, Mode A atomic split) is pending a later task.
+- **Demo 2 — atomic, per‑leg‑private split settlement vs our CIP‑0056 test venue.** ✅
+  - *2026‑06‑18:* `@synfin/cli`’s `settle-demo` command drives the proven `daml/synfin-settlement` library (unchanged) via a new demo Daml Script (`Synfin.Demo.AtomicSettlement`) on a local in‑memory ledger: a 2‑venue/4‑leg Amulet split settles atomically in one transaction with on‑ledger bounds, single‑use allocations, and **per‑leg privacy** asserted. Honestly labelled as our **own CIP‑0056 (Mode A) test venue** — architecture ready for Mode‑A venues as the network matures, **not** a claim vs live third‑party venues (ADR‑0009). No funds, no mainnet.
+- **Reference CLI.** ✅ Both PoW demos exist: `quote` (Demo 1) and `settle-demo` (Demo 2).
 - **Acceptance:** spec published; ≥ 2 conformant adapters; types consumed by the SDK in an integration test.
 
 ## M2 — Atomic split‑execution (≈ weeks 8–16)
