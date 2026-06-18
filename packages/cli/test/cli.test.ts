@@ -1,0 +1,246 @@
+import { describe, expect, it } from 'vitest';
+import type {
+  AssetId,
+  Quote,
+  QuoteRejection,
+  QuoteRequest,
+  SwapIntent,
+  VenueAdapter,
+} from '@synfin/spec';
+import {
+  aggregateQuotes,
+  buildIntent,
+  formatReport,
+  minUnit,
+  resolveToken,
+} from '../src/index.js';
+import { edgeBps, pickBestSingle } from '../src/aggregate.js';
+import type { AggregateResult } from '../src/index.js';
+
+const CC: AssetId = {
+  registry: 'DSO::1220sample',
+  instrumentId: 'Amulet',
+  decimals: 10,
+};
+const USDCx: AssetId = {
+  registry: 'usdc::1220sample',
+  instrumentId: 'USDCx',
+  decimals: 6,
+};
+const NOW = new Date('2030-01-01T00:00:00Z');
+const FUTURE = '2099-01-01T00:00:00Z';
+
+/** A stub adapter that returns a fixed receive (or a rejection) for any request. */
+function stubVenue(
+  venueId: string,
+  receive: string | null,
+  code = 'pair_unsupported',
+): VenueAdapter {
+  return {
+    venueId,
+    settlementMode: 'managed-deposit',
+    quote(request: QuoteRequest): Promise<Quote | QuoteRejection> {
+      if (receive === null) {
+        return Promise.resolve({ venueId, code });
+      }
+      const quote: Quote = {
+        quoteId: `${venueId}:${request.nonce}`,
+        venueId,
+        give: { asset: request.give.asset, amount: request.give.amount },
+        receive: { asset: request.want.asset, amount: receive },
+        feeBps: 0,
+        sourceKind: 'AMM',
+        settlementMode: 'managed-deposit',
+        firmness: 'indicative',
+        validUntil: FUTURE,
+      };
+      return Promise.resolve(quote);
+    },
+  };
+}
+
+/** A venue whose quote() rejects the promise (transport failure). */
+function throwingVenue(venueId: string): VenueAdapter {
+  return {
+    venueId,
+    settlementMode: 'managed-deposit',
+    quote(): Promise<Quote | QuoteRejection> {
+      return Promise.reject(new Error('connection refused'));
+    },
+  };
+}
+
+function intent(amount = '100'): SwapIntent {
+  return buildIntent({
+    give: CC,
+    want: USDCx,
+    amount,
+    slippageBps: 50,
+    deadline: FUTURE,
+  });
+}
+
+describe('tokens + intent helpers', () => {
+  it('resolveToken maps known symbols and rejects unknown', () => {
+    expect(resolveToken('CC')?.instrumentId).toBe('Amulet');
+    expect(resolveToken('USDCx')?.decimals).toBe(6);
+    expect(resolveToken('NOPE')).toBeUndefined();
+  });
+
+  it('minUnit returns the smallest positive unit at a precision', () => {
+    expect(minUnit(6)).toBe('0.000001');
+    expect(minUnit(0)).toBe('1');
+    expect(minUnit(2)).toBe('0.01');
+  });
+
+  it('buildIntent sets a permissive minReceive and carries slippage', () => {
+    const i = intent();
+    expect(i.want.minReceive).toBe('0.000001');
+    expect(i.maxSlippageBps).toBe(50);
+    expect(i.give).toEqual({ asset: CC, amount: '100' });
+  });
+});
+
+describe('aggregateQuotes', () => {
+  it('gathers quotes, routes, picks best single venue, computes edge', async () => {
+    const result = await aggregateQuotes(
+      [stubVenue('cantonswap', '16.30'), stubVenue('oneswap', '16.50')],
+      intent(),
+      NOW,
+    );
+    expect(result.quotes).toHaveLength(2);
+    expect(result.route.ok).toBe(true);
+    expect(result.bestSingle?.venueId).toBe('oneswap');
+    expect(result.bestSingle?.receive).toBe('16.50');
+    // Both venues quote the full size; the router picks the best single, so the
+    // routed receipt equals the best single venue -> 0 bps edge.
+    expect(result.edgeBps).toBe(0);
+  });
+
+  it('captures rejections as typed outcomes without dropping the run', async () => {
+    const result = await aggregateQuotes(
+      [
+        stubVenue('cantonswap', '16.30'),
+        stubVenue('oneswap', null, 'not_configured'),
+      ],
+      intent(),
+      NOW,
+    );
+    expect(result.quotes).toHaveLength(1);
+    const oneswap = result.outcomes.find((o) => o.venueId === 'oneswap');
+    expect(oneswap?.rejection?.code).toBe('not_configured');
+  });
+
+  it('turns a transport failure into a transport_error outcome (never throws)', async () => {
+    const result = await aggregateQuotes(
+      [throwingVenue('cantonswap'), stubVenue('oneswap', '16.50')],
+      intent(),
+      NOW,
+    );
+    const canton = result.outcomes.find((o) => o.venueId === 'cantonswap');
+    expect(canton?.rejection?.code).toBe('transport_error');
+    expect(result.quotes).toHaveLength(1);
+  });
+
+  it('reports no route and null edge when no venue quotes', async () => {
+    const result = await aggregateQuotes(
+      [stubVenue('cantonswap', null), stubVenue('oneswap', null)],
+      intent(),
+      NOW,
+    );
+    expect(result.quotes).toHaveLength(0);
+    expect(result.route.ok).toBe(false);
+    expect(result.bestSingle).toBeNull();
+    expect(result.edgeBps).toBeNull();
+  });
+});
+
+describe('edgeBps + pickBestSingle (edge cases)', () => {
+  it('edgeBps is null on null inputs, non-positive base, or unparseable values', () => {
+    expect(edgeBps(null, '16')).toBeNull();
+    expect(edgeBps('16', null)).toBeNull();
+    expect(edgeBps('16', '0')).toBeNull(); // non-positive base
+    expect(edgeBps('xx', '16')).toBeNull(); // unparseable routed
+    expect(edgeBps('16', 'yy')).toBeNull(); // unparseable base
+  });
+
+  it('edgeBps is positive when the routed receipt beats the base', () => {
+    expect(edgeBps('16.50', '16.00')).toBeGreaterThan(0);
+  });
+
+  it('pickBestSingle skips quotes with an unparseable receive', () => {
+    const mk = (venueId: string, amount: string): Quote => ({
+      quoteId: `${venueId}:q`,
+      venueId,
+      give: { asset: CC, amount: '100' },
+      receive: { asset: USDCx, amount },
+      feeBps: 0,
+      sourceKind: 'AMM',
+      settlementMode: 'managed-deposit',
+      firmness: 'indicative',
+      validUntil: FUTURE,
+    });
+    const best = pickBestSingle([mk('a', 'not-a-number'), mk('b', '16.50')]);
+    expect(best?.venueId).toBe('b');
+    expect(pickBestSingle([])).toBeNull();
+  });
+});
+
+describe('formatReport', () => {
+  it('labels live runs and shows venue quotes + route + edge', async () => {
+    const result = await aggregateQuotes(
+      [stubVenue('cantonswap', '16.30'), stubVenue('oneswap', '16.50')],
+      intent(),
+      NOW,
+    );
+    const report = formatReport(result, 'live');
+    expect(report).toContain('LIVE venue quotes');
+    expect(report).toContain('cantonswap [managed-deposit]');
+    expect(report).toContain('oneswap [managed-deposit]');
+    expect(report).toContain('Best route:');
+    expect(report).toContain('Edge vs best single venue: 0 bps');
+    expect(report).toContain('quote layer only');
+  });
+
+  it('clearly labels fixture runs as recorded sample data', async () => {
+    const result = await aggregateQuotes(
+      [stubVenue('cantonswap', '16.30')],
+      intent(),
+      NOW,
+    );
+    const report = formatReport(result, 'fixtures');
+    expect(report).toContain('RECORDED SAMPLE DATA');
+    expect(report).toContain('NOT live');
+  });
+
+  it('renders a no-route result with the typed reason', async () => {
+    const result = await aggregateQuotes(
+      [stubVenue('cantonswap', null)],
+      intent(),
+      NOW,
+    );
+    const report = formatReport(result, 'live');
+    expect(report).toContain('Best route: none (');
+    expect(report).toContain('no quote (pair_unsupported)');
+  });
+
+  it('falls back to "no_quote" when an outcome has neither quote nor rejection', () => {
+    const synthetic: AggregateResult = {
+      intent: intent(),
+      outcomes: [
+        {
+          venueId: 'ghost',
+          settlementMode: 'managed-deposit',
+          quote: null,
+          rejection: null,
+        },
+      ],
+      quotes: [],
+      route: { ok: false, reason: 'no-eligible-quotes' },
+      bestSingle: null,
+      edgeBps: null,
+    };
+    const report = formatReport(synthetic, 'live');
+    expect(report).toContain('no quote (no_quote)');
+  });
+});

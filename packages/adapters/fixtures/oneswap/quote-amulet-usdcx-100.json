@@ -1,0 +1,22 @@
+{
+  "inputToken": "Amulet",
+  "inputTokenAdmin": "DSO::1220sample0000000000000000000000000000000000000000000000000000000000",
+  "outputToken": "USDCx",
+  "outputTokenAdmin": "decentralized-usdc-interchain-rep::1220sample00000000000000000000000000000000000000000000000000000000",
+  "inputAmount": "100",
+  "totalInputAmount": "100.5",
+  "outputAmount": "16.341200",
+  "rate": "0.163412",
+  "effectivePrice": "0.16258209",
+  "priceImpact": "0.0006",
+  "fee": 0.003,
+  "poolFeeAmount": "0.300000",
+  "lpFeeAmount": "0.270000",
+  "platformFeeAmount": "0.030000",
+  "inputAmountAfterPoolFee": "99.700000",
+  "networkFeeAmount": "0.500000",
+  "poolId": "pool-cc-usdcx",
+  "expiresIn": 30,
+  "maxPriceImpact": 0.5,
+  "settlementSafety": null
+}
