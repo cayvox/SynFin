@@ -32,4 +32,38 @@ const venue = new MockVenueAdapter({
 const quoteOrRejection = await venue.quote(request);
 ```
 
+## Real venue adapters — `CantonSwapAdapter`, `OneSwapAdapter`
+
+Adapters for two **real** Canton venues. Both are **Mode B (`managed-deposit`)**
+(ADR-0009): they settle via the venue's own deposit/detect/execute flow, not a
+CIP-0056 atomic allocation — so each declares `settlementMode = 'managed-deposit'`.
+This is the **quote layer only**: no settlement, deposit, or funds; the venues'
+deposit/execution details (`memo`/`swapAddress`, pool party/reference) are
+intentionally **not** placed on the `Quote` (they belong to the deferred
+managed-execution path, RFC-0004).
+
+Design (both): an injectable HTTP **`Fetcher`** separates the impure network call
+from a **pure, deterministic normalizer** (`normalizeCantonSwapQuote`,
+`normalizeOneSwapQuote`). The normalizer treats the venue response as untrusted
+input, floors receipts in the taker's favour (SPEC §3), and returns either a
+spec-valid `Quote` or a typed `QuoteRejection` — it never throws. This is what
+lets the same adapter run live (default `fetchJson`) and against golden fixtures
+in tests (`fixtures/`, with provenance) with **no live network call in CI**.
+
+| Venue | Quote mechanism (read-only, fundless) | Firmness | Auth |
+| --- | --- | --- | --- |
+| CantonSwap | `POST /nswap/quote` → `toAmount`, … (fees embedded) | indicative (TTL) | none |
+| OneSwap | `quotes.get` read-only price preview → `outputAmount`, `expiresIn` | indicative | API key (env) |
+
+```ts
+import { CantonSwapAdapter, OneSwapAdapter, fetchJson } from '@synfin/adapters';
+
+const cantonswap = new CantonSwapAdapter(); // live, read-only; no key
+const oneswap = new OneSwapAdapter({
+  baseUrl: process.env.ONESWAP_BASE_URL,
+  apiKey: process.env.ONESWAP_API_KEY, // read-only quoting; never logged
+});
+const quoteOrRejection = await cantonswap.quote(request);
+```
+
 Apache-2.0. Pre-alpha: interfaces are unstable until `v1.0.0`.
