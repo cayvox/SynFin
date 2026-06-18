@@ -1,0 +1,4 @@
+pair,size,quotedVenues,bestVenue,bestReceive,worstVenue,worstReceive,spreadBps,observations,firstSeen,lastSeen
+CC/USDCx,1000,1,cantonswap,162.000000,cantonswap,162.000000,,2,2026-06-18T09:05:00.000Z,2026-06-18T09:05:00.000Z
+CC/USDCx,125,2,cantonswap,20.447269,oneswap,20.350000,47.79,4,2026-06-18T09:00:00.000Z,2026-06-18T09:05:00.000Z
+CC/USDCx,500,2,cantonswap,81.500000,oneswap,81.000000,61.72,2,2026-06-18T09:05:00.000Z,2026-06-18T09:05:00.000Z

@@ -6,7 +6,8 @@ Synfin is built in deliberate phases. The open‑source layer (this repository) 
 
 **Goal:** prove the need with data and seed the project.
 
-- Read‑only tool that collects quotes for the same pairs across reachable venues over ~30 days.
+- Read‑only tool that collects quotes for the same pairs across reachable venues over ~30 days. 🟡
+  - *2026‑06‑18:* 🟡 **Monitor built and collecting** — `tools/price-monitor` (`@synfin/price-monitor`) requests read‑only quotes from CantonSwap + OneSwap for CC/USDCx at several sizes, appends timestamped observations to a JSONL store (each row labelled live/fixture), and computes the cross‑venue spread (bps) into a Markdown + CSV report. No funds, no settlement. A committed deterministic **sample report** (`tools/price-monitor/sample/`) already shows a meaningful spread (≈ 48–62 bps). **✅ awaits a sustained live capture** (≈30 days) — gated on venue availability (CantonSwap’s quote endpoint was under maintenance and OneSwap quoting needs an API key at capture time).
 - Output: a public dataset and a simple dashboard quantifying cross‑venue spread by size and time.
 - **Decision gate:** if spreads are consistently meaningful (e.g., > 20–30 bps on relevant sizes), the need is demonstrated and the data becomes the evidence section of the grant proposal. If negligible, we have cheaply avoided a wrong turn and still own a useful Canton price dataset.
 
