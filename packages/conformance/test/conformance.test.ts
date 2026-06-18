@@ -1,5 +1,11 @@
 import { describe, it } from 'vitest';
-import { MockVenueAdapter } from '@synfin/adapters';
+import { readFileSync } from 'node:fs';
+import {
+  CantonSwapAdapter,
+  MockVenueAdapter,
+  OneSwapAdapter,
+  type Fetcher,
+} from '@synfin/adapters';
 import { referenceRouter } from '@synfin/router-ref';
 import type { AssetId, QuoteRequest } from '@synfin/spec';
 import { runAdapterConformance, runRouterConformance } from '../src/index.js';
@@ -51,6 +57,74 @@ describe('adapter conformance (MockVenueAdapter is the first subject)', () => {
     await runAdapterConformance(adapter, {
       requests: [request('250', 'f1')],
       now: new Date('2030-01-01T00:00:00Z'),
+    });
+  });
+});
+
+// --- Real Mode B (managed-deposit) venue adapters, run against golden fixtures.
+//     No live network call: a fixture-backed Fetcher + a fixed clock make the
+//     runs deterministic (TESTING.md §5; ADR-0009; RFC-0004).
+const CC: AssetId = {
+  registry:
+    'DSO::1220sample0000000000000000000000000000000000000000000000000000000000',
+  instrumentId: 'Amulet',
+  decimals: 10,
+};
+const USDCx: AssetId = {
+  registry:
+    'decentralized-usdc-interchain-rep::1220sample00000000000000000000000000000000000000000000000000000000',
+  instrumentId: 'USDCx',
+  decimals: 6,
+};
+const NOW = new Date('2030-01-01T00:00:00Z');
+
+function ccRequest(amount: string, nonce: string): QuoteRequest {
+  return {
+    intentRef: 'intent-1',
+    give: { asset: CC, amount },
+    want: { asset: USDCx },
+    deadline: '2999-01-01T00:00:00Z',
+    nonce,
+  };
+}
+function loadFixture(rel: string): unknown {
+  return JSON.parse(
+    readFileSync(
+      new URL(`../../adapters/fixtures/${rel}`, import.meta.url),
+      'utf8',
+    ),
+  );
+}
+function fixtureFetcher(body: unknown): Fetcher {
+  return () => Promise.resolve({ status: 200, body });
+}
+
+describe('real venue adapters pass adapter conformance (fixture-backed)', () => {
+  it('CantonSwapAdapter conforms', async () => {
+    const adapter = new CantonSwapAdapter({
+      fetcher: fixtureFetcher(
+        loadFixture('cantonswap/quote-amulet-usdcx-125.json'),
+      ),
+      now: () => NOW,
+    });
+    await runAdapterConformance(adapter, {
+      requests: [ccRequest('125', 'c1'), ccRequest('500', 'c2')],
+      now: NOW,
+    });
+  });
+
+  it('OneSwapAdapter conforms', async () => {
+    const adapter = new OneSwapAdapter({
+      baseUrl: 'https://example.invalid',
+      apiKey: 'test-key-not-a-secret',
+      fetcher: fixtureFetcher(
+        loadFixture('oneswap/quote-amulet-usdcx-100.json'),
+      ),
+      now: () => NOW,
+    });
+    await runAdapterConformance(adapter, {
+      requests: [ccRequest('100', 'o1'), ccRequest('250', 'o2')],
+      now: NOW,
     });
   });
 });
