@@ -329,3 +329,49 @@ export function compareByWorstCase(a: RoutePlan, b: RoutePlan): -1 | 0 | 1 {
   }
   return aw.compare(bw);
 }
+
+/**
+ * Whether a plan may be settled atomically (SPEC §6; RFC-0004; ADR-0009): TRUE
+ * iff **every** leg's referenced quote settles via `atomic-allocation`. A single
+ * `managed-deposit` leg makes the route non-atomic — it must be executed via the
+ * managed path, never co-settled in one Daml transaction. An unresolved
+ * `quoteRef` (a quote not in the supplied set) is treated as non-atomic (it
+ * cannot be proven atomic); use `checkQuoteLinkage` to surface that separately.
+ */
+export function isAtomicRoute(
+  plan: RoutePlan,
+  quotes: readonly Quote[],
+): boolean {
+  const byId = indexByQuoteId(quotes);
+  return plan.legs.every((leg) => {
+    const quote = byId.get(leg.quoteRef);
+    return quote !== undefined && quote.settlementMode === 'atomic-allocation';
+  });
+}
+
+/**
+ * Settlement-eligibility check for the atomic path: a plan is only eligible for
+ * atomic settlement (`daml/synfin-settlement`) when {@link isAtomicRoute} holds.
+ * This is intentionally separate from {@link checkRoutePlan} (which validates
+ * §4.4 economic constraints): a route containing `managed-deposit` legs is a
+ * perfectly valid plan, it just cannot be settled atomically (RFC-0004).
+ */
+export function checkAtomicallySettleable(
+  plan: RoutePlan,
+  quotes: readonly Quote[],
+): Result<RoutePlan> {
+  const byId = indexByQuoteId(quotes);
+  const errors: ValidationError[] = [];
+  plan.legs.forEach((leg, i) => {
+    const quote = byId.get(leg.quoteRef);
+    if (quote === undefined || quote.settlementMode !== 'atomic-allocation') {
+      errors.push({
+        code: 'not_atomically_settleable',
+        message:
+          'leg is not atomic-allocation; the route cannot be settled atomically',
+        path: `/legs/${i}`,
+      });
+    }
+  });
+  return errors.length > 0 ? err(errors) : ok(plan);
+}

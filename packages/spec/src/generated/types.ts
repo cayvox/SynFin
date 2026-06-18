@@ -182,6 +182,10 @@ export interface Quote {
    */
   sourceKind: "AMM" | "CLOB" | "RFQ";
   /**
+   * How the venue settles (SPEC §4.3, §5; RFC-0004; ADR-0009). `atomic-allocation`: settles via a CIP-0056 allocation, so this leg CAN be part of a single atomic Daml transaction (SPEC §6). `managed-deposit`: the venue settles via its own deposit/detect/execute flow, so this leg CANNOT be atomically co-settled and is executed via the managed path. Carried on the Quote (alongside `sourceKind`) so a Router operating on quotes can determine each leg's settlement mode.
+   */
+  settlementMode: "atomic-allocation" | "managed-deposit";
+  /**
    * An indicative quote is non-binding; a firm quote is binding and MUST be backed by commitment+signature (SPEC §4.3).
    */
   firmness: "indicative" | "firm";

@@ -57,6 +57,7 @@ export function validIndicativeQuote(overrides: Partial<Quote> = {}): Quote {
     receive: { asset: BTC, amount: '0.00120000' },
     feeBps: 10,
     sourceKind: 'AMM',
+    settlementMode: 'atomic-allocation',
     firmness: 'indicative',
     validUntil: FUTURE,
     ...overrides,
