@@ -3,7 +3,11 @@
  * Interfaces only — implementations live in `@synfin/adapters`,
  * `@synfin/router-ref`, and `daml/synfin-settlement`.
  */
-export type { VenueAdapter, QuoteRejection } from './venue-adapter.js';
+export type {
+  VenueAdapter,
+  QuoteRejection,
+  SettlementMode,
+} from './venue-adapter.js';
 export { isQuoteRejection } from './venue-adapter.js';
 export type { Router, RouteResult, NoViableRouteReason } from './router.js';
 export type {

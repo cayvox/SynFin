@@ -1,6 +1,6 @@
 {
   "name": "@synfin/spec",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Normative TypeScript types, JSON Schemas, runtime validators and the three Synfin ports (single source of truth for SQSS).",
   "license": "Apache-2.0",
   "type": "module",

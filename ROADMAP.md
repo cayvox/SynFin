@@ -16,6 +16,7 @@ Synfin is built in deliberate phases. The open‑source layer (this repository) 
 - Daml interface definitions for swap intent and settlement composition.
 - `@synfin/spec` (normative types/schemas) and a quote/inventory SDK skeleton.
 - **2 venue adapters** for the most liquid venues, passing the conformance suite.
+  - *2026‑06‑18:* SQSS `0.5.0` / RFC‑0004 added the `settlementMode` capability (`atomic-allocation` | `managed-deposit`) to the Venue/`Quote` contract and the all‑atomic‑allocation rule — the contract groundwork that lets real adapters declare their settlement mode. Real adapters and the Mode‑B execution path remain to do.
 - **Acceptance:** spec published; ≥ 2 conformant adapters; types consumed by the SDK in an integration test.
 
 ## M2 — Atomic split‑execution (≈ weeks 8–16)

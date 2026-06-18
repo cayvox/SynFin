@@ -1,6 +1,20 @@
 import type { Quote, QuoteRequest, VenueId } from '../generated/types.js';
 
 /**
+ * How a venue settles (SPEC §4.3, §5; RFC-0004; ADR-0009). Derived from the
+ * generated `Quote` type so the venue capability and the quote field cannot
+ * drift apart (the JSON Schema is the single source of truth).
+ *
+ * - `atomic-allocation` (Mode A): settles via a CIP-0056 allocation, so a leg
+ *   from this venue CAN be part of a single atomic Daml transaction (SPEC §6).
+ * - `managed-deposit` (Mode B): settles via the venue's own
+ *   deposit/detect/execute flow, so a leg from this venue CANNOT be atomically
+ *   co-settled and is executed via the managed path (not defined here — RFC-0004
+ *   defers `ManagedExecution`).
+ */
+export type SettlementMode = Quote['settlementMode'];
+
+/**
  * A typed rejection returned by a venue instead of a {@link Quote} (SPEC §5:
  * `POST /quote` returns a Quote "or a typed rejection"). Rejections are
  * first-class so adapters never throw to signal "no quote" and never invent a
@@ -50,6 +64,14 @@ export function isQuoteRejection(
 export interface VenueAdapter {
   /** Stable identifier of the venue this adapter serves. */
   readonly venueId: VenueId;
+
+  /**
+   * How this venue settles (RFC-0004; ADR-0009). Lets the router/coordinator
+   * decide whether the venue can be an atomic leg (`atomic-allocation`) or must
+   * be executed via the managed deposit path (`managed-deposit`). Every
+   * {@link Quote} the adapter returns MUST carry this same `settlementMode`.
+   */
+  readonly settlementMode: SettlementMode;
 
   /**
    * Quote a single size bucket. Resolves to a {@link Quote} or a typed
