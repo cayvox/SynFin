@@ -49,12 +49,15 @@ export {
   checkAggregateConsistency,
   checkRoutePlan,
   compareByWorstCase,
+  isAtomicRoute,
+  checkAtomicallySettleable,
 } from './constraints.js';
 
 // The three ports (ADR-0005).
 export type {
   VenueAdapter,
   QuoteRejection,
+  SettlementMode,
   Router,
   RouteResult,
   NoViableRouteReason,

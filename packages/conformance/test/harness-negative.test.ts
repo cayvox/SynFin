@@ -29,6 +29,7 @@ describe('harness catches non-conformant adapters', () => {
     let n = 0;
     const flaky: VenueAdapter = {
       venueId: 'flaky',
+      settlementMode: 'atomic-allocation',
       quote(): Promise<Quote> {
         n += 1;
         return Promise.resolve({
@@ -38,6 +39,7 @@ describe('harness catches non-conformant adapters', () => {
           receive: { asset: BTC, amount: '0.00100000' },
           feeBps: 0,
           sourceKind: 'AMM',
+          settlementMode: 'atomic-allocation',
           firmness: 'indicative',
           validUntil: '2999-01-01T00:00:00Z',
         });
@@ -51,6 +53,7 @@ describe('harness catches non-conformant adapters', () => {
   it('rejects an adapter whose quote is not spec-valid', async () => {
     const bad: VenueAdapter = {
       venueId: 'bad',
+      settlementMode: 'atomic-allocation',
       quote(): Promise<Quote> {
         return Promise.resolve({
           quoteId: 'q1',
@@ -59,6 +62,7 @@ describe('harness catches non-conformant adapters', () => {
           receive: { asset: USD, amount: '0.00100000' }, // wrong receive asset
           feeBps: 0,
           sourceKind: 'AMM',
+          settlementMode: 'atomic-allocation',
           firmness: 'indicative',
           validUntil: '2999-01-01T00:00:00Z',
         });
@@ -72,6 +76,7 @@ describe('harness catches non-conformant adapters', () => {
   it('rejects an adapter rejection that carries the wrong venueId', async () => {
     const bad: VenueAdapter = {
       venueId: 'bad',
+      settlementMode: 'atomic-allocation',
       quote(): Promise<QuoteRejection> {
         return Promise.resolve({ venueId: 'someone-else', code: 'nope' });
       },

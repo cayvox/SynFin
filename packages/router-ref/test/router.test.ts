@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Decimal,
   checkRoutePlan,
+  isAtomicRoute,
   type AssetId,
   type Quote,
   type SwapIntent,
@@ -23,6 +24,7 @@ function quote(overrides: Partial<Quote> = {}): Quote {
     receive: { asset: BTC, amount: '0.00120000' },
     feeBps: 0,
     sourceKind: 'AMM',
+    settlementMode: 'atomic-allocation',
     firmness: 'indicative',
     validUntil: FUTURE,
     ...overrides,
@@ -267,5 +269,60 @@ describe('referenceRouter (Router port value, RFC-0002)', () => {
     const r = referenceRouter.route(intent(), [], NOW);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe('no-eligible-quotes');
+  });
+});
+
+describe('reference router — settlement mode (RFC-0004, SPEC §6)', () => {
+  // The reference router selects purely on economics; settlement mode does not
+  // change its output. Atomicity is asserted downstream via `isAtomicRoute`, so
+  // these tests prove that a plan built over managed-deposit liquidity is never
+  // mistaken for an atomically-settleable route — without the router needing a
+  // mode-specific code path.
+  it('still routes a managed-deposit venue, but the plan is not atomic', () => {
+    const quotes = [quote({ settlementMode: 'managed-deposit' })];
+    const r = route(intent(), quotes, NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(isAtomicRoute(r.plan, quotes)).toBe(false);
+  });
+
+  it('flags an all-atomic-allocation route as atomic', () => {
+    const quotes = [quote({ settlementMode: 'atomic-allocation' })];
+    const r = route(intent(), quotes, NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(isAtomicRoute(r.plan, quotes)).toBe(true);
+  });
+
+  it('treats a mixed route (one managed leg) as non-atomic', () => {
+    const intentBig = intent({ give: { asset: USD, amount: '100' } });
+    // Two venues each cover part; one settles managed-deposit.
+    const quotes = [
+      quote({
+        quoteId: 'qa',
+        venueId: 'va',
+        give: { asset: USD, amount: '60' },
+        receive: { asset: BTC, amount: '0.00072000' },
+        settlementMode: 'atomic-allocation',
+      }),
+      quote({
+        quoteId: 'qb',
+        venueId: 'vb',
+        give: { asset: USD, amount: '40' },
+        receive: { asset: BTC, amount: '0.00048000' },
+        settlementMode: 'managed-deposit',
+      }),
+    ];
+    const r = route(intentBig, quotes, NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Whatever legs the router picks, if any referenced quote is managed-deposit
+    // the route must not be atomic.
+    const usesManaged = r.plan.legs.some(
+      (l) =>
+        quotes.find((q) => q.quoteId === l.quoteRef)?.settlementMode ===
+        'managed-deposit',
+    );
+    if (usesManaged) expect(isAtomicRoute(r.plan, quotes)).toBe(false);
   });
 });

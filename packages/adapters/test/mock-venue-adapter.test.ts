@@ -54,6 +54,20 @@ describe('MockVenueAdapter', () => {
     expect(Decimal.parse(q.receive.amount)?.isPositive()).toBe(true);
   });
 
+  it('defaults to atomic-allocation settlement and echoes it on quotes (RFC-0004)', async () => {
+    const a = adapter();
+    expect(a.settlementMode).toBe('atomic-allocation');
+    const q = await asQuote(a.quote(request()));
+    expect(q.settlementMode).toBe('atomic-allocation');
+  });
+
+  it('can be configured as a managed-deposit venue (RFC-0004)', async () => {
+    const a = adapter({ settlementMode: 'managed-deposit' });
+    expect(a.settlementMode).toBe('managed-deposit');
+    const q = await asQuote(a.quote(request()));
+    expect(q.settlementMode).toBe('managed-deposit');
+  });
+
   it('is deterministic for identical requests', async () => {
     const a = adapter({ feeBps: 10 });
     expect(await a.quote(request())).toEqual(await a.quote(request()));
