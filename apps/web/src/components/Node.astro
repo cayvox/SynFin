@@ -1,0 +1,107 @@
+---
+/**
+ * Node (DESIGN.md §5/§6) — a constellation venue node: a 32px lit ring with a
+ * delicate inner ring, and a side-aware label (name + mono quote). Route nodes
+ * get an ember inner ring + faint glow, and the price renders in ember. The dot
+ * is centered exactly on its (x,y) anchor so the connector lines meet it.
+ */
+interface Props {
+  name: string;
+  pair: string;
+  price: string;
+  route?: boolean;
+  side?: 'left' | 'right';
+  /** Position as percentages of the constellation panel. */
+  x: number;
+  y: number;
+}
+const { name, pair, price, route = false, side = 'left', x, y } = Astro.props;
+---
+
+<div
+  class:list={['node', `node--${side}`, route && 'node--route']}
+  style={`left:${x}%;top:${y}%`}
+  data-anim
+>
+  <span class="node__dot">
+    <span class="node__inner"></span>
+  </span>
+  <span class="node__label">
+    <span class="node__name">{name}</span>
+    <span class="node__quote mono">
+      {pair}
+      <span class="node__price">{price}</span>
+    </span>
+  </span>
+</div>
+
+<style>
+  .node {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+  }
+  .node__dot {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--line-2);
+    background: radial-gradient(
+      circle at 50% 35%,
+      rgba(241, 239, 234, 0.1),
+      rgba(20, 21, 25, 0.7)
+    );
+    box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.8);
+  }
+  .node__inner {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.25px solid var(--ink-2);
+  }
+  .node--route .node__inner {
+    border-color: var(--ember);
+    box-shadow: 0 0 10px 0 var(--ember-glow);
+  }
+
+  .node__label {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+  .node--left .node__label {
+    left: calc(100% + 12px);
+    text-align: left;
+  }
+  .node--right .node__label {
+    right: calc(100% + 12px);
+    text-align: right;
+  }
+  .node__name {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .node__quote {
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+  }
+  .node__price {
+    color: var(--ink-2);
+  }
+  .node--route .node__price {
+    color: var(--ember);
+  }
+  /* Labels always accompany the dots: the whole constellation is desktop-only
+     (hidden < 1024px in Constellation.astro), so there are never bare dots. */
+</style>
