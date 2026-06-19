@@ -1,0 +1,129 @@
+---
+/**
+ * PrivacyDiagram (CONTENT.md §5) — a small, restrained schematic of per-leg
+ * confidentiality: the split's three legs are compartmentalized so each venue
+ * sees ONLY its own leg, while the coordinator/executor sees the whole route.
+ * Thin faded hairlines (like the hero) — DOM/SVG, no canvas, no glow.
+ */
+const legs = ['CantonSwap', 'OneSwap', 'RFQ desk'];
+---
+
+<div class="pd">
+  <div class="pd__exec">
+    <span class="pd__exec-dot" aria-hidden="true"></span>
+    executor · sees the whole route
+  </div>
+  <ul class="pd__lanes">
+    {
+      legs.map((name) => (
+        <li class="pd__lane">
+          <span class="pd__lane-name">{name}</span>
+          <span class="pd__lane-tag mono">
+            <svg
+              class="pd__lock"
+              viewBox="0 0 12 12"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="2.5"
+                y="5.5"
+                width="7"
+                height="5"
+                rx="1"
+                stroke="currentColor"
+              />
+              <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" stroke="currentColor" />
+            </svg>
+            its leg only
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .pd {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .pd__exec {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    padding: 6px 12px;
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    color: var(--ink-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+  }
+  .pd__exec-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-2);
+  }
+
+  /* The executor rail connects to every lane (executor sees all); the dashed
+     gaps between lanes read as the sealed compartment walls. */
+  .pd__lanes {
+    list-style: none;
+    padding: 0 0 0 18px;
+    margin: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pd__lanes::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 14px;
+    bottom: 14px;
+    width: 1px;
+    background: var(--line-2);
+  }
+  .pd__lane {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 13px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+  }
+  .pd__lane::before {
+    /* connector tick from the executor rail */
+    content: '';
+    position: absolute;
+    left: -13px;
+    top: 50%;
+    width: 13px;
+    height: 1px;
+    background: var(--line-2);
+  }
+  .pd__lane-name {
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .pd__lane-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+  .pd__lock {
+    width: 12px;
+    height: 12px;
+    color: var(--ink-3);
+  }
+</style>

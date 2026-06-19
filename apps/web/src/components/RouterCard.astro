@@ -1,18 +1,17 @@
 ---
 /**
- * RouterCard (DESIGN.md §5; CONTENT.md §1) — the hero centerpiece. A believable
- * best-execution interface (crisp DOM/SVG, never canvas): input → best-route
- * split across 3 venues → the edge → atomic settlement. Numbers are the
- * canonical illustrative demo (CONTENT.md §1) — NOT measured/live data.
+ * RouterCard (DESIGN.md §5; CONTENT.md §4) — the best-execution card, dark-glass
+ * re-skin, living in the Proof bento (NOT the hero). The canonical illustrative
+ * demo: 250,000 CC → split 46/33/21 across CantonSwap/OneSwap/RFQ desk, +47.8 bps
+ * edge, atomic per-leg-private settlement. Allocation bars fill with warm-white
+ * (--ink), NOT ember; ember appears only on the +47.8 edge and the seal-check.
+ * No fake "live" pulse. Numbers are illustrative — never measured/live.
  *
- * Animation hooks for hero.ts: each `.rc-bar__fill` carries its final width as
- * `--pct` (so no-JS / reduced-motion render full); the edge number's final value
- * is in the DOM with `data-count-to` (counts up once, then locks). Tabular,
- * width reserved — no layout shift.
+ * Animation hooks for proof.ts: each `.rc-bar__fill` carries its final width as
+ * `--pct` (full by default → no-JS/reduced shows it full); the edge number's
+ * final value is in the DOM with `data-count-to`. Tabular, width reserved.
  */
 import SealMark from './SealMark.astro';
-import Button from './Button.astro';
-import TickRule from './TickRule.astro';
 
 const venues = [
   { name: 'CantonSwap', pct: 46, receive: '18,372' },
@@ -22,22 +21,17 @@ const venues = [
 ---
 
 <article class="rc" aria-label="Best-execution router (illustrative demo)">
-  <!-- Header -->
   <header class="rc__head">
-    <div class="rc__title">
-      <span>Best execution</span>
-    </div>
+    <span class="rc__title">Best execution</span>
     <span class="rc__pair mono">CC → USDCx</span>
   </header>
 
-  <!-- Input -->
   <div class="rc__input">
     <span class="rc__label">You route</span>
     <div class="rc__amount mono">250,000 <span class="rc__ccy">CC</span></div>
     <span class="rc__slip mono">slippage 0.30%</span>
   </div>
 
-  <!-- Split -->
   <div class="rc__split">
     <div class="rc__split-head">
       <span class="rc__label">Best route — split across 3 venues</span>
@@ -62,7 +56,6 @@ const venues = [
     </ul>
   </div>
 
-  <!-- Edge -->
   <div class="rc__edge">
     <div class="rc__edge-num">
       <span class="rc__edge-val" data-count-to="47.8">+47.8</span>
@@ -74,140 +67,126 @@ const venues = [
     </div>
   </div>
 
-  <TickRule marker={47.8} max={120} class="rc__tick" />
-
-  <!-- Settlement -->
   <div class="rc__settle">
-    <SealMark size={22} check decorative class="rc__seal" />
+    <SealMark size={20} check decorative class="rc__seal" />
     <span
       >Atomic settlement. All legs in one transaction — per-leg private.</span
     >
   </div>
 
-  <!-- Action -->
-  <Button variant="primary" block class="rc__action">Route &amp; settle</Button>
+  <p class="rc__demo mono">Illustrative demo — not measured or live data.</p>
 </article>
 
 <style>
   .rc {
-    background: var(--paper-2);
-    border: var(--hairline) solid var(--line);
-    border-radius: var(--r-card);
-    box-shadow: var(--shadow-card);
-    padding: var(--s-6);
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: var(--s-5);
-    width: 100%;
-    max-width: 420px;
+    gap: 20px;
+    height: 100%;
   }
 
   .rc__label {
     font-family: var(--font-ui);
-    font-size: var(--t-1);
+    font-size: 12px;
     font-weight: 500;
     color: var(--ink-3);
   }
 
-  /* Header */
   .rc__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
   .rc__title {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--s-2);
     font-family: var(--font-ui);
     font-weight: 600;
-    font-size: var(--t-3);
+    font-size: 15px;
+    color: var(--ink);
   }
   .rc__pair {
-    font-size: var(--t-2);
+    font-size: 13px;
     color: var(--ink-2);
   }
 
-  /* Input */
   .rc__input {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: baseline;
-    gap: var(--s-1) var(--s-3);
-    padding: var(--s-4);
-    background: var(--paper);
-    border: var(--hairline) solid var(--line);
-    border-radius: var(--r);
+    gap: 4px 12px;
+    padding: 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
   }
   .rc__input .rc__label {
     grid-column: 1;
   }
   .rc__amount {
     grid-column: 1;
-    font-size: var(--t-7);
+    font-size: 30px;
     font-weight: 500;
     line-height: 1.05;
     color: var(--ink);
   }
   .rc__ccy {
-    font-size: var(--t-4);
+    font-size: 16px;
     color: var(--ink-2);
   }
   .rc__slip {
     grid-column: 2;
     grid-row: 2;
     align-self: end;
-    font-size: var(--t-1);
+    font-size: 12px;
     color: var(--ink-2);
   }
 
-  /* Split */
   .rc__split-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--s-3);
+    margin-bottom: 12px;
   }
   .rc__tag {
-    font-size: var(--t-0);
+    font-size: 11px;
     color: var(--ink-3);
-    border: var(--hairline) solid var(--line-2);
-    border-radius: var(--r);
-    padding: 2px 6px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    padding: 2px 8px;
   }
   .rc__venues {
     list-style: none;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
   .rc-venue {
     display: grid;
     grid-template-columns: 10px 1fr auto;
     align-items: center;
-    column-gap: var(--s-3);
-    row-gap: 4px;
-    padding: 7px var(--s-2);
-    border-radius: var(--r);
-    transition: background var(--dur-fast) var(--ease-out);
+    column-gap: 12px;
+    row-gap: 5px;
+    padding: 8px;
+    border-radius: var(--r-xs);
+    transition: background var(--d-fast) var(--e-out);
   }
   .rc-venue:hover {
-    background: var(--paper-3);
+    background: var(--bg-3);
   }
   .rc-venue__mark {
     width: 9px;
     height: 9px;
     border: 1px solid var(--ink-3);
-    border-radius: 1px;
+    border-radius: 2px;
   }
   .rc-venue__name {
     font-family: var(--font-ui);
-    font-size: var(--t-3);
+    font-size: 14px;
     color: var(--ink);
   }
   .rc-venue__pct {
-    font-size: var(--t-2);
+    font-size: 13px;
     color: var(--ink-2);
     text-align: right;
     min-width: 3.2ch;
@@ -216,7 +195,7 @@ const venues = [
     grid-column: 2 / 4;
     height: 4px;
     border-radius: 2px;
-    background: var(--paper-3);
+    background: var(--line);
     overflow: hidden;
   }
   .rc-bar__fill {
@@ -228,7 +207,7 @@ const venues = [
   }
   .rc-venue__recv {
     grid-column: 2 / 4;
-    font-size: var(--t-1);
+    font-size: 12px;
     color: var(--ink-2);
     text-align: right;
   }
@@ -236,70 +215,74 @@ const venues = [
     color: var(--ink-3);
   }
 
-  /* Edge */
   .rc__edge {
     display: flex;
     align-items: center;
-    gap: var(--s-5);
-    padding-top: var(--s-4);
-    border-top: var(--hairline) solid var(--line);
+    gap: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
   }
   .rc__edge-num {
     display: inline-flex;
     align-items: baseline;
-    gap: var(--s-2);
-    color: var(--seal);
+    gap: 7px;
+    color: var(--ember);
   }
   .rc__edge-val {
     font-family: var(--font-display);
-    font-optical-sizing: auto;
-    font-weight: 500;
-    font-size: var(--t-8);
+    font-weight: 600;
+    font-size: 44px;
     line-height: 0.9;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
-    min-width: 3.6ch;
+    min-width: 3.4ch;
     display: inline-block;
   }
   .rc__edge-unit {
     font-family: var(--font-ui);
     font-weight: 600;
-    font-size: var(--t-4);
-    color: var(--seal);
+    font-size: 15px;
+    color: var(--ember);
   }
   .rc__edge-meta {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
   }
   .rc__edge-abs {
-    font-size: var(--t-1);
+    font-size: 12px;
     color: var(--ink-2);
   }
 
-  .rc__tick {
-    margin-top: calc(-1 * var(--s-2));
-  }
-
-  /* Settlement */
   .rc__settle {
     display: flex;
     align-items: center;
-    gap: var(--s-3);
-    padding: var(--s-3) var(--s-4);
-    background: var(--paper);
-    border: var(--hairline) solid var(--line);
-    border-radius: var(--r);
+    gap: 11px;
+    padding: 12px 14px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
     font-family: var(--font-ui);
-    font-size: var(--t-2);
+    font-size: 13px;
     color: var(--ink-2);
+  }
+
+  .rc__demo {
+    margin: -6px 0 0;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
   }
 
   @media (max-width: 460px) {
     .rc {
-      padding: var(--s-5);
+      padding: 18px;
     }
     .rc__amount {
-      font-size: var(--t-6);
+      font-size: 26px;
+    }
+    .rc__edge-val {
+      font-size: 38px;
     }
   }
 </style>

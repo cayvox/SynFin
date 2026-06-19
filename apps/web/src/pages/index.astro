@@ -5,6 +5,7 @@ import Footer from '../components/Footer.astro';
 import Eyebrow from '../components/Eyebrow.astro';
 import Button from '../components/Button.astro';
 import Constellation from '../components/Constellation.astro';
+import ProofBento from '../components/ProofBento.astro';
 import { REPO, SPEC } from '../site.ts';
 ---
 
@@ -71,15 +72,20 @@ import { REPO, SPEC } from '../site.ts';
       </div>
     </section>
 
-    {/* TODO(Phase 2 — CONTENT.md §2): The problem (#problem) */}
-    {/* TODO(Phase 2 — CONTENT.md §3): How it works (#how-it-works) */}
     {
-      /* TODO(Phase 2 — CONTENT.md §4): Proof bento — RouterCard + +47.8 stat + privacy diagram (#proof) */
+      /* TODO(later — CONTENT.md §2): The problem (#problem) — slots above Proof */
     }
-    {/* TODO(Phase 2 — CONTENT.md §5): Per-leg privacy (#privacy) */}
-    {/* TODO(Phase 2 — CONTENT.md §6): How venues plug in (#architecture) */}
-    {/* TODO(Phase 2 — CONTENT.md §7): Open by design (#open) */}
-    {/* TODO(Phase 2 — CONTENT.md §8): For the ecosystem (#ecosystem) */}
+    {
+      /* TODO(later — CONTENT.md §3): How it works (#how-it-works) — slots above Proof */
+    }
+
+    <!-- §4 — Proof / Insights bento -->
+    <ProofBento />
+
+    {/* TODO(later — CONTENT.md §5): Per-leg privacy (#privacy) */}
+    {/* TODO(later — CONTENT.md §6): How venues plug in (#architecture) */}
+    {/* TODO(later — CONTENT.md §7): Open by design (#open) */}
+    {/* TODO(later — CONTENT.md §8): For the ecosystem (#ecosystem) */}
   </main>
 
   <Footer />
@@ -236,5 +242,6 @@ import { REPO, SPEC } from '../site.ts';
 
 <script>
   import '../scripts/hero.ts';
+  import '../scripts/proof.ts';
   import '../scripts/reveal.ts';
 </script>
