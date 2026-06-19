@@ -57,18 +57,17 @@ const markerPct = (marker / max) * 100;
         );
       })
     }
-    <!-- marker: stem + triangle at the edge value (ink — the edge number is the
-         sole oxblood payoff; the marker still reads clearly in ink) -->
+    <!-- ember marker: stem + triangle at the edge value (this card's single payoff) -->
     <line
       x1={markerX}
       y1={baseline + 2}
       x2={markerX}
       y2={baseline - 13}
-      stroke="var(--ink)"
+      stroke="var(--ember)"
       stroke-width="1.4"></line>
     <path
       d={`M${markerX - 4} ${baseline - 13} L${markerX + 4} ${baseline - 13} L${markerX} ${baseline - 7} Z`}
-      fill="var(--ink)"></path>
+      fill="var(--ember)"></path>
   </svg>
   <figcaption class="tick__caps mono">
     <span>0 bps</span>
@@ -93,7 +92,7 @@ const markerPct = (marker / max) * 100;
     display: block;
     margin-top: 6px;
     height: 1.2em;
-    font-size: var(--t-0);
+    font-size: 11px;
     letter-spacing: 0.02em;
     color: var(--ink-3);
   }

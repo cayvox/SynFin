@@ -1,0 +1,238 @@
+---
+/**
+ * ProofBento (CONTENT.md §4; DESIGN.md §5/§7/§8b) — the "Proof / Insights"
+ * section below the hero: a 12-col responsive bento of dark-glass cards built to
+ * the hero's bar (same material, layered light, ember restraint, mono data).
+ * Cards: RouterCard (centerpiece) · edge stat + TickRule · per-leg privacy ·
+ * 10/10 tests · CIP-0056/0112 badge · venue split. One ember payoff per card.
+ */
+import Eyebrow from './Eyebrow.astro';
+import SealMark from './SealMark.astro';
+import RouterCard from './RouterCard.astro';
+import TickRule from './TickRule.astro';
+import PrivacyDiagram from './PrivacyDiagram.astro';
+import VenueSplit from './VenueSplit.astro';
+---
+
+<section id="proof" class="proof">
+  <div class="container">
+    <header class="proof__head" data-reveal>
+      <Eyebrow text="03 — Already delivered" />
+      <h2 class="proof__title">Proven, not promised.</h2>
+    </header>
+
+    <div class="bento">
+      <div class="cell cell--router card" data-reveal>
+        <RouterCard />
+      </div>
+
+      <div class="cell cell--edge card" data-reveal>
+        <div class="stat">
+          <span class="stat__num mono" data-count-to="47.8">+47.8</span>
+          <span class="stat__unit mono">bps</span>
+        </div>
+        <p class="cell__label">best execution vs the best single venue</p>
+        <TickRule marker={47.8} max={120} class="cell__tick" />
+      </div>
+
+      <div class="cell cell--privacy card" data-reveal>
+        <h3 class="cell__title">Per-leg privacy</h3>
+        <p class="cell__lead">Each venue sees only its own leg.</p>
+        <PrivacyDiagram />
+        <p class="cell__note">
+          Per-leg confidentiality ≠ anonymity to your own counterparty.
+        </p>
+      </div>
+
+      <div class="cell cell--tests card" data-reveal>
+        <span class="stat__num mono">10/10</span>
+        <p class="cell__label">
+          on-ledger settlement tests pass · including one proving a venue can't
+          see another's leg.
+        </p>
+      </div>
+
+      <div class="cell cell--cip card" data-reveal>
+        <div class="cip__head">
+          <SealMark size={26} decorative />
+          <span>Built on Canton's token standard</span>
+        </div>
+        <p class="cell__strong mono">CIP-0056 / 0112</p>
+        <p class="cell__label">We adopt it — and contribute to it.</p>
+      </div>
+
+      <div class="cell cell--split card" data-reveal>
+        <h3 class="cell__title">Venue split</h3>
+        <VenueSplit />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .proof {
+    position: relative;
+    padding-block: var(--section-y);
+    overflow: hidden;
+  }
+  /* §7 atmosphere — a quieter, single wash (varied from the hero). */
+  .proof::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        46% 40% at 28% 6%,
+        rgba(228, 232, 240, 0.07),
+        transparent 62%
+      ),
+      radial-gradient(40% 36% at 86% 96%, var(--ember-glow), transparent 66%);
+  }
+  .proof > .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .proof__head {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 40px;
+    max-width: 640px;
+  }
+  .proof__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+  }
+
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+  }
+
+  .cell {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cell--router {
+    grid-column: 1 / 8;
+    grid-row: 1 / 3;
+    padding: 0; /* RouterCard provides its own padding */
+  }
+  .cell--edge {
+    grid-column: 8 / 13;
+    grid-row: 1;
+    justify-content: center;
+  }
+  .cell--privacy {
+    grid-column: 8 / 13;
+    grid-row: 2;
+  }
+  .cell--tests {
+    grid-column: 1 / 5;
+    grid-row: 3;
+  }
+  .cell--cip {
+    grid-column: 5 / 9;
+    grid-row: 3;
+  }
+  .cell--split {
+    grid-column: 9 / 13;
+    grid-row: 3;
+    justify-content: center;
+  }
+
+  /* Shared card text */
+  .cell__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+  }
+  .cell__lead {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    color: var(--ink-2);
+    margin-top: -4px;
+  }
+  .cell__label {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .cell__note {
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--ink-3);
+  }
+  .cell__strong {
+    font-size: 18px;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+  }
+  .cell__tick {
+    margin-top: 4px;
+  }
+
+  .stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    color: var(--ember);
+  }
+  .stat__num {
+    font-size: 40px;
+    font-weight: 500;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ember);
+  }
+  .cell--tests .stat__num {
+    color: var(--ink);
+  }
+  .stat__unit {
+    font-size: 15px;
+    color: var(--ember);
+  }
+
+  .cip__head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  /* Tablet: two columns, RouterCard spans full width. */
+  @media (max-width: 960px) {
+    .bento {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .cell {
+      grid-column: auto !important;
+      grid-row: auto !important;
+    }
+    .cell--router {
+      grid-column: 1 / -1 !important;
+    }
+  }
+
+  /* Mobile: single column, source order. */
+  @media (max-width: 640px) {
+    .bento {
+      grid-template-columns: 1fr;
+    }
+    .cell--router {
+      grid-column: auto !important;
+    }
+  }
+</style>

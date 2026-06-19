@@ -2,10 +2,13 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /**
- * Scroll-reveal scaffolding (DESIGN.md §6) for the content sections that land in
- * a later phase. Each `[data-reveal]` (see Section.astro) rises in once on
- * enter. Under prefers-reduced-motion every element is revealed immediately and
- * no ScrollTrigger is created. Safe no-op when there are no reveal targets yet.
+ * Scroll reveal (DESIGN.md §6/§9). Each `[data-reveal]` rises in once on enter.
+ *
+ * Progressive enhancement: content is VISIBLE by default (no CSS hides it). Only
+ * when motion is allowed does this set the hidden pre-state in JS and animate it
+ * in on scroll, clearing props on complete. With no JS or reduced motion the
+ * elements simply stay visible. Reveal targets are below the fold, so setting
+ * the pre-state on load causes no first-paint flash.
  */
 function init(): void {
   const targets = gsap.utils.toArray<HTMLElement>('[data-reveal]');
@@ -14,21 +17,26 @@ function init(): void {
   const prefersReduced = window.matchMedia(
     '(prefers-reduced-motion: reduce)',
   ).matches;
-
-  if (prefersReduced) {
-    targets.forEach((el) => el.classList.add('is-revealed'));
-    return;
-  }
+  if (prefersReduced) return; // visible by default
 
   gsap.registerPlugin(ScrollTrigger);
-  targets.forEach((el) => {
+  for (const el of targets) {
+    gsap.set(el, { opacity: 0, y: 24 });
     ScrollTrigger.create({
       trigger: el,
-      start: 'top 85%',
+      start: 'top 86%',
       once: true,
-      onEnter: () => el.classList.add('is-revealed'),
+      onEnter: () => {
+        gsap.to(el, {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power3.out',
+          clearProps: 'opacity,transform',
+        });
+      },
     });
-  });
+  }
 }
 
 if (document.readyState === 'loading') {
