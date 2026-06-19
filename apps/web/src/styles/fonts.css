@@ -1,26 +1,46 @@
 /*
- * Self-hosted faces (STACK.md "Fonts setup"). Never the Google CDN. All
- * `font-display: swap`. Newsreader is the variable display face (wght + opsz,
- * normal + italic); `font-optical-sizing: auto` is applied where used (base.css).
+ * Self-hosted faces (STACK.md). Never the Google CDN. All `font-display: swap`.
+ * Display = Mona Sans (GitHub, OFL); UI = Geist; numerics = Geist Mono (tabular).
  */
 
-/* Display — Newsreader variable (Production Type) */
+/* Display — Mona Sans (400–800) */
 @font-face {
-  font-family: 'Newsreader';
-  src: url('/fonts/Newsreader-Variable.woff2') format('woff2');
-  font-weight: 200 800;
+  font-family: 'Mona Sans';
+  src: url('/fonts/MonaSans-400.woff2') format('woff2');
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Newsreader';
-  src: url('/fonts/Newsreader-Variable-Italic.woff2') format('woff2');
-  font-weight: 200 800;
-  font-style: italic;
+  font-family: 'Mona Sans';
+  src: url('/fonts/MonaSans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans';
+  src: url('/fonts/MonaSans-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans';
+  src: url('/fonts/MonaSans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Mona Sans';
+  src: url('/fonts/MonaSans-800.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
   font-display: swap;
 }
 
-/* UI — Geist (grotesk) */
+/* UI — Geist */
 @font-face {
   font-family: 'Geist';
   src: url('/fonts/Geist-Regular.woff2') format('woff2');
@@ -42,15 +62,8 @@
   font-style: normal;
   font-display: swap;
 }
-@font-face {
-  font-family: 'Geist';
-  src: url('/fonts/Geist-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
 
-/* Mono — Geist Mono (all numerics, tickers, labels; tabular) */
+/* Mono — Geist Mono (tabular numerics) */
 @font-face {
   font-family: 'Geist Mono';
   src: url('/fonts/GeistMono-Regular.woff2') format('woff2');
