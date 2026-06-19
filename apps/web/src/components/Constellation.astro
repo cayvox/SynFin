@@ -1,0 +1,362 @@
+---
+/**
+ * Constellation (DESIGN.md §6/§7/§8) — the hero's signature layer behind the
+ * centered text column: layered volumetric light + film grain (§7), the routing
+ * connector SVG built to the LINE SPEC (§6), the five venue nodes + convergence
+ * marker at the approved positions (§8). It fills the hero panel absolutely; the
+ * text column sits above it.
+ *
+ * LINE SPEC (the make-or-break craft, §6): thin (~1px) hairlines with
+ * `vector-effect:non-scaling-stroke` + round caps. Neutral arcs use a per-line
+ * fade gradient (#F1EFEA 0 → .12 → 0); secondary links are faint dotted;
+ * ember best-route lines (CantonSwap + OneSwap + RFQ desk → convergence) use a
+ * vertical-ish fade (#CC6A43 0 → .30 @40% → #E68A5E .58) at 1.1px with only a
+ * subtle blur — never thick saturated lasers. Curves route around the central
+ * text column (gutters + lower third), never across the headline/subhead.
+ */
+import Node from './Node.astro';
+
+const W = 1440;
+const H = 856;
+const pctX = (x: number): number => +((x / W) * 100).toFixed(3);
+const pctY = (y: number): number => +((y / H) * 100).toFixed(3);
+
+// §8 node positions (1440×856) + the convergence point.
+const nodes = [
+  {
+    name: 'CantonSwap',
+    pair: 'CC/USDCx',
+    price: '124.81',
+    x: 187,
+    y: 222,
+    route: true,
+    side: 'left' as const,
+  },
+  {
+    name: 'OneSwap',
+    pair: 'CC/USDCx',
+    price: '124.63',
+    x: 173,
+    y: 548,
+    route: true,
+    side: 'left' as const,
+  },
+  {
+    name: 'CompassSwap',
+    pair: 'CC/USDCx',
+    price: '124.55',
+    x: 432,
+    y: 736,
+    route: false,
+    side: 'left' as const,
+  },
+  {
+    name: 'Cantex',
+    pair: 'CC/USDCx',
+    price: '124.72',
+    x: 1253,
+    y: 222,
+    route: false,
+    side: 'right' as const,
+  },
+  {
+    name: 'RFQ desk',
+    pair: 'CC/USDCx',
+    price: '125.04',
+    x: 1267,
+    y: 548,
+    route: true,
+    side: 'right' as const,
+  },
+];
+const conv = { x: 720, y: 736 };
+
+// Ember best-route lines (route node → convergence). Routed down the gutters
+// and along the lower third, clear of the centered text column.
+const emberLines = [
+  {
+    id: 'e1',
+    d: 'M187 222 C 120 520, 300 720, 720 736',
+    x1: 187,
+    y1: 222,
+    x2: 720,
+    y2: 736,
+  },
+  {
+    id: 'e2',
+    d: 'M173 548 C 220 700, 420 740, 720 736',
+    x1: 173,
+    y1: 548,
+    x2: 720,
+    y2: 736,
+  },
+  {
+    id: 'e3',
+    d: 'M1267 548 C 1200 720, 1000 742, 720 736',
+    x1: 1267,
+    y1: 548,
+    x2: 720,
+    y2: 736,
+  },
+];
+
+// Neutral network arcs (white fade gradient at the ends).
+const netLines = [
+  {
+    id: 'n4',
+    d: 'M432 736 C 540 742, 620 740, 720 736',
+    x1: 432,
+    y1: 736,
+    x2: 720,
+    y2: 736,
+  },
+  {
+    id: 'n5',
+    d: 'M1253 222 C 1330 360, 1330 430, 1267 548',
+    x1: 1253,
+    y1: 222,
+    x2: 1267,
+    y2: 548,
+  },
+  {
+    id: 'n6',
+    d: 'M187 222 C 110 340, 110 430, 173 548',
+    x1: 187,
+    y1: 222,
+    x2: 173,
+    y2: 548,
+  },
+  {
+    id: 'n7',
+    d: 'M1253 222 C 1390 540, 1120 745, 720 736',
+    x1: 1253,
+    y1: 222,
+    x2: 720,
+    y2: 736,
+  },
+];
+
+// Faint dotted secondary links.
+const dottedLines = [
+  'M432 736 C 300 705, 205 620, 173 548',
+  'M1253 222 C 1320 805, 700 805, 432 736',
+];
+---
+
+<div class="constellation" aria-hidden="true">
+  <div class="atmos atmos--key"></div>
+  <div class="atmos atmos--ember"></div>
+  <div class="grain"></div>
+
+  <svg
+    class="lines"
+    viewBox={`0 0 ${W} ${H}`}
+    preserveAspectRatio="none"
+    fill="none"
+  >
+    <defs>
+      <filter id="emberGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1.1" result="b"></feGaussianBlur>
+        <feMerge>
+          <feMergeNode in="b"></feMergeNode>
+          <feMergeNode in="SourceGraphic"></feMergeNode>
+        </feMerge>
+      </filter>
+      {
+        netLines.map((l) => (
+          <linearGradient
+            id={`grad-${l.id}`}
+            gradientUnits="userSpaceOnUse"
+            x1={l.x1}
+            y1={l.y1}
+            x2={l.x2}
+            y2={l.y2}
+          >
+            <stop offset="0" stop-color="#F1EFEA" stop-opacity="0" />
+            <stop offset="0.5" stop-color="#F1EFEA" stop-opacity="0.12" />
+            <stop offset="1" stop-color="#F1EFEA" stop-opacity="0" />
+          </linearGradient>
+        ))
+      }
+      {
+        emberLines.map((l) => (
+          <linearGradient
+            id={`grad-${l.id}`}
+            gradientUnits="userSpaceOnUse"
+            x1={l.x1}
+            y1={l.y1}
+            x2={l.x2}
+            y2={l.y2}
+          >
+            <stop offset="0" stop-color="#CC6A43" stop-opacity="0" />
+            <stop offset="0.4" stop-color="#CC6A43" stop-opacity="0.3" />
+            <stop offset="1" stop-color="#E68A5E" stop-opacity="0.58" />
+          </linearGradient>
+        ))
+      }
+    </defs>
+
+    <g class="lines__net">
+      {
+        dottedLines.map((d) => (
+          <path
+            class="cx-line"
+            d={d}
+            stroke="rgba(241,239,234,0.07)"
+            stroke-width="1"
+            stroke-dasharray="1.5 7"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+        ))
+      }
+      {
+        netLines.map((l) => (
+          <path
+            class="cx-line"
+            d={l.d}
+            stroke={`url(#grad-${l.id})`}
+            stroke-width="1"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+        ))
+      }
+    </g>
+
+    <g class="lines__ember" filter="url(#emberGlow)">
+      {
+        emberLines.map((l) => (
+          <path
+            class="cx-line cx-line--ember"
+            d={l.d}
+            stroke={`url(#grad-${l.id})`}
+            stroke-width="1.1"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+        ))
+      }
+    </g>
+  </svg>
+
+  {
+    nodes.map((n) => (
+      <Node
+        name={n.name}
+        pair={n.pair}
+        price={n.price}
+        route={n.route}
+        side={n.side}
+        x={pctX(n.x)}
+        y={pctY(n.y)}
+      />
+    ))
+  }
+
+  <div
+    class="conv"
+    style={`left:${pctX(conv.x)}%;top:${pctY(conv.y)}%`}
+    data-anim
+  >
+    <span class="conv__dot"></span>
+    <span class="mono">best route · +47.8 bps</span>
+  </div>
+</div>
+
+<style>
+  .constellation {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* §7 atmosphere — layered washes, never one blob */
+  .atmos {
+    position: absolute;
+    inset: 0;
+  }
+  .atmos--key {
+    background: radial-gradient(
+        52% 46% at 66% 12%,
+        rgba(228, 232, 240, 0.24),
+        rgba(228, 232, 240, 0.08) 42%,
+        transparent 70%
+      ),
+      radial-gradient(
+        42% 56% at 50% 26%,
+        rgba(212, 218, 228, 0.1),
+        transparent 64%
+      ),
+      radial-gradient(
+        34% 82% at 84% -4%,
+        rgba(228, 232, 240, 0.11),
+        transparent 58%
+      );
+  }
+  .atmos--ember {
+    background: radial-gradient(
+      34% 30% at 50% 92%,
+      var(--ember-glow),
+      rgba(204, 106, 67, 0.05) 45%,
+      transparent 70%
+    );
+  }
+  .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  /* Hidden pre-paint when animating, so the fully-drawn lines never flash
+     before hero.ts runs the stroke-dash draw (revealed by the timeline). */
+  :global(.is-animatable) .lines {
+    opacity: 0;
+  }
+
+  /* Convergence marker (§6) */
+  .conv {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    color: var(--ember);
+    background: rgba(204, 106, 67, 0.07);
+    border: 1px solid var(--ember-soft);
+    border-radius: var(--r-pill);
+    box-shadow: 0 0 22px -2px var(--ember-glow);
+    white-space: nowrap;
+  }
+  .conv__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
+  }
+
+  /* Mobile: keep it from tangling — fade lines, drop side labels (Node), and
+     pull the bottom nodes/marker in. */
+  @media (max-width: 720px) {
+    .lines {
+      opacity: 0.5;
+    }
+    .grain {
+      display: none;
+    }
+  }
+</style>

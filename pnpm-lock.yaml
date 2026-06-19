@@ -41,9 +41,9 @@ importers:
       '@astrojs/check':
         specifier: 0.9.9
         version: 0.9.9(prettier-plugin-astro@0.14.1)(prettier@3.8.4)(typescript@5.7.2)
-      '@fontsource-variable/newsreader':
-        specifier: 5.2.10
-        version: 5.2.10
+      '@fontsource/mona-sans':
+        specifier: 5.2.8
+        version: 5.2.8
       astro:
         specifier: 5.18.2
         version: 5.18.2(@types/node@20.19.43)(rollup@4.62.0)(typescript@5.7.2)(yaml@2.9.0)
@@ -782,8 +782,8 @@ packages:
     resolution: {integrity: sha512-ZAoA40rNMPwSm+AeHpCq8STiNAwzWLJuP8Xv4CHIc9wv/PSuExjMrmjfYNj682vW0OOiZ1HKxzvjQr9XZIisQA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@fontsource-variable/newsreader@5.2.10':
-    resolution: {integrity: sha512-MdI2iRwrqWpMOU/2aV2BgfZ4dJNlj/XlYaY8Zb7t87mWqHskYW0XiUANkt1cyOCiEfW2VQ0bQ5vZgGPp6B2B4w==}
+  '@fontsource/mona-sans@5.2.8':
+    resolution: {integrity: sha512-xsZE75lQlcPx/WzAuz7EfOHyPbaOMoHU6FAeLUB3J4f8zjPe8g5Ifh8JCWID9vjpQM9Ty1UxqLXgCMVSktlOlw==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -3625,7 +3625,7 @@ snapshots:
       '@eslint/core': 0.13.0
       levn: 0.4.1
 
-  '@fontsource-variable/newsreader@5.2.10': {}
+  '@fontsource/mona-sans@5.2.8': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

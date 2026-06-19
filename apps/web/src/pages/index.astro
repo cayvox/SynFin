@@ -4,122 +4,131 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Eyebrow from '../components/Eyebrow.astro';
 import Button from '../components/Button.astro';
-import RouterCard from '../components/RouterCard.astro';
-import LedgerTicker from '../components/LedgerTicker.astro';
+import Constellation from '../components/Constellation.astro';
 import { REPO, SPEC } from '../site.ts';
-
-const proof = [
-  'Open · Apache-2.0',
-  'Built on CIP-0056 & 0112',
-  '10/10 on-ledger tests',
-];
-const aggregating = [
-  'CantonSwap',
-  'OneSwap',
-  'CompassSwap',
-  'Cantex',
-  'RFQ desks',
-];
 ---
 
 <Base>
   <Nav />
 
   <main id="main">
-    <!-- ===================== HERO (CONTENT.md §1) ===================== -->
+    <!-- ===================== HERO — routing constellation (DESIGN.md §6/§8) ===================== -->
     <section class="hero" data-hero>
-      <div class="container hero__grid">
-        <div class="hero__copy">
-          <Eyebrow text="Open best-execution layer · Canton" data-anim />
+      <div class="container">
+        <div class="hero__panel">
+          <Constellation />
 
-          <h1 class="hero__headline" data-anim>
-            Best execution, <em>native</em> to Canton.
-          </h1>
+          <div class="hero__content">
+            <Eyebrow text="Open best-execution layer · Canton" data-anim />
 
-          <p class="hero__sub" data-anim>
-            Synfin gathers quotes across Canton's venues, routes to the best
-            price, and settles the split in one atomic transaction, with proven
-            per-leg privacy. The open, neutral aggregation layer for Canton —
-            built on the token standard, not a venue.
-          </p>
+            <h1 class="hero__headline" data-anim>
+              <span class="hero__line">Best execution,</span>
+              <span class="hero__line hero__line--muted">native to Canton.</span
+              >
+            </h1>
 
-          <div class="hero__cta" data-anim>
-            <Button
-              variant="primary"
-              href={SPEC}
-              target="_blank"
-              rel="noopener noreferrer">Read the specification</Button
-            >
-            <Button
-              variant="secondary"
-              href={REPO}
-              target="_blank"
-              rel="noopener noreferrer">View on GitHub</Button
-            >
+            <p class="hero__sub" data-anim>
+              Synfin aggregates quotes across every Canton venue, routes to the
+              best price, and settles the split in one atomic transaction — with
+              per-leg privacy.
+            </p>
+
+            <div class="hero__cta" data-anim>
+              <Button
+                variant="primary"
+                href={SPEC}
+                target="_blank"
+                rel="noopener noreferrer">Read the spec ↗</Button
+              >
+              <Button
+                variant="ghost"
+                href={REPO}
+                target="_blank"
+                rel="noopener noreferrer">View on GitHub</Button
+              >
+            </div>
           </div>
 
-          <ul class="hero__proof mono" data-anim>
-            {proof.map((p) => <li class="hero__proof-item">{p}</li>)}
-          </ul>
+          <div class="hero__band">
+            <span class="hero__scroll mono">
+              <span class="hero__scroll-ring" aria-hidden="true">↓</span>
+              01 / 03 · SCROLL
+            </span>
+            <span class="hero__proof mono">
+              <span class="hero__proof-dot" aria-hidden="true"></span>
+              built on CIP-0056 / 0112 · 10/10 on-ledger tests
+            </span>
+          </div>
         </div>
-
-        <div class="hero__card" data-anim>
-          <RouterCard />
-        </div>
-      </div>
-
-      <div class="container hero__agg" data-anim>
-        <span class="hero__agg-label">Aggregating across</span>
-        <ul class="hero__agg-list">
-          {aggregating.map((v) => <li class="hero__agg-item">{v}</li>)}
-        </ul>
       </div>
     </section>
 
-    {/* TODO(Phase 2 — CONTENT.md): 02 The problem (#problem) */}
-    {/* TODO(Phase 2 — CONTENT.md): 03 How it works (#how-it-works) */}
-    {/* TODO(Phase 2 — CONTENT.md): 04 The proof (#proof) */}
-    {/* TODO(Phase 2 — CONTENT.md): 05 Per-leg privacy (#privacy) */}
-    {/* TODO(Phase 2 — CONTENT.md): 06 How venues plug in (#architecture) */}
-    {/* TODO(Phase 2 — CONTENT.md): 07 Open by design (#open) */}
-    {/* TODO(Phase 2 — CONTENT.md): 08 For the ecosystem (#ecosystem) */}
+    {/* TODO(Phase 2 — CONTENT.md §2): The problem (#problem) */}
+    {/* TODO(Phase 2 — CONTENT.md §3): How it works (#how-it-works) */}
     {
-      /* TODO(Phase 3 — DESIGN.md §7): paper grain + guilloché watermark + engraved dividers */
+      /* TODO(Phase 2 — CONTENT.md §4): Proof bento — RouterCard + +47.8 stat + privacy diagram (#proof) */
     }
+    {/* TODO(Phase 2 — CONTENT.md §5): Per-leg privacy (#privacy) */}
+    {/* TODO(Phase 2 — CONTENT.md §6): How venues plug in (#architecture) */}
+    {/* TODO(Phase 2 — CONTENT.md §7): Open by design (#open) */}
+    {/* TODO(Phase 2 — CONTENT.md §8): For the ecosystem (#ecosystem) */}
   </main>
 
-  <LedgerTicker />
   <Footer />
 </Base>
 
 <style>
   .hero {
-    padding-top: var(--s-11);
-    padding-bottom: var(--s-9);
+    padding-top: 8px;
+    padding-bottom: var(--section-y);
   }
-  .hero__grid {
+
+  .hero__panel {
+    position: relative;
+    overflow: hidden;
+    min-height: clamp(560px, 60vw, 768px);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--panel-radius);
+    box-shadow: var(--card-inset), var(--card-shadow);
     display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
+    place-items: center;
+  }
+
+  .hero__content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: var(--s-10);
+    text-align: center;
+    gap: 22px;
+    max-width: 900px;
+    padding: 40px var(--gutter);
   }
 
   .hero__headline {
-    margin-top: var(--s-5);
-    font-size: var(--t-hero);
-    line-height: 0.98;
-    letter-spacing: -0.012em;
-    max-width: 13ch;
+    display: flex;
+    flex-direction: column;
+    font-size: clamp(34px, 7.4vw, 92px);
+    line-height: 0.97;
+    letter-spacing: -0.035em;
   }
-  .hero__headline em {
-    font-style: italic;
-    font-weight: 400;
+  .hero__line {
+    white-space: nowrap;
+  }
+  @media (max-width: 460px) {
+    .hero__line {
+      white-space: normal;
+    }
+  }
+  .hero__line--muted {
+    color: var(--ink-3);
   }
 
   .hero__sub {
-    margin-top: var(--s-5);
-    max-width: 46ch;
-    font-size: var(--t-5);
+    max-width: 600px;
+    font-size: clamp(16px, 2.2vw, 19px);
     line-height: 1.5;
     color: var(--ink-2);
   }
@@ -127,83 +136,56 @@ const aggregating = [
   .hero__cta {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--s-3);
-    margin-top: var(--s-7);
+    justify-content: center;
+    gap: 12px;
+    margin-top: 6px;
   }
 
-  .hero__proof {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-2) var(--s-5);
-    margin-top: var(--s-7);
-    padding: 0;
-    list-style: none;
-  }
-  .hero__proof-item {
-    position: relative;
-    font-size: var(--t-1);
-    letter-spacing: 0.02em;
-    color: var(--ink-3);
-  }
-  .hero__proof-item:not(:last-child)::after {
-    content: '';
+  /* Bottom band */
+  .hero__band {
     position: absolute;
-    right: calc(-1 * var(--s-3));
-    top: 50%;
-    width: 1px;
-    height: 11px;
-    transform: translateY(-50%);
-    background: var(--line-2);
-  }
-
-  .hero__card {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .hero__agg {
+    z-index: 2;
+    inset: auto 0 0 0;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: var(--s-3) var(--s-5);
-    margin-top: var(--s-11);
-    padding-top: var(--s-6);
-    border-top: var(--hairline) solid var(--line);
-  }
-  .hero__agg-label {
-    font-family: var(--font-ui);
-    font-size: var(--t-2);
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px clamp(16px, 3vw, 30px);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--ink-3);
   }
-  .hero__agg-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-3) var(--s-5);
-    list-style: none;
-    padding: 0;
+  .hero__scroll,
+  .hero__proof {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
   }
-  .hero__agg-item {
-    font-family: var(--font-ui);
-    font-weight: 500;
-    font-size: var(--t-3);
-    color: var(--ink-2);
+  .hero__scroll-ring {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--line-2);
+    border-radius: 50%;
+    font-size: 11px;
+  }
+  .hero__proof-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
   }
 
-  @media (max-width: 900px) {
-    .hero__grid {
-      grid-template-columns: 1fr;
-      gap: var(--s-9);
+  @media (max-width: 720px) {
+    .hero__band {
+      font-size: 10px;
+      letter-spacing: 0.06em;
     }
-    .hero__card {
-      justify-content: flex-start;
-    }
-  }
-  @media (max-width: 640px) {
-    .hero {
-      padding-top: var(--s-9);
-    }
-    .hero__card .rc {
-      max-width: 100%;
+    .hero__proof {
+      display: none;
     }
   }
 </style>

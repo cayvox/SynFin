@@ -1,58 +1,59 @@
 ---
 /**
- * Nav (DESIGN.md §5): seal mark + "Synfin" wordmark (display face, the `f` in
- * oxblood) on the left; on the right, text links + a solid `Read the spec` CTA.
- * Hairline bottom border, ~78px tall. Mobile collapses the links into a `Menu`
- * disclosure (no-JS <details>, keyboard-accessible).
- *
- * In-page links target the content sections that land in a later phase; they
- * resolve to those anchors once sections 2–9 exist (CONTENT.md). The CTA + the
- * GitHub link point at real, existing destinations today.
+ * Nav (DESIGN.md §5) — logo left; a centered dark-glass pill of links
+ * (Overview · How it works · Proof · Open & neutral · | · Spec ↗); right:
+ * GitHub + primary "Read the spec". Mobile collapses the pill into a no-JS
+ * <details> Menu. In-page links resolve to sections 2–9 as they land.
  */
 import SealMark from './SealMark.astro';
 import Button from './Button.astro';
 import { REPO, SPEC } from '../site.ts';
 
 const links = [
+  { label: 'Overview', href: '#main' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Proof', href: '#proof' },
   { label: 'Open & neutral', href: '#open' },
-  { label: 'GitHub', href: REPO, external: true },
 ];
 ---
 
 <header class="nav">
   <div class="container nav__inner">
     <a class="brand" href="/" aria-label="Synfin — home">
-      <SealMark size={30} decorative />
-      <span class="brand__word">Syn<span class="brand__f">f</span>in</span>
+      <SealMark size={28} decorative />
+      <span class="brand__word">Synfin</span>
     </a>
 
-    <nav class="nav__links" aria-label="Primary">
+    <nav class="pill" aria-label="Primary">
       {
         links.map((l) => (
-          <a
-            class="nav__link"
-            href={l.href}
-            {...(l.external
-              ? { target: '_blank', rel: 'noopener noreferrer' }
-              : {})}
-          >
+          <a class="pill__link" href={l.href}>
             {l.label}
           </a>
         ))
       }
+      <span class="pill__divider" aria-hidden="true"></span>
+      <a
+        class="pill__link"
+        href={SPEC}
+        target="_blank"
+        rel="noopener noreferrer">Spec ↗</a
+      >
     </nav>
 
-    <div class="nav__cta">
+    <div class="nav__right">
+      <a
+        class="nav__ghost"
+        href={REPO}
+        target="_blank"
+        rel="noopener noreferrer">GitHub</a
+      >
       <Button
         variant="primary"
         href={SPEC}
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener noreferrer">Read the spec</Button
       >
-        Read the spec
-      </Button>
     </div>
 
     <details class="nav__menu">
@@ -60,26 +61,24 @@ const links = [
       <div class="nav__menu-panel">
         {
           links.map((l) => (
-            <a
-              class="nav__link"
-              href={l.href}
-              {...(l.external
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
-            >
+            <a class="pill__link" href={l.href}>
               {l.label}
             </a>
           ))
         }
+        <a
+          class="pill__link"
+          href={REPO}
+          target="_blank"
+          rel="noopener noreferrer">GitHub ↗</a
+        >
         <Button
           variant="primary"
           href={SPEC}
           target="_blank"
           rel="noopener noreferrer"
-          block
+          block>Read the spec</Button
         >
-          Read the spec
-        </Button>
       </div>
     </details>
   </div>
@@ -90,70 +89,81 @@ const links = [
     position: sticky;
     top: 0;
     z-index: 50;
-    background: color-mix(in srgb, var(--paper) 88%, transparent);
-    backdrop-filter: saturate(1.05) blur(8px);
-    border-bottom: var(--hairline) solid var(--line);
+    padding-block: 16px;
   }
   .nav__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--s-6);
-    height: 78px;
+    gap: 20px;
   }
 
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: var(--s-3);
+    gap: 10px;
   }
   .brand__word {
     font-family: var(--font-display);
-    font-optical-sizing: auto;
-    font-weight: 500;
-    font-size: var(--t-6);
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -0.02em;
     color: var(--ink);
   }
-  .brand__f {
-    /* Wordmark is fully monochrome; the seal mark carries the brand colour
-       (DESIGN §1 oxblood budget — concentrate oxblood on brand + payoff). */
-    color: inherit;
-  }
 
-  .nav__links {
+  /* Centered dark-glass pill */
+  .pill {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: var(--s-7);
-    margin-left: auto;
-    margin-right: var(--s-7);
+    gap: 4px;
+    padding: 6px;
+    background: rgba(20, 21, 25, 0.66);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    backdrop-filter: blur(14px);
   }
-  .nav__link {
-    position: relative;
+  .pill__link {
+    padding: 7px 13px;
+    border-radius: var(--r-pill);
     font-family: var(--font-ui);
     font-weight: 500;
-    font-size: var(--t-3);
+    font-size: 13.5px;
     color: var(--ink-2);
-    transition: color var(--dur-fast) var(--ease-out);
+    transition:
+      color var(--d-fast) var(--e-out),
+      background var(--d-fast) var(--e-out);
   }
-  .nav__link::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 100%;
-    bottom: -6px;
-    height: 1px;
-    background: var(--ink);
-    transition: right var(--dur-fast) var(--ease-out);
-  }
-  .nav__link:hover {
+  .pill__link:hover {
     color: var(--ink);
+    background: rgba(255, 255, 255, 0.05);
   }
-  .nav__link:hover::after {
-    right: 0;
+  .pill__divider {
+    width: 1px;
+    height: 18px;
+    margin-inline: 4px;
+    background: var(--line-2);
   }
 
-  /* Mobile disclosure */
+  .nav__right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .nav__ghost {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 13.5px;
+    color: var(--ink-2);
+    transition: color var(--d-fast) var(--e-out);
+  }
+  .nav__ghost:hover {
+    color: var(--ink);
+  }
+
+  /* Mobile menu */
   .nav__menu {
     display: none;
   }
@@ -161,37 +171,35 @@ const links = [
     list-style: none;
     cursor: pointer;
     font-family: var(--font-ui);
-    font-weight: 600;
-    font-size: var(--t-3);
-    padding: 8px 12px;
+    font-weight: 500;
+    font-size: 13.5px;
+    padding: 8px 14px;
     border: 1px solid var(--line-2);
-    border-radius: var(--r);
+    border-radius: var(--r-pill);
     color: var(--ink);
   }
   .nav__menu > summary::-webkit-details-marker {
     display: none;
   }
-  .nav__menu[open] > summary {
-    border-color: var(--ink);
-  }
   .nav__menu-panel {
     position: absolute;
     left: 16px;
     right: 16px;
-    margin-top: var(--s-3);
+    margin-top: 12px;
     display: flex;
     flex-direction: column;
-    gap: var(--s-4);
-    padding: var(--s-5);
-    background: var(--paper-2);
-    border: var(--hairline) solid var(--line);
+    gap: 8px;
+    padding: 14px;
+    background: rgba(18, 19, 22, 0.96);
+    border: 1px solid var(--line);
     border-radius: var(--r-card);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(14px);
   }
 
-  @media (max-width: 760px) {
-    .nav__links,
-    .nav__cta {
+  @media (max-width: 860px) {
+    .pill,
+    .nav__right {
       display: none;
     }
     .nav__menu {
