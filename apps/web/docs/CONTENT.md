@@ -54,18 +54,21 @@ Pull-stat (optional, mono): `1 token standard, 0 best-execution layers` / `no st
 
 ---
 
-## 3 — What Synfin does  (eyebrow: `02 — How it works`)  — a real ordered sequence, numbered
+## 3 — What Synfin does  (eyebrow: `02 — How it works`)  — renders as the ORBITAL (DESIGN §12 governs layout)
 
-Heading: **One order. The whole market. The best route, settled atomically.**
+Heading: **One engine. The whole market.** ("The whole market." muted.)
+Intro: *Synfin scans every Canton venue at once, locks the best route — one venue or a split across several — and settles it atomically, with per-leg privacy.*
 
-Five stages (numbered 01–05 — this is a genuine process, so numbering is earned):
+Renders as the router orbital (see DESIGN.md §12 §3 + `reference/synfin-orbital.png`): the orbital tells
+the story (scan venues → lock best route 46/33/21 → settle atomically → +47.8 bps), and a left-column
+4-row step list carries the words. The five underlying stages (use for the step copy):
 1. **Intent.** You express a swap intent — what you give, what you want, your limits (min receive, slippage, deadline).
 2. **Quote.** Synfin gathers quotes across every connected venue through one normalized interface.
 3. **Route.** A deterministic router finds the best execution — a single venue or a split across several — net of fees.
 4. **Settle.** The split settles in **one atomic transaction** via Canton's token standard (CIP-0056/0112): all legs or none.
 5. **Edge.** You see exactly what aggregation earned you, to the basis point, versus the best single venue.
 
-Each stage: one-line title + one sentence. Visual rhyme: the seal/route motif.
+Left-column list collapses these to 4 rows: 01 Intent · 02 Quote · 03 **Route & settle** (active) · 04 Edge.
 
 ---
 

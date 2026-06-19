@@ -1,0 +1,119 @@
+---
+/**
+ * §2 "The problem" (CONTENT.md §2; DESIGN.md §12) — a calm editorial breather
+ * between the hero and the orbital. Mostly type: tonal heading, a lead + two
+ * supporting paragraphs in a ~620px column, and a mono pull-stat whose "0"
+ * carries the single ember accent. One quiet §7 wash.
+ */
+import Eyebrow from './Eyebrow.astro';
+---
+
+<section id="problem" class="problem">
+  <div class="container">
+    <header class="problem__head" data-reveal>
+      <Eyebrow text="01 — The problem" />
+      <h2 class="problem__title">
+        Canton has a token standard.
+        <span class="problem__muted"
+          >It doesn't have a best-execution layer — yet.</span
+        >
+      </h2>
+    </header>
+
+    <div class="problem__body" data-reveal>
+      <p>
+        Canton's token standard (CIP-0056 / 0112) gave the network a common
+        settlement rail: any compliant asset can settle atomically via
+        allocations. Liquidity is arriving — AMMs, order books, RFQ desks.
+      </p>
+      <p>
+        But there's no neutral way to compare prices across venues, and no
+        standard quote interface. CIP-0056 / 0112 standardize tokens, transfers,
+        and <em>settlement</em> — not <em>quotes</em> or <em>routing</em>. A
+        taker who hits one venue leaves price on the table.
+      </p>
+      <p>
+        On every other chain the answer to fragmentation is the same: an
+        aggregation / best-execution layer on top of the settlement rail. Canton
+        doesn't have one yet.
+      </p>
+    </div>
+
+    <p class="problem__stat mono" data-reveal>
+      1 token standard <span class="problem__sep">·</span>
+      <span class="problem__zero">0</span> best-execution layers
+    </p>
+  </div>
+</section>
+
+<style>
+  .problem {
+    position: relative;
+    padding-block: var(--section-y);
+    overflow: hidden;
+  }
+  .problem::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      40% 36% at 22% 4%,
+      rgba(228, 232, 240, 0.06),
+      transparent 60%
+    );
+  }
+  .problem > .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .problem__head {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 720px;
+  }
+  .problem__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(30px, 4.4vw, 50px);
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+    display: flex;
+    flex-direction: column;
+  }
+  .problem__muted {
+    color: var(--ink-3);
+  }
+
+  .problem__body {
+    margin-top: 34px;
+    max-width: 620px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    font-size: 16.5px;
+    line-height: 1.65;
+    color: var(--ink-2);
+  }
+  .problem__body em {
+    font-style: normal;
+    color: var(--ink);
+  }
+
+  .problem__stat {
+    margin-top: 40px;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+  }
+  .problem__sep {
+    margin: 0 6px;
+    color: var(--line-2);
+  }
+  .problem__zero {
+    color: var(--ember);
+    font-weight: 500;
+  }
+</style>

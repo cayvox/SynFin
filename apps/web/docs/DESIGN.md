@@ -257,3 +257,68 @@ layer** on top of Canton's token standard — like 1inch/Jupiter, not a venue, n
 standard. We **adopt** CIP-0056/0112 and **contribute** to it. "Proven" only where literally proven
 (10/10 on-ledger tests; settles via CIP-0056/0112). Complementary to venues, never "first/only". Numbers
 are illustrative unless explicitly from tests/spec; never imply measured/live production data.
+
+---
+
+## 12. Detailed build specs — §2 "The problem" + §3 "How it works" (variant A, approved)
+
+Reference render for §3: `reference/synfin-flow.png` (+ `reference/synfin-flow.html` for exact line/coord/
+values). Port the structure + line treatment into clean Astro; improve (responsive, motion); match the PNG.
+
+### §2 — The problem (a calm editorial breather BEFORE the flow)
+- Eyebrow: `01 — The problem`. Heading (tonal): "Canton has a token standard." (`--ink`) +
+  "It doesn't have a best-execution layer — yet." (`--ink-3` muted). Display L (~46–52px).
+- Body (CONTENT.md §2): the lead + two supporting paragraphs, in a refined max-width column
+  (~620px), `--ink-2`, generous leading. Left-aligned editorial; lots of space; quiet.
+- Pull-stat (lit-glass or inline, mono): `1 token standard` · `0 best-execution layers` — the "0" may
+  carry the single ember accent. One ember max in this section.
+- OPTIONAL subtle visual (keep faint, right side or background): a few **disconnected** venue dots with
+  NO connecting lines — a deliberate contrast to the hero's connected route ("today: fragmented, no
+  layer"). Must stay quiet; if it adds noise, omit. §2 is a breather, mostly type.
+- Quiet §7 atmosphere (one soft wash). No hero blob.
+
+### §3 — How it works (the ORBITAL — approved variant B1)
+Reference render: `reference/synfin-orbital.png` (+ `synfin-orbital.html` for exact coords/values).
+The story the visual MUST tell (this is what keeps it from being generic): Synfin's router scans every
+Canton venue at once, locks the best route (a split across the chosen venues), and settles it
+atomically — real venues, real quotes, the real 46/33/21 split, the real +47.8 bps edge. Not a
+decorative orbit.
+
+Layout — a 2-column editorial split (max-width 1320, gap ~40, align center):
+- LEFT (~0.82fr) copy: eyebrow `02 — How it works`; tonal h2 "One engine." (--ink) + "The whole market."
+  (--ink-3 muted), Display L (~50px); a ~42ch intro (CONTENT §3 adapted: "Synfin scans every Canton
+  venue at once, locks the best route — one venue or a split across several — and settles it atomically,
+  with per-leg privacy."); then a 4-row step list separated by hairline top/bottom borders, each row:
+  mono number + title (Display M ~16px) + one-line desc (--ink-2): 01 Intent · 02 Quote · 03 **Route &
+  settle** (active — title in ember) · 04 Edge (+47.8 bps vs the best single venue). Copy from CONTENT §3.
+- RIGHT (1fr) the ORBITAL (~560×560, square — lock aspect, render uniformly; do NOT stretch):
+  • Concentric instrument rings: r=250 (faint `rgba(241,239,234,.07)`) with **12 bezel ticks**
+    (`…,.16`, 8px), r=170 (the venue orbit, `…,.10`), r=108 (faint `…,.06`).
+  • Center **router core** = the SealMark instrument scaled (~104px: rings + 8 ticks + route bezier) with
+    an **ember center dot** (r≈5.5 #CC6A43 + a faint ember ring) and a soft **ember radial glow** behind
+    (~300px, `--ember-glow`). Keep the center clean (no caption — state lives in the meter + the steps).
+  • **Top meter arc** (best route locked): an ember arc at r≈235 spanning ~120° over the top
+    (`M76.5,162.5 A235,235 0 0 1 483.5,162.5` in the 560 box), `url(#arc)` ember gradient ~2px, a small
+    ember head dot near its right end; and a centered pill above the orbital:
+    "● best route · +47.8 bps · locked" (ember, soft halo).
+  • **5 venue nodes** on the r=170 orbit (coords in the 560 box): CantonSwap (154,166) · OneSwap (120,338)
+    · RFQ desk (440,338) — these three are the **route** (ember inner ring + ember price); Cantex (406,166)
+    · CompassSwap (280,450) — **scanned, not chosen** (neutral). Each node = 28px lit ring + name (--ink
+    12.5px) + mono quote (--ink-2; route price in ember). Labels sit just outside each node; keep clear of
+    the rings/lines.
+  • **Route lines**: ember, core→the 3 chosen venues, gentle bows (`#CC6A43` ~.5, 1.1px, subtle blur
+    stdDeviation ~1.0, NO bloom), with small ember mono **share labels 46 / 33 / 21** placed on each line
+    (clear of the core seal and of the node quotes). Faint dotted neutral lines core→the 2 scanned venues.
+  • Ember discipline: meter + 3 route lines + core center + 3 share labels + the active step — restrained,
+    warm-on-dark, no saturated/neon, no bloom.
+
+Motion: on scroll-in — rings fade in; the meter arc draws (stroke-dashoffset) and "+47.8" counts up once
+(tabular, locks); route lines draw from the core outward; venue nodes fade/scale in staggered; an
+optional faint scan sweep. Slow, subtle. The outer ring MAY rotate very slowly (motion-allowed only).
+PE: content visible by default; reduced-motion + JS-off → final state (arc + lines fully drawn, +47.8
+shown), no flash/blink. Lines/arc gradients on near-horizontal/vertical spans → `userSpaceOnUse` (or solid).
+
+Responsive: desktop = the 2-col split (match PNG). ≤~960: stack — copy on top, orbital centered below,
+scaled (~420px) with labels still legible. ≤~560: orbital simplifies (may drop the faint scanned lines /
+shrink further) but keeps the core + the 3 route venues + the meter readable; NO clipping, NO horizontal
+scroll, clean order.

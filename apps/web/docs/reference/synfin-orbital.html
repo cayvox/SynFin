@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Synfin — orbital B1</title>
+<style>
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-400.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-500.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-600.woff2') format('woff2');font-weight:600}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Medium.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Medium.woff2') format('woff2');font-weight:500}
+  :root{
+    --bg-0:#070708;--ink:#F1EFEA;--ink-2:#A8A59D;--ink-3:#6F6C64;
+    --line:rgba(241,239,234,.10);--line-2:rgba(241,239,234,.16);
+    --ember:#CC6A43;--ember-hi:#E68A5E;--ember-soft:rgba(204,106,67,.55);--ember-glow:rgba(204,106,67,.16);
+    --display:'Mona Sans',sans-serif;--ui:'Geist',sans-serif;--mono:'Geist Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg-0);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased}
+  .section{position:relative;padding:96px 60px 110px;overflow:hidden;min-height:980px}
+  .section::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(38% 42% at 18% 8%, rgba(228,232,240,.07), transparent 60%);}
+  .grid{position:relative;max-width:1320px;margin:0 auto;display:grid;grid-template-columns:0.82fr 1fr;gap:40px;align-items:center}
+  .copy .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);border:1px solid var(--line-2);
+    background:rgba(20,21,25,.5);border-radius:999px;padding:7px 15px 7px 12px;letter-spacing:.02em}
+  .copy .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px 1px var(--ember-soft)}
+  h2{font-family:var(--display);font-weight:600;font-size:50px;line-height:1.04;letter-spacing:-.025em;margin:22px 0 0;max-width:13ch}
+  h2 .muted{color:var(--ink-3)}
+  .copy p{font-size:16.5px;line-height:1.6;color:var(--ink-2);max-width:42ch;margin:24px 0 0}
+  .steps{margin:34px 0 0;display:flex;flex-direction:column;gap:0}
+  .step{display:flex;gap:14px;padding:13px 0;border-top:1px solid var(--line)}
+  .step:last-child{border-bottom:1px solid var(--line)}
+  .step .sn{font-family:var(--mono);font-size:12px;color:var(--ink-3);width:26px;flex:none;padding-top:2px}
+  .step .st{font-family:var(--display);font-weight:600;font-size:16px}
+  .step .sd{font-size:13.5px;color:var(--ink-2);margin-top:2px;line-height:1.45}
+  .step.on .st{color:var(--ember)}
+
+  /* orbital */
+  .orb-wrap{position:relative;display:grid;place-items:center}
+  .orb{position:relative;width:560px;height:560px}
+  .orb svg.rings{position:absolute;inset:0;width:100%;height:100%}
+  .glowcore{position:absolute;left:50%;top:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;
+    background:radial-gradient(circle, var(--ember-glow), rgba(204,106,67,.05) 40%, transparent 68%);pointer-events:none}
+  .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;text-align:center}
+  .core .cap{font-family:var(--mono);font-size:11px;color:var(--ink-2);letter-spacing:.06em;margin-top:14px;display:flex;align-items:center;gap:7px}
+  .core .cap .ck{color:var(--ember)}
+  .meter{position:absolute;left:50%;top:14px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--mono);font-size:12px;color:var(--ember);border:1px solid var(--ember-soft);border-radius:999px;
+    padding:7px 14px;background:rgba(204,106,67,.07);box-shadow:0 0 22px -6px var(--ember-soft);white-space:nowrap}
+  .meter .d{width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 8px 1px var(--ember-soft)}
+  .vn{position:absolute;transform:translate(-50%,-50%);z-index:3}
+  .vn .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;margin:0 auto;
+    background:radial-gradient(circle at 50% 34%,rgba(241,239,234,.12),rgba(20,21,25,.75));border:1px solid var(--line-2);
+    box-shadow:0 6px 16px -8px rgba(0,0,0,.85)}
+  .vn .dot i{width:8px;height:8px;border-radius:50%;border:1.25px solid var(--ink-2)}
+  .vn.route .dot i{border-color:var(--ember);box-shadow:0 0 7px 0 var(--ember-soft)}
+  .vn .nm{font-size:12.5px;color:var(--ink);font-weight:500;text-align:center;margin-top:7px;white-space:nowrap}
+  .vn .q{font-family:var(--mono);font-size:11px;color:var(--ink-2);text-align:center;margin-top:2px;white-space:nowrap}
+  .vn.route .q b{color:var(--ember);font-weight:500}
+  .sh{position:absolute;font-family:var(--mono);font-size:11px;color:var(--ember);transform:translate(-50%,-50%);z-index:3}
+</style></head>
+<body>
+  <section class="section">
+    <div class="grid">
+      <!-- left copy -->
+      <div class="copy">
+        <span class="eyebrow"><span class="dot"></span>02 — How it works</span>
+        <h2>One engine.<br><span class="muted">The whole market.</span></h2>
+        <p>Synfin scans every Canton venue at once, locks the best route — one venue or a split across several — and settles it atomically, with per-leg privacy.</p>
+        <div class="steps">
+          <div class="step"><span class="sn">01</span><div><div class="st">Intent</div><div class="sd">You set the terms — give, want, limits.</div></div></div>
+          <div class="step"><span class="sn">02</span><div><div class="st">Quote</div><div class="sd">Quotes gathered across every venue, once.</div></div></div>
+          <div class="step on"><span class="sn">03</span><div><div class="st">Route &amp; settle</div><div class="sd">Best split, settled in one atomic transaction.</div></div></div>
+          <div class="step"><span class="sn">04</span><div><div class="st">Edge</div><div class="sd">+47.8 bps vs the best single venue.</div></div></div>
+        </div>
+      </div>
+
+      <!-- right orbital -->
+      <div class="orb-wrap">
+        <div class="orb">
+          <div class="glowcore"></div>
+          <svg class="rings" viewBox="0 0 560 560" fill="none">
+            <defs>
+              <linearGradient id="arc" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0" stop-color="#CC6A43" stop-opacity=".25"/><stop offset="100%" stop-color="#E68A5E" stop-opacity=".9"/>
+              </linearGradient>
+              <filter id="eg" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.0" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+            <!-- concentric instrument rings -->
+            <circle cx="280" cy="280" r="250" stroke="rgba(241,239,234,.07)" stroke-width="1"/>
+            <circle cx="280" cy="280" r="170" stroke="rgba(241,239,234,.10)" stroke-width="1"/>
+            <circle cx="280" cy="280" r="108" stroke="rgba(241,239,234,.06)" stroke-width="1"/>
+            <!-- outer tick ring (instrument bezel), 60 ticks -->
+            <g stroke="rgba(241,239,234,.16)" stroke-width="1">
+              <line x1="280" y1="30" x2="280" y2="38" transform="rotate(0 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(30 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(60 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(90 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(120 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(150 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(180 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(210 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(240 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(270 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(300 280 280)"/><line x1="280" y1="30" x2="280" y2="38" transform="rotate(330 280 280)"/>
+            </g>
+            <!-- top meter arc (best route locked) at r=235 -->
+            <path d="M76.5,162.5 A235,235 0 0 1 483.5,162.5" stroke="url(#arc)" stroke-width="2" stroke-linecap="round" filter="url(#eg)"/>
+            <circle cx="446" cy="114" r="3.2" fill="#E68A5E"/>
+            <!-- route ember lines: core -> 3 chosen (gentle bow) -->
+            <g filter="url(#eg)" stroke="#CC6A43" stroke-opacity=".5" stroke-width="1.1" stroke-linecap="round">
+              <path d="M280,280 C235,235 190,200 154,166"/>
+              <path d="M280,280 C220,300 165,322 120,338"/>
+              <path d="M280,280 C345,300 400,322 440,338"/>
+            </g>
+            <!-- faint scanned (not chosen) -->
+            <g stroke="rgba(241,239,234,.10)" stroke-width="1" stroke-dasharray="1.5 6" stroke-linecap="round">
+              <path d="M280,280 C330,235 372,200 406,166"/>
+              <path d="M280,280 L280,450"/>
+            </g>
+          </svg>
+
+          <!-- top meter label -->
+          <div class="meter"><span class="d"></span>best route · +47.8 bps · locked</div>
+
+          <!-- center router core (seal instrument) -->
+          <div class="core">
+            <svg width="104" height="104" viewBox="0 0 104 104" fill="none">
+              <circle cx="52" cy="52" r="47" stroke="rgba(241,239,234,.5)" stroke-width="1"/>
+              <circle cx="52" cy="52" r="33" stroke="rgba(241,239,234,.26)" stroke-width="1"/>
+              <g stroke="rgba(241,239,234,.5)" stroke-width="1">
+                <line x1="52" y1="6" x2="52" y2="12"/><line x1="98" y1="52" x2="92" y2="52"/><line x1="52" y1="98" x2="52" y2="92"/><line x1="6" y1="52" x2="12" y2="52"/>
+                <line x1="84.5" y1="19.5" x2="80.3" y2="23.7"/><line x1="84.5" y1="84.5" x2="80.3" y2="80.3"/><line x1="19.5" y1="84.5" x2="23.7" y2="80.3"/><line x1="19.5" y1="19.5" x2="23.7" y2="23.7"/>
+              </g>
+              <path d="M24 64 C40 40, 64 40, 80 64" stroke="rgba(241,239,234,.45)" stroke-width="1.4"/>
+              <circle cx="52" cy="52" r="5.5" fill="#CC6A43"/>
+              <circle cx="52" cy="52" r="5.5" fill="none" stroke="#E68A5E" stroke-opacity=".5" stroke-width="3"/>
+            </svg>
+          </div>
+
+          <!-- share labels on route lines -->
+          <div class="sh" style="left:206px;top:213px">46</div>
+          <div class="sh" style="left:185px;top:320px">33</div>
+          <div class="sh" style="left:372px;top:320px">21</div>
+
+          <!-- venue nodes (centers from r=170) -->
+          <div class="vn route" style="left:154px;top:166px"><div class="dot"><i></i></div><div class="nm">CantonSwap</div><div class="q">CC/USDCx · <b>124.81</b></div></div>
+          <div class="vn route" style="left:120px;top:338px"><div class="dot"><i></i></div><div class="nm">OneSwap</div><div class="q">CC/USDCx · <b>124.63</b></div></div>
+          <div class="vn route" style="left:440px;top:338px"><div class="dot"><i></i></div><div class="nm">RFQ desk</div><div class="q">CC/USDCx · <b>125.04</b></div></div>
+          <div class="vn" style="left:406px;top:166px"><div class="dot"><i></i></div><div class="nm">Cantex</div><div class="q">CC/USDCx · 124.72</div></div>
+          <div class="vn" style="left:280px;top:450px"><div class="dot"><i></i></div><div class="nm">CompassSwap</div><div class="q">CC/USDCx · 124.55</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body></html>
