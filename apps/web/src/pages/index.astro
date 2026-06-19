@@ -47,6 +47,14 @@ import { REPO, SPEC } from '../site.ts';
                 rel="noopener noreferrer">View on GitHub</Button
               >
             </div>
+
+            <!-- Static best-route chip — shown only below 1024px, where the
+                 full constellation is hidden (Fix 5). Sits clearly below the
+                 CTAs; never overlaps them. -->
+            <p class="hero__chip mono" data-anim>
+              <span class="hero__chip-dot" aria-hidden="true"></span>
+              best route · +47.8 bps
+            </p>
           </div>
 
           <div class="hero__band">
@@ -86,7 +94,7 @@ import { REPO, SPEC } from '../site.ts';
   .hero__panel {
     position: relative;
     overflow: hidden;
-    min-height: clamp(560px, 60vw, 768px);
+    min-height: clamp(520px, 92vw, 640px);
     background: var(--bg);
     border: 1px solid var(--line);
     border-radius: var(--panel-radius);
@@ -94,40 +102,49 @@ import { REPO, SPEC } from '../site.ts';
     display: grid;
     place-items: center;
   }
+  /* Desktop: lock the panel to the constellation viewBox aspect (1440:856) so
+     the fixed-viewBox SVG maps 1:1 — no non-uniform stretch, line ends meet node
+     centres (Fix 6). */
+  @media (min-width: 1024px) {
+    .hero__panel {
+      min-height: 0;
+      aspect-ratio: 1440 / 856;
+    }
+  }
 
   .hero__content {
     position: relative;
-    z-index: 2;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     gap: 22px;
-    max-width: 900px;
+    max-width: 660px;
     padding: 40px var(--gutter);
   }
 
   .hero__headline {
     display: flex;
     flex-direction: column;
-    font-size: clamp(34px, 7.4vw, 92px);
+    font-size: clamp(34px, 6.2vw, 80px);
     line-height: 0.97;
     letter-spacing: -0.035em;
   }
   .hero__line {
     white-space: nowrap;
   }
+  .hero__line--muted {
+    color: var(--ink-3);
+  }
   @media (max-width: 460px) {
     .hero__line {
       white-space: normal;
     }
   }
-  .hero__line--muted {
-    color: var(--ink-3);
-  }
 
   .hero__sub {
-    max-width: 600px;
+    max-width: 560px;
     font-size: clamp(16px, 2.2vw, 19px);
     line-height: 1.5;
     color: var(--ink-2);
@@ -141,10 +158,37 @@ import { REPO, SPEC } from '../site.ts';
     margin-top: 6px;
   }
 
+  /* Static chip (mobile/tablet only) */
+  .hero__chip {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 13px;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    color: var(--ember-hi);
+    background: color-mix(in srgb, var(--bg) 86%, var(--ember) 14%);
+    border: 1px solid var(--ember-soft);
+    border-radius: var(--r-pill);
+  }
+  .hero__chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
+  }
+  @media (max-width: 1023px) {
+    .hero__chip {
+      display: inline-flex;
+    }
+  }
+
   /* Bottom band */
   .hero__band {
     position: absolute;
-    z-index: 2;
+    z-index: 3;
     inset: auto 0 0 0;
     display: flex;
     align-items: center;
