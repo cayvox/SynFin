@@ -1,0 +1,329 @@
+---
+/**
+ * RouterCard (DESIGN.md §5; CONTENT.md §1) — the hero centerpiece. A believable
+ * best-execution interface (crisp DOM/SVG, never canvas): input → best-route
+ * split across 3 venues → the edge → atomic settlement. Numbers are the
+ * canonical illustrative demo (CONTENT.md §1) — NOT measured/live data.
+ *
+ * Animation hooks for hero.ts: each `.rc-bar__fill` carries its final width as
+ * `--pct` (so no-JS / reduced-motion render full); the edge number's final value
+ * is in the DOM with `data-count-to` (counts up once, then locks). Tabular,
+ * width reserved — no layout shift.
+ */
+import SealMark from './SealMark.astro';
+import Button from './Button.astro';
+import TickRule from './TickRule.astro';
+
+const venues = [
+  { name: 'CantonSwap', pct: 46, receive: '18,372' },
+  { name: 'OneSwap', pct: 33, receive: '13,181' },
+  { name: 'RFQ desk', pct: 21, receive: '8,387' },
+];
+---
+
+<article class="rc" aria-label="Best-execution router (illustrative demo)">
+  <!-- Header -->
+  <header class="rc__head">
+    <div class="rc__title">
+      <span class="rc__pip" aria-hidden="true"></span>
+      <span>Best execution</span>
+    </div>
+    <span class="rc__pair mono">CC → USDCx</span>
+  </header>
+
+  <!-- Input -->
+  <div class="rc__input">
+    <span class="rc__label">You route</span>
+    <div class="rc__amount mono">250,000 <span class="rc__ccy">CC</span></div>
+    <span class="rc__slip mono">slippage 0.30%</span>
+  </div>
+
+  <!-- Split -->
+  <div class="rc__split">
+    <div class="rc__split-head">
+      <span class="rc__label">Best route — split across 3 venues</span>
+      <span class="rc__tag mono">RFQ + AMM</span>
+    </div>
+    <ul class="rc__venues">
+      {
+        venues.map((v) => (
+          <li class="rc-venue">
+            <span class="rc-venue__mark" aria-hidden="true" />
+            <span class="rc-venue__name">{v.name}</span>
+            <span class="rc-venue__pct mono">{v.pct}%</span>
+            <span class="rc-bar">
+              <span class="rc-bar__fill" style={`--pct:${v.pct}%`} />
+            </span>
+            <span class="rc-venue__recv mono">
+              {v.receive} <span class="rc-venue__ccy">USDCx</span>
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <!-- Edge -->
+  <div class="rc__edge">
+    <div class="rc__edge-num">
+      <span class="rc__edge-val" data-count-to="47.8">+47.8</span>
+      <span class="rc__edge-unit">bps</span>
+    </div>
+    <div class="rc__edge-meta">
+      <span class="rc__label">Edge vs the best single venue</span>
+      <span class="rc__edge-abs mono">≈ +191 USDCx · receive 39,940</span>
+    </div>
+  </div>
+
+  <TickRule marker={47.8} max={120} class="rc__tick" />
+
+  <!-- Settlement -->
+  <div class="rc__settle">
+    <SealMark size={22} check decorative class="rc__seal" />
+    <span
+      >Atomic settlement. All legs in one transaction — per-leg private.</span
+    >
+  </div>
+
+  <!-- Action -->
+  <Button variant="primary" block class="rc__action">Route &amp; settle</Button>
+</article>
+
+<style>
+  .rc {
+    background: var(--paper-2);
+    border: var(--hairline) solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--s-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .rc__label {
+    font-family: var(--font-ui);
+    font-size: var(--t-1);
+    font-weight: 500;
+    color: var(--ink-3);
+  }
+
+  /* Header */
+  .rc__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .rc__title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: var(--t-3);
+  }
+  .rc__pip {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--seal);
+    animation: rc-pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes rc-pulse {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(140, 43, 30, 0.35);
+    }
+    50% {
+      opacity: 0.55;
+      box-shadow: 0 0 0 4px rgba(140, 43, 30, 0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rc__pip {
+      animation: none;
+    }
+  }
+  .rc__pair {
+    font-size: var(--t-2);
+    color: var(--ink-2);
+  }
+
+  /* Input */
+  .rc__input {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: var(--s-1) var(--s-3);
+    padding: var(--s-4);
+    background: var(--paper);
+    border: var(--hairline) solid var(--line);
+    border-radius: var(--r);
+  }
+  .rc__input .rc__label {
+    grid-column: 1;
+  }
+  .rc__amount {
+    grid-column: 1;
+    font-size: var(--t-7);
+    font-weight: 500;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .rc__ccy {
+    font-size: var(--t-4);
+    color: var(--ink-2);
+  }
+  .rc__slip {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    font-size: var(--t-1);
+    color: var(--ink-2);
+  }
+
+  /* Split */
+  .rc__split-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--s-3);
+  }
+  .rc__tag {
+    font-size: var(--t-0);
+    color: var(--ink-3);
+    border: var(--hairline) solid var(--line-2);
+    border-radius: var(--r);
+    padding: 2px 6px;
+  }
+  .rc__venues {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .rc-venue {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    align-items: center;
+    column-gap: var(--s-3);
+    row-gap: 4px;
+    padding: 7px var(--s-2);
+    border-radius: var(--r);
+    transition: background var(--dur-fast) var(--ease-out);
+  }
+  .rc-venue:hover {
+    background: var(--paper-3);
+  }
+  .rc-venue__mark {
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--ink-3);
+    border-radius: 1px;
+  }
+  .rc-venue__name {
+    font-family: var(--font-ui);
+    font-size: var(--t-3);
+    color: var(--ink);
+  }
+  .rc-venue__pct {
+    font-size: var(--t-2);
+    color: var(--ink-2);
+    text-align: right;
+    min-width: 3.2ch;
+  }
+  .rc-bar {
+    grid-column: 2 / 4;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--paper-3);
+    overflow: hidden;
+  }
+  .rc-bar__fill {
+    display: block;
+    height: 100%;
+    width: var(--pct);
+    background: var(--ink);
+    border-radius: 2px;
+  }
+  .rc-venue__recv {
+    grid-column: 2 / 4;
+    font-size: var(--t-1);
+    color: var(--ink-2);
+    text-align: right;
+  }
+  .rc-venue__ccy {
+    color: var(--ink-3);
+  }
+
+  /* Edge */
+  .rc__edge {
+    display: flex;
+    align-items: center;
+    gap: var(--s-5);
+    padding-top: var(--s-4);
+    border-top: var(--hairline) solid var(--line);
+  }
+  .rc__edge-num {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    color: var(--seal);
+  }
+  .rc__edge-val {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: var(--t-8);
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
+    min-width: 3.6ch;
+    display: inline-block;
+  }
+  .rc__edge-unit {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: var(--t-4);
+    color: var(--seal);
+  }
+  .rc__edge-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .rc__edge-abs {
+    font-size: var(--t-1);
+    color: var(--ink-2);
+  }
+
+  .rc__tick {
+    margin-top: calc(-1 * var(--s-2));
+  }
+
+  /* Settlement */
+  .rc__settle {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    background: var(--paper);
+    border: var(--hairline) solid var(--line);
+    border-radius: var(--r);
+    font-family: var(--font-ui);
+    font-size: var(--t-2);
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 460px) {
+    .rc {
+      padding: var(--s-5);
+    }
+    .rc__amount {
+      font-size: var(--t-6);
+    }
+  }
+</style>

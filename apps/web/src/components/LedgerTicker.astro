@@ -1,0 +1,74 @@
+---
+/**
+ * LedgerTicker (DESIGN.md §5; CONTENT.md) — a slow horizontal tape of venue
+ * quotes in mono, reading as a security's microprint. Oxblood appears only on
+ * `best route · +47.8 bps`. Decorative (aria-hidden); pauses entirely under
+ * prefers-reduced-motion. Figures are illustrative, not live/measured.
+ */
+const quotes = [
+  'CantonSwap · CC/USDCx · 124.81',
+  'OneSwap · CC/USDCx · 124.63',
+  'best route · +47.8 bps',
+  'RFQ desk · CC/USDCx · 125.04',
+  'CompassSwap · CC/USDCx · 124.55',
+  'Cantex · CC/USDCx · 124.72',
+];
+// Two copies → seamless 50% translate loop.
+const lane = [...quotes, ...quotes];
+---
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker__track">
+    {
+      lane.map((q) => (
+        <span
+          class:list={[
+            'ticker__item mono',
+            q.startsWith('best route') && 'is-edge',
+          ]}
+        >
+          {q}
+        </span>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .ticker {
+    overflow: hidden;
+    border-block: var(--hairline) solid var(--line);
+    background: var(--paper-2);
+    padding-block: var(--s-3);
+  }
+  .ticker__track {
+    display: flex;
+    width: max-content;
+    gap: var(--s-8);
+    padding-left: var(--s-8);
+    animation: ticker 48s linear infinite;
+  }
+  .ticker__item {
+    font-size: var(--t-1);
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+  .ticker__item.is-edge {
+    color: var(--seal);
+  }
+  @keyframes ticker {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker__track {
+      animation: none;
+      transform: none;
+    }
+  }
+</style>

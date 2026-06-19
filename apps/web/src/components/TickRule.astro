@@ -1,0 +1,118 @@
+---
+/**
+ * TickRule (DESIGN.md §5): an engraved basis-point scale 0→120 with major/minor
+ * ticks and an oxblood marker + triangle at the route's edge value (+47.8 bps).
+ * Pure SVG; encodes "basis-point precision" structurally. Numbers are mono.
+ */
+interface Props {
+  marker?: number; // bps
+  max?: number; // bps full-scale
+  class?: string;
+}
+const { marker = 47.8, max = 120, class: className } = Astro.props;
+
+const W = 400;
+const H = 30;
+const padX = 4;
+const baseline = 20;
+const span = W - padX * 2;
+const xOf = (bps: number) => padX + (bps / max) * span;
+
+// Minor tick every 5 bps; major every 20 bps.
+const minor = Array.from({ length: max / 5 + 1 }, (_, i) => i * 5);
+const markerX = xOf(marker);
+const markerPct = (marker / max) * 100;
+---
+
+<figure
+  class:list={['tick', className]}
+  aria-label={`Edge ${marker} of ${max} basis points`}
+>
+  <svg
+    viewBox={`0 0 ${W} ${H}`}
+    preserveAspectRatio="none"
+    role="img"
+    aria-hidden="true"
+  >
+    <line
+      x1={padX}
+      y1={baseline}
+      x2={W - padX}
+      y2={baseline}
+      stroke="var(--line-2)"
+      stroke-width="1"></line>
+    {
+      minor.map((bps) => {
+        const major = bps % 20 === 0;
+        return (
+          <line
+            x1={xOf(bps)}
+            y1={baseline}
+            x2={xOf(bps)}
+            y2={baseline - (major ? 9 : 5)}
+            stroke="var(--ink-3)"
+            stroke-width={major ? 1 : 0.6}
+            opacity={major ? 0.8 : 0.5}
+          />
+        );
+      })
+    }
+    <!-- oxblood marker: stem + triangle at the edge value -->
+    <line
+      x1={markerX}
+      y1={baseline + 2}
+      x2={markerX}
+      y2={baseline - 13}
+      stroke="var(--seal)"
+      stroke-width="1.4"></line>
+    <path
+      d={`M${markerX - 4} ${baseline - 13} L${markerX + 4} ${baseline - 13} L${markerX} ${baseline - 7} Z`}
+      fill="var(--seal)"></path>
+  </svg>
+  <figcaption class="tick__caps mono">
+    <span>0 bps</span>
+    <span class="tick__here" style={`left:${markerPct}%`}
+      >best route · +{marker} bps</span
+    >
+    <span>{max} bps</span>
+  </figcaption>
+</figure>
+
+<style>
+  .tick {
+    margin: 0;
+  }
+  .tick svg {
+    width: 100%;
+    height: 30px;
+    overflow: visible;
+  }
+  .tick__caps {
+    position: relative;
+    display: block;
+    margin-top: 6px;
+    height: 1.2em;
+    font-size: var(--t-0);
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+  }
+  .tick__caps > span:first-child {
+    position: absolute;
+    left: 0;
+  }
+  .tick__caps > span:last-child {
+    position: absolute;
+    right: 0;
+  }
+  .tick__here {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    color: var(--seal);
+  }
+  @media (max-width: 420px) {
+    .tick__here {
+      display: none;
+    }
+  }
+</style>

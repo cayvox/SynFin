@@ -1,0 +1,105 @@
+---
+/**
+ * Button (DESIGN.md §5). Variants: primary (ink → oxblood on hover) and
+ * secondary (paper + keyline). Renders an <a> when `href` is set, else a
+ * <button>. Every state is crafted: hover / active / focus-visible / disabled.
+ */
+interface Props {
+  variant?: 'primary' | 'secondary';
+  href?: string;
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+  block?: boolean;
+  class?: string;
+  rel?: string;
+  target?: string;
+  'aria-label'?: string;
+}
+const {
+  variant = 'primary',
+  href,
+  type = 'button',
+  disabled = false,
+  block = false,
+  class: className,
+  ...rest
+} = Astro.props;
+const cls = ['btn', `btn--${variant}`, block && 'btn--block', className];
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag class:list={cls} {...href ? { href } : { type, disabled }} {...rest}>
+  <span class="btn__label"><slot /></span>
+</Tag>
+
+<style>
+  .btn {
+    --btn-bg: var(--ink);
+    --btn-fg: var(--paper);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-2);
+    padding: 11px var(--s-5);
+    border-radius: var(--r);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: var(--t-3);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    white-space: nowrap;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: 1px solid transparent;
+    transition:
+      background var(--dur-fast) var(--ease-out),
+      border-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .btn--block {
+    width: 100%;
+  }
+
+  /* Primary — ink fill → oxblood on hover, lifts 1px, settles on press. */
+  .btn--primary:hover {
+    --btn-bg: var(--seal);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px -8px rgba(115, 33, 22, 0.6);
+  }
+  .btn--primary:active {
+    --btn-bg: var(--seal-2);
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  /* Secondary — paper + keyline → ink keyline + faint fill on hover. */
+  .btn--secondary {
+    --btn-bg: var(--paper);
+    --btn-fg: var(--ink);
+    border-color: var(--line-2);
+  }
+  .btn--secondary:hover {
+    --btn-bg: var(--paper-3);
+    border-color: var(--ink);
+  }
+  .btn--secondary:active {
+    --btn-bg: var(--paper-3);
+    transform: translateY(0.5px);
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--seal);
+    outline-offset: 3px;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    pointer-events: none;
+  }
+</style>
