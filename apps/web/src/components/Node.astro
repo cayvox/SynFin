@@ -102,10 +102,6 @@ const { name, pair, price, route = false, side = 'left', x, y } = Astro.props;
   .node--route .node__price {
     color: var(--ember);
   }
-
-  @media (max-width: 720px) {
-    .node__label {
-      display: none;
-    }
-  }
+  /* Labels always accompany the dots: the whole constellation is desktop-only
+     (hidden < 1024px in Constellation.astro), so there are never bare dots. */
 </style>
