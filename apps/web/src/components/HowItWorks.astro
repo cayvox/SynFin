@@ -1,0 +1,169 @@
+---
+/**
+ * §3 "How it works" (CONTENT.md §3; DESIGN.md §12) — a 2-column editorial split:
+ * left, the words (tonal heading + intro + a 4-row step list, "Route & settle"
+ * active in ember); right, the router Orbital. Reads as: scan every venue →
+ * lock the best route (46/33/21) → settle atomically → +47.8 bps edge.
+ */
+import Eyebrow from './Eyebrow.astro';
+import Orbital from './Orbital.astro';
+
+const steps = [
+  {
+    n: '01',
+    t: 'Intent',
+    d: 'You set the terms — give, want, limits.',
+    on: false,
+  },
+  {
+    n: '02',
+    t: 'Quote',
+    d: 'Quotes gathered across every venue, once.',
+    on: false,
+  },
+  {
+    n: '03',
+    t: 'Route & settle',
+    d: 'Best split, settled in one atomic transaction.',
+    on: true,
+  },
+  { n: '04', t: 'Edge', d: '+47.8 bps vs the best single venue.', on: false },
+];
+---
+
+<section id="how-it-works" class="how">
+  <div class="how__grid">
+    <div class="how__copy" data-reveal>
+      <Eyebrow text="02 — How it works" />
+      <h2 class="how__title">
+        <span>One engine.</span>
+        <span class="how__muted">The whole market.</span>
+      </h2>
+      <p class="how__intro">
+        Synfin scans every Canton venue at once, locks the best route — one
+        venue or a split across several — and settles it atomically, with
+        per-leg privacy.
+      </p>
+      <div class="how__steps">
+        {
+          steps.map((s) => (
+            <div class:list={['how__step', s.on && 'how__step--on']}>
+              <span class="how__sn mono">{s.n}</span>
+              <div>
+                <div class="how__st">{s.t}</div>
+                <div class="how__sd">{s.d}</div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="how__orb" data-reveal>
+      <Orbital />
+    </div>
+  </div>
+</section>
+
+<style>
+  .how {
+    position: relative;
+    padding-block: var(--section-y);
+    overflow: hidden;
+  }
+  .how__grid {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    display: grid;
+    grid-template-columns: 0.82fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+
+  .how__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(32px, 4.6vw, 50px);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .how__muted {
+    color: var(--ink-3);
+  }
+  .how__intro {
+    margin-top: 24px;
+    max-width: 42ch;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  .how__steps {
+    margin-top: 34px;
+  }
+  .how__step {
+    display: flex;
+    gap: 14px;
+    padding: 13px 0;
+    border-top: 1px solid var(--line);
+  }
+  .how__step:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .how__sn {
+    width: 26px;
+    flex: none;
+    padding-top: 2px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .how__st {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .how__step--on .how__st {
+    color: var(--ember);
+  }
+  .how__sd {
+    margin-top: 2px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  .how__orb {
+    display: grid;
+    place-items: center;
+  }
+
+  /* Tablet: stack — copy on top, orbital centered below, scaled. */
+  @media (max-width: 960px) {
+    .how__grid {
+      grid-template-columns: 1fr;
+      gap: 48px;
+    }
+    .how__orb :global(.orb) {
+      width: min(420px, 86vw);
+    }
+  }
+
+  /* Mobile: simplify the orbital (drop the faint scanned lines), keep core +
+     route venues + meter readable. */
+  @media (max-width: 560px) {
+    .how__orb :global(.orb-scan) {
+      display: none;
+    }
+    .how__orb :global(.vn__q) {
+      font-size: 10px;
+    }
+  }
+</style>

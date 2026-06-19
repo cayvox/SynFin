@@ -5,6 +5,8 @@ import Footer from '../components/Footer.astro';
 import Eyebrow from '../components/Eyebrow.astro';
 import Button from '../components/Button.astro';
 import Constellation from '../components/Constellation.astro';
+import Problem from '../components/Problem.astro';
+import HowItWorks from '../components/HowItWorks.astro';
 import ProofBento from '../components/ProofBento.astro';
 import { REPO, SPEC } from '../site.ts';
 ---
@@ -72,12 +74,11 @@ import { REPO, SPEC } from '../site.ts';
       </div>
     </section>
 
-    {
-      /* TODO(later — CONTENT.md §2): The problem (#problem) — slots above Proof */
-    }
-    {
-      /* TODO(later — CONTENT.md §3): How it works (#how-it-works) — slots above Proof */
-    }
+    <!-- §2 — The problem -->
+    <Problem />
+
+    <!-- §3 — How it works (the router orbital) -->
+    <HowItWorks />
 
     <!-- §4 — Proof / Insights bento -->
     <ProofBento />
@@ -242,6 +243,7 @@ import { REPO, SPEC } from '../site.ts';
 
 <script>
   import '../scripts/hero.ts';
+  import '../scripts/orbital.ts';
   import '../scripts/proof.ts';
   import '../scripts/reveal.ts';
 </script>
