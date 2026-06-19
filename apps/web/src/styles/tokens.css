@@ -1,72 +1,59 @@
 /*
- * Synfin design tokens — the single source of truth in CSS (DESIGN.md §1–§3, §6).
- * Monochrome warm-neutral paper world + ONE oxblood accent. Change nothing here
- * without DESIGN.md.
+ * Synfin design tokens — DARK / CINEMATIC (DESIGN.md §1–§3). Single source of
+ * truth in CSS. Warm-grey monochrome on warm near-black + ONE ember accent.
  */
 :root {
-  /* §1 Color — exact */
-  --paper: #ecebe5; /* page background — warm-neutral light */
-  --paper-2: #f3f2ec; /* lifted surfaces / cards */
-  --paper-3: #e4e3dc; /* recessed tracks, hover fills */
-  --ink: #19160f; /* primary text / solid fills */
-  --ink-2: #5a5448; /* secondary text */
-  --ink-3: #8c8678; /* tertiary text, captions, labels */
-  --line: #d4d2c7; /* hairline rules / borders */
-  --line-2: #c2bfb2; /* stronger hairline */
-  --seal: #8c2b1e; /* OXBLOOD — the sole accent */
-  --seal-2: #732116; /* oxblood pressed / active */
+  /* §1 Canvas — warm near-black (never clinical #000) */
+  --bg-0: #070708; /* page */
+  --bg: #0b0b0d; /* hero panel base */
+  --bg-1: #121316; /* cards */
+  --bg-2: #191a1e; /* raised card / inputs */
+  --bg-3: #202126; /* hover surface */
 
-  /* §2 Type — families (self-hosted; see fonts.css). --font-display is the #1
-     upgrade lever: a licensed apex face is a one-line swap. */
-  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  /* §1 Ink — warm-grey ramp */
+  --ink: #f1efea; /* primary (warm white) */
+  --ink-2: #a8a59d; /* secondary */
+  --ink-3: #6f6c64; /* faint / muted headline tone */
+
+  /* §1 Lines — hairline light */
+  --line: rgba(241, 239, 234, 0.1);
+  --line-2: rgba(241, 239, 234, 0.16);
+  --line-3: rgba(241, 239, 234, 0.06);
+
+  /* §1 Accent — ember (the ONLY accent) */
+  --ember: #cc6a43;
+  --ember-hi: #e68a5e; /* hover / line terminus */
+  --ember-soft: rgba(204, 106, 67, 0.55);
+  --ember-glow: rgba(204, 106, 67, 0.16);
+
+  /* §1 on-light (for the white primary button) */
+  --on-light: #0b0b0d;
+
+  /* §2 Type — self-hosted (fonts.css). --font-display is the swap lever. */
+  --font-display: 'Mona Sans', system-ui, -apple-system, sans-serif;
   --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  /* §2 Type scale (rem, 16px base) */
-  --t-0: 0.6875rem; /* 11 */
-  --t-1: 0.75rem; /* 12 */
-  --t-2: 0.8125rem; /* 13 */
-  --t-3: 0.875rem; /* 14 */
-  --t-4: 1rem; /* 16 */
-  --t-5: 1.125rem; /* 18 */
-  --t-6: 1.375rem; /* 22 */
-  --t-7: 1.875rem; /* 30 */
-  --t-8: 2.625rem; /* 42 */
-  --t-9: 3.75rem; /* 60 */
-  --t-10: 5.125rem; /* 82 */
-  --t-hero: clamp(48px, 5.6vw, 82px);
+  /* §3 Radius */
+  --r-pill: 999px;
+  --r-card: 18px;
+  --r-sm: 11px;
+  --r-xs: 8px;
 
-  /* §3 Spacing (8px base scale) */
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 20px;
-  --s-6: 24px;
-  --s-7: 32px;
-  --s-8: 40px;
-  --s-9: 56px;
-  --s-10: 72px;
-  --s-11: 96px;
-  --s-12: 128px;
+  /* §3 Layout */
+  --maxw: 1240px;
+  --gutter: 30px;
+  --section-y: clamp(72px, 11vw, 148px);
 
-  /* §3 Grid / radius */
-  --container: 1180px;
-  --gutter: 32px;
-  --r: 3px; /* controls / chips — tight, securities-grade */
-  --r-card: 8px; /* cards */
-  --hairline: 1px;
-  --section-y: clamp(56px, 9vw, 128px);
+  /* §3 Motion */
+  --e-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --e-inout: cubic-bezier(0.65, 0.05, 0.36, 1);
+  --d-fast: 0.18s;
+  --d: 0.4s;
+  --d-slow: 1.1s;
 
-  /* Restrained elevation (premium pass layers more depth — DESIGN.md §7) */
-  --shadow-card: 0 1px 1px rgba(25, 22, 15, 0.04),
-    0 2px 6px rgba(25, 22, 15, 0.05), 0 12px 28px -16px rgba(25, 22, 15, 0.18);
-  --ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--seal); /* focus-visible */
-
-  /* §6 Motion */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 140ms;
-  --dur-mid: 520ms;
-  --dur-slow: 1100ms;
-  --stagger: 110ms;
+  /* Material (DESIGN.md §5/§7) */
+  --card-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+  --card-inset: inset 0 1px 0 rgba(241, 239, 234, 0.06);
+  --panel-radius: 26px;
 }

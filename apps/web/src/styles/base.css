@@ -1,4 +1,4 @@
-/* Reset + base type + structural primitives (DESIGN.md §2, §3, §8 quality floor). */
+/* Reset + base type + structural primitives — DARK (DESIGN.md §1–§3, §10). */
 
 *,
 *::before,
@@ -16,12 +16,11 @@ html {
 }
 
 body {
-  background: var(--paper);
+  background: var(--bg-0);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: var(--t-4);
-  line-height: 1.55;
-  letter-spacing: -0.006em;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -49,19 +48,18 @@ button {
   cursor: pointer;
 }
 
-/* Display headings — Newsreader, optical sizing on, tight metrics (§2). */
+/* Display headings — Mona Sans, tight (§2). */
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-optical-sizing: auto;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.012em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
   color: var(--ink);
 }
 
-/* Numbers, tickers, labels — always tabular, no layout shift (§2, §8). */
+/* Numbers, tickers, labels — always tabular (§2). */
 .mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -69,24 +67,24 @@ h3 {
 }
 
 ::selection {
-  background: var(--seal);
-  color: var(--paper);
+  background: var(--ember-soft);
+  color: var(--ink);
 }
 
-/* Visible keyboard focus everywhere (§8 quality floor). */
+/* Visible keyboard focus — ember ring (§5, §10 quality floor). */
 :focus-visible {
-  outline: 2px solid var(--seal);
+  outline: 2px solid var(--ember);
   outline-offset: 3px;
-  border-radius: 1px;
+  border-radius: 2px;
 }
 :focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Layout container — 1180px, 32px gutters (16px mobile) (§3). */
+/* Layout container — 1240px, 30px gutters (16px mobile) (§3). */
 .container {
   width: 100%;
-  max-width: var(--container);
+  max-width: var(--maxw);
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -96,53 +94,39 @@ h3 {
   }
 }
 
-/* Skip link — hidden until focused (accessibility). */
+/* Skip link — hidden until focused. */
 .skip-link {
   position: absolute;
-  left: var(--s-4);
-  top: var(--s-4);
+  left: 16px;
+  top: 16px;
   z-index: 100;
-  padding: var(--s-2) var(--s-4);
+  padding: 8px 16px;
   background: var(--ink);
-  color: var(--paper);
-  border-radius: var(--r);
+  color: var(--on-light);
+  border-radius: var(--r-pill);
   font-family: var(--font-ui);
   font-weight: 600;
-  font-size: var(--t-3);
-  transform: translateY(-160%);
-  transition: transform var(--dur-fast) var(--ease-out);
+  font-size: 13px;
+  transform: translateY(-180%);
+  transition: transform var(--d-fast) var(--e-out);
 }
 .skip-link:focus {
   transform: translateY(0);
 }
 
-/* Reduced motion: kill transitions/animations; final states render (§6, §8). */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Progressive enhancement: the hero rests in its FINAL, VISIBLE state by
-   default — with no JavaScript and under prefers-reduced-motion. The hidden
-   pre-animation state is applied ONLY when hero.ts confirms GSAP is available
-   and motion is allowed, by adding `.is-animatable` to the hero root. hero.ts
-   then animates to the visible state and removes the class on complete. Content
-   is therefore never hidden behind JS that may not run. */
+/* Progressive enhancement (DESIGN.md §9): content is visible by DEFAULT.
+   The hidden pre-animation state applies ONLY under `.is-animatable`, which
+   hero.ts adds to the hero root after confirming GSAP is present and motion is
+   allowed. It animates to visible then clearProps + removes the class, so no
+   content is ever hidden behind JS that may not run. No first-paint flash:
+   the class is also set pre-paint by a guarded inline snippet in <head>. */
+/* Opacity-only hide (transform is animated per-element by hero.ts so it never
+   clobbers a positioning transform like the constellation nodes' translate). */
 .is-animatable [data-anim] {
   opacity: 0;
-  transform: translateY(16px);
-}
-.is-animatable .rc-bar__fill {
-  width: 0;
 }
 
-/* Reveal primitive (Section): hidden until revealed; reduced-motion shows it. */
+/* Scroll-reveal primitive (Section) — reduced-motion shows it immediately. */
 [data-reveal] {
   opacity: 0;
   transform: translateY(24px);
@@ -151,10 +135,21 @@ h3 {
   opacity: 1;
   transform: none;
   transition:
-    opacity var(--dur-mid) var(--ease-out),
-    transform var(--dur-mid) var(--ease-out);
+    opacity var(--d-slow) var(--e-out),
+    transform var(--d-slow) var(--e-out);
 }
+
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
   [data-reveal] {
     opacity: 1;
     transform: none;

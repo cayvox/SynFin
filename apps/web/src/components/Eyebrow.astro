@@ -1,8 +1,7 @@
 ---
 /**
- * Eyebrow (DESIGN.md §5): a small oxblood dot + a Geist 600 label. One of the
- * ≤4 oxblood touches per viewport. Use a short label; numbering is reserved for
- * the genuine "how it works" sequence (CONTENT.md §3).
+ * Eyebrow (DESIGN.md §8) — a small dark-glass pill with an ember dot. One of the
+ * ≤4 ember touches per viewport. Forwards `data-*` (e.g. `data-anim`).
  */
 interface Props {
   text: string;
@@ -21,18 +20,23 @@ const { text, class: className, ...rest } = Astro.props;
   .eyebrow {
     display: inline-flex;
     align-items: center;
-    gap: var(--s-2);
+    gap: 9px;
+    padding: 7px 14px 7px 12px;
+    background: rgba(241, 239, 234, 0.03);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
     font-family: var(--font-ui);
-    font-weight: 600;
-    font-size: var(--t-2);
-    letter-spacing: 0.04em;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.01em;
     color: var(--ink-2);
   }
   .eyebrow__dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--ink);
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
     flex: none;
   }
 </style>

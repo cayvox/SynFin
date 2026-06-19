@@ -19,13 +19,12 @@ const {
   canonical = CANONICAL,
 } = Astro.props;
 
-// Hero faces to preload (STACK.md / FONTS): Newsreader variable (normal) +
-// Geist 400/500/600 + Geist Mono 400/500.
+// Hero faces to preload (STACK.md / FONTS): Mona Sans 600 + Geist 400/500 +
+// Geist Mono 400/500.
 const preloadFonts = [
-  'Newsreader-Variable.woff2',
+  'MonaSans-600.woff2',
   'Geist-Regular.woff2',
   'Geist-Medium.woff2',
-  'Geist-SemiBold.woff2',
   'GeistMono-Regular.woff2',
   'GeistMono-Medium.woff2',
 ];
@@ -36,11 +35,30 @@ const preloadFonts = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Progressive enhancement (DESIGN.md §9): set the hidden pre-animation
+         state BEFORE first paint, but ONLY when JS is on AND motion is allowed —
+         so there is no visible→hide flash, and no-JS / reduced-motion render the
+         final state. A failsafe reveals the content even if the animation module
+         never loads (never hide content behind JS that may not run). -->
+    <script is:inline>
+      (function () {
+        try {
+          if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          var d = document.documentElement;
+          d.classList.add('is-animatable');
+          setTimeout(function () {
+            d.classList.remove('is-animatable');
+          }, 2600);
+        } catch (e) {
+          /* render final state */
+        }
+      })();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <meta name="theme-color" content="#ECEBE5" />
-    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#070708" />
+    <meta name="color-scheme" content="dark" />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 

@@ -1,11 +1,12 @@
 ---
 /**
- * Button (DESIGN.md §5). Variants: primary (ink → oxblood on hover) and
- * secondary (paper + keyline). Renders an <a> when `href` is set, else a
- * <button>. Every state is crafted: hover / active / focus-visible / disabled.
+ * Button (DESIGN.md §5) — pill. `primary`: warm-white fill, dark text, inset top
+ * highlight + soft shadow, hover → pure white. `ghost`: faint fill + hairline
+ * border, light text. Renders <a> when `href` is set, else <button>. All states
+ * crafted; focus-visible = ember ring.
  */
 interface Props {
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'ghost';
   href?: string;
   type?: 'button' | 'submit';
   disabled?: boolean;
@@ -29,68 +30,70 @@ const Tag = href ? 'a' : 'button';
 ---
 
 <Tag class:list={cls} {...href ? { href } : { type, disabled }} {...rest}>
-  <span class="btn__label"><slot /></span>
+  <slot />
 </Tag>
 
 <style>
   .btn {
-    --btn-bg: var(--ink);
-    --btn-fg: var(--paper);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: var(--s-2);
-    padding: 11px var(--s-5);
-    border-radius: var(--r);
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: var(--r-pill);
     font-family: var(--font-ui);
-    font-weight: 600;
-    font-size: var(--t-3);
-    letter-spacing: -0.01em;
+    font-weight: 500;
+    font-size: 14px;
+    letter-spacing: -0.005em;
     line-height: 1;
     white-space: nowrap;
-    background: var(--btn-bg);
-    color: var(--btn-fg);
     border: 1px solid transparent;
     transition:
-      background var(--dur-fast) var(--ease-out),
-      border-color var(--dur-fast) var(--ease-out),
-      color var(--dur-fast) var(--ease-out),
-      transform var(--dur-fast) var(--ease-out),
-      box-shadow var(--dur-fast) var(--ease-out);
+      background var(--d-fast) var(--e-out),
+      border-color var(--d-fast) var(--e-out),
+      color var(--d-fast) var(--e-out),
+      transform var(--d-fast) var(--e-out),
+      box-shadow var(--d-fast) var(--e-out);
   }
   .btn--block {
     width: 100%;
   }
 
-  /* Primary — ink fill → oxblood on hover, lifts 1px, settles on press. */
+  /* Primary — warm-white fill, dark text, inset highlight + soft shadow. */
+  .btn--primary {
+    background: var(--ink);
+    color: var(--on-light);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 10px 24px -14px rgba(0, 0, 0, 0.9);
+  }
   .btn--primary:hover {
-    --btn-bg: var(--seal);
+    background: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 4px 14px -8px rgba(115, 33, 22, 0.6);
   }
   .btn--primary:active {
-    --btn-bg: var(--seal-2);
     transform: translateY(0);
-    box-shadow: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 4px 12px -10px rgba(0, 0, 0, 0.9);
   }
 
-  /* Secondary — paper + keyline → ink keyline + faint fill on hover. */
-  .btn--secondary {
-    --btn-bg: var(--paper);
-    --btn-fg: var(--ink);
+  /* Ghost — faint fill + hairline border. */
+  .btn--ghost {
+    background: rgba(241, 239, 234, 0.03);
+    color: var(--ink);
     border-color: var(--line-2);
   }
-  .btn--secondary:hover {
-    --btn-bg: var(--paper-3);
-    border-color: var(--ink);
+  .btn--ghost:hover {
+    background: rgba(241, 239, 234, 0.07);
+    border-color: var(--line-2);
   }
-  .btn--secondary:active {
-    --btn-bg: var(--paper-3);
+  .btn--ghost:active {
     transform: translateY(0.5px);
   }
 
   .btn:focus-visible {
-    outline: 2px solid var(--seal);
+    outline: 2px solid var(--ember);
     outline-offset: 3px;
   }
 
@@ -99,7 +102,6 @@ const Tag = href ? 'a' : 'button';
     opacity: 0.45;
     cursor: not-allowed;
     transform: none;
-    box-shadow: none;
     pointer-events: none;
   }
 </style>
