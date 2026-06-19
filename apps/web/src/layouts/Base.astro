@@ -1,0 +1,84 @@
+---
+/**
+ * Base layout — document head (CONTENT.md meta), self-hosted font preloads
+ * (STACK.md), global styles, a visible skip-link, and semantic landmarks.
+ */
+import '../styles/tokens.css';
+import '../styles/fonts.css';
+import '../styles/base.css';
+import { CANONICAL } from '../site.ts';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+const {
+  title = 'Synfin — Best execution for Canton',
+  description = "The open, neutral best-execution aggregation layer for the Canton Network: aggregate quotes across venues, route to the best price, and settle atomically with per-leg privacy — built on Canton's token standard (CIP-0056/0112).",
+  canonical = CANONICAL,
+} = Astro.props;
+
+// Hero faces to preload (STACK.md / FONTS): Newsreader variable (normal) +
+// Geist 400/500/600 + Geist Mono 400/500.
+const preloadFonts = [
+  'Newsreader-Variable.woff2',
+  'Geist-Regular.woff2',
+  'Geist-Medium.woff2',
+  'Geist-SemiBold.woff2',
+  'GeistMono-Regular.woff2',
+  'GeistMono-Medium.woff2',
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Mark the doc for animation ONLY when JS is on and motion is allowed, so
+         the hero's initial hidden state never flashes for no-JS / reduced-motion. -->
+    <script is:inline>
+      try {
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.classList.add('anim');
+        }
+      } catch (_) {
+        /* no-op: render final state */
+      }
+    </script>
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#ECEBE5" />
+    <meta name="color-scheme" content="light" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <!-- Open Graph / Twitter (og.png is a Phase-3 deliverable — STACK.md) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Synfin" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    {
+      preloadFonts.map((f) => (
+        <link
+          rel="preload"
+          href={`/fonts/${f}`}
+          as="font"
+          type="font/woff2"
+          crossorigin="anonymous"
+        />
+      ))
+    }
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <slot />
+  </body>
+</html>

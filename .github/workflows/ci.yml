@@ -39,6 +39,13 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Build the website (apps/web — astro check + build)
+        # The website is already covered by `pnpm build` / `pnpm typecheck` and
+        # the root lint/format steps (it is a workspace member). This explicit
+        # filtered build surfaces the web app's status as its own CI line
+        # (STACK.md "CI checks the web app must pass"). The daml job is untouched.
+        run: pnpm --filter @synfin/web build
+
       - name: Verify generated types are in sync
         # Fails if `gen` produces a diff against committed output.
         run: pnpm gen:check

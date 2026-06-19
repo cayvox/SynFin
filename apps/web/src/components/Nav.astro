@@ -1,0 +1,199 @@
+---
+/**
+ * Nav (DESIGN.md §5): seal mark + "Synfin" wordmark (display face, the `f` in
+ * oxblood) on the left; on the right, text links + a solid `Read the spec` CTA.
+ * Hairline bottom border, ~78px tall. Mobile collapses the links into a `Menu`
+ * disclosure (no-JS <details>, keyboard-accessible).
+ *
+ * In-page links target the content sections that land in a later phase; they
+ * resolve to those anchors once sections 2–9 exist (CONTENT.md). The CTA + the
+ * GitHub link point at real, existing destinations today.
+ */
+import SealMark from './SealMark.astro';
+import Button from './Button.astro';
+import { REPO, SPEC } from '../site.ts';
+
+const links = [
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Proof', href: '#proof' },
+  { label: 'Open & neutral', href: '#open' },
+  { label: 'GitHub', href: REPO, external: true },
+];
+---
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="brand" href="/" aria-label="Synfin — home">
+      <SealMark size={30} decorative />
+      <span class="brand__word">Syn<span class="brand__f">f</span>in</span>
+    </a>
+
+    <nav class="nav__links" aria-label="Primary">
+      {
+        links.map((l) => (
+          <a
+            class="nav__link"
+            href={l.href}
+            {...(l.external
+              ? { target: '_blank', rel: 'noopener noreferrer' }
+              : {})}
+          >
+            {l.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="nav__cta">
+      <Button
+        variant="primary"
+        href={SPEC}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Read the spec
+      </Button>
+    </div>
+
+    <details class="nav__menu">
+      <summary aria-label="Menu">Menu</summary>
+      <div class="nav__menu-panel">
+        {
+          links.map((l) => (
+            <a
+              class="nav__link"
+              href={l.href}
+              {...(l.external
+                ? { target: '_blank', rel: 'noopener noreferrer' }
+                : {})}
+            >
+              {l.label}
+            </a>
+          ))
+        }
+        <Button
+          variant="primary"
+          href={SPEC}
+          target="_blank"
+          rel="noopener noreferrer"
+          block
+        >
+          Read the spec
+        </Button>
+      </div>
+    </details>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: saturate(1.05) blur(8px);
+    border-bottom: var(--hairline) solid var(--line);
+  }
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-6);
+    height: 78px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .brand__word {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-size: var(--t-6);
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .brand__f {
+    color: var(--seal);
+  }
+
+  .nav__links {
+    display: flex;
+    align-items: center;
+    gap: var(--s-7);
+    margin-left: auto;
+    margin-right: var(--s-7);
+  }
+  .nav__link {
+    position: relative;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: var(--t-3);
+    color: var(--ink-2);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .nav__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -6px;
+    height: 1px;
+    background: var(--ink);
+    transition: right var(--dur-fast) var(--ease-out);
+  }
+  .nav__link:hover {
+    color: var(--ink);
+  }
+  .nav__link:hover::after {
+    right: 0;
+  }
+
+  /* Mobile disclosure */
+  .nav__menu {
+    display: none;
+  }
+  .nav__menu > summary {
+    list-style: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: var(--t-3);
+    padding: 8px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r);
+    color: var(--ink);
+  }
+  .nav__menu > summary::-webkit-details-marker {
+    display: none;
+  }
+  .nav__menu[open] > summary {
+    border-color: var(--ink);
+  }
+  .nav__menu-panel {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    margin-top: var(--s-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+    padding: var(--s-5);
+    background: var(--paper-2);
+    border: var(--hairline) solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (max-width: 760px) {
+    .nav__links,
+    .nav__cta {
+      display: none;
+    }
+    .nav__menu {
+      display: block;
+    }
+  }
+</style>
