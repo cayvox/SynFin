@@ -57,17 +57,18 @@ const markerPct = (marker / max) * 100;
         );
       })
     }
-    <!-- oxblood marker: stem + triangle at the edge value -->
+    <!-- marker: stem + triangle at the edge value (ink — the edge number is the
+         sole oxblood payoff; the marker still reads clearly in ink) -->
     <line
       x1={markerX}
       y1={baseline + 2}
       x2={markerX}
       y2={baseline - 13}
-      stroke="var(--seal)"
+      stroke="var(--ink)"
       stroke-width="1.4"></line>
     <path
       d={`M${markerX - 4} ${baseline - 13} L${markerX + 4} ${baseline - 13} L${markerX} ${baseline - 7} Z`}
-      fill="var(--seal)"></path>
+      fill="var(--ink)"></path>
   </svg>
   <figcaption class="tick__caps mono">
     <span>0 bps</span>
@@ -108,7 +109,7 @@ const markerPct = (marker / max) * 100;
     position: absolute;
     transform: translateX(-50%);
     white-space: nowrap;
-    color: var(--seal);
+    color: var(--ink-2);
   }
   @media (max-width: 420px) {
     .tick__here {

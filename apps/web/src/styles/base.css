@@ -128,13 +128,17 @@ h3 {
   }
 }
 
-/* Animated entrance is opt-in via `.anim` (set in <head> only when JS is on and
-   motion is allowed). Without it, the hero renders its FINAL state immediately —
-   no flash for no-JS / reduced-motion. hero.ts animates these to their targets. */
-.anim [data-anim] {
+/* Progressive enhancement: the hero rests in its FINAL, VISIBLE state by
+   default — with no JavaScript and under prefers-reduced-motion. The hidden
+   pre-animation state is applied ONLY when hero.ts confirms GSAP is available
+   and motion is allowed, by adding `.is-animatable` to the hero root. hero.ts
+   then animates to the visible state and removes the class on complete. Content
+   is therefore never hidden behind JS that may not run. */
+.is-animatable [data-anim] {
   opacity: 0;
+  transform: translateY(16px);
 }
-.anim .rc-bar__fill {
+.is-animatable .rc-bar__fill {
   width: 0;
 }
 

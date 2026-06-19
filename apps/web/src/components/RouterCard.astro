@@ -25,7 +25,6 @@ const venues = [
   <!-- Header -->
   <header class="rc__head">
     <div class="rc__title">
-      <span class="rc__pip" aria-hidden="true"></span>
       <span>Best execution</span>
     </div>
     <span class="rc__pair mono">CC → USDCx</span>
@@ -123,29 +122,6 @@ const venues = [
     font-family: var(--font-ui);
     font-weight: 600;
     font-size: var(--t-3);
-  }
-  .rc__pip {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--seal);
-    animation: rc-pulse 2.4s var(--ease-out) infinite;
-  }
-  @keyframes rc-pulse {
-    0%,
-    100% {
-      opacity: 1;
-      box-shadow: 0 0 0 0 rgba(140, 43, 30, 0.35);
-    }
-    50% {
-      opacity: 0.55;
-      box-shadow: 0 0 0 4px rgba(140, 43, 30, 0);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .rc__pip {
-      animation: none;
-    }
   }
   .rc__pair {
     font-size: var(--t-2);
