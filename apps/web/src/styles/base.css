@@ -126,17 +126,38 @@ h3 {
   opacity: 0;
 }
 
-/* Scroll-reveal primitive (Section) — reduced-motion shows it immediately. */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(24px);
-}
-[data-reveal].is-revealed {
-  opacity: 1;
-  transform: none;
+/* Scroll-reveal primitive (Section / bento cards). Progressive enhancement:
+   `[data-reveal]` is VISIBLE by default — the hidden pre-state is applied by
+   reveal.ts in JS (only when motion is allowed), then animated in on scroll.
+   So no-JS and reduced-motion render the final, visible state with no flash. */
+
+/* Card material (DESIGN.md §5) — the lit dark-glass surface, reused everywhere. */
+.card {
+  position: relative;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--card-inset), var(--card-shadow);
   transition:
-    opacity var(--d-slow) var(--e-out),
-    transform var(--d-slow) var(--e-out);
+    border-color var(--d) var(--e-out),
+    transform var(--d) var(--e-out);
+}
+.card::before {
+  /* faint internal lit glow */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 78% at 50% 0%,
+    rgba(241, 239, 234, 0.05),
+    transparent 60%
+  );
+}
+.card:hover {
+  border-color: var(--line-2);
+  transform: translateY(-2px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -149,9 +170,5 @@ h3 {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
-  }
-  [data-reveal] {
-    opacity: 1;
-    transform: none;
   }
 }

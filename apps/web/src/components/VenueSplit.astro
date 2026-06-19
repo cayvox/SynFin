@@ -1,0 +1,107 @@
+---
+/**
+ * VenueSplit (CONTENT.md §4) — a small, refined stacked bar of the 46/33/21
+ * split across CantonSwap / OneSwap / RFQ desk. Warm-white segments (graded
+ * --ink ramp), a single ember dot marking the best leg; mono labels. Thin and
+ * editorial — not a generic dashboard chart.
+ */
+const segs = [
+  { name: 'CantonSwap', pct: 46, tone: 'var(--ink)', best: true },
+  { name: 'OneSwap', pct: 33, tone: 'var(--ink-2)', best: false },
+  { name: 'RFQ desk', pct: 21, tone: 'var(--ink-3)', best: false },
+];
+---
+
+<div class="vs">
+  <div
+    class="vs__bar"
+    role="img"
+    aria-label="Split: CantonSwap 46%, OneSwap 33%, RFQ desk 21%"
+  >
+    {
+      segs.map((s) => (
+        <span class="vs__seg" style={`width:${s.pct}%;background:${s.tone}`} />
+      ))
+    }
+  </div>
+  <ul class="vs__legend">
+    {
+      segs.map((s) => (
+        <li class="vs__row">
+          <span
+            class="vs__swatch"
+            style={`background:${s.tone}`}
+            aria-hidden="true"
+          />
+          <span class="vs__name">
+            {s.name}
+            {s.best && <span class="vs__best" aria-hidden="true" />}
+          </span>
+          <span class="vs__pct mono">{s.pct}%</span>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .vs {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .vs__bar {
+    display: flex;
+    gap: 2px;
+    height: 8px;
+    width: 100%;
+  }
+  .vs__seg {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .vs__seg:first-child {
+    border-radius: var(--r-xs) 2px 2px var(--r-xs);
+  }
+  .vs__seg:last-child {
+    border-radius: 2px var(--r-xs) var(--r-xs) 2px;
+  }
+  .vs__legend {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .vs__row {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    align-items: center;
+    gap: 10px;
+  }
+  .vs__swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+  }
+  .vs__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .vs__best {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ember);
+  }
+  .vs__pct {
+    font-size: 13px;
+    color: var(--ink);
+    text-align: right;
+  }
+</style>
