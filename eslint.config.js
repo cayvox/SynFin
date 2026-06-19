@@ -1,6 +1,7 @@
 // @ts-check
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import astro from 'eslint-plugin-astro';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
@@ -10,6 +11,7 @@ export default tseslint.config(
       '**/dist/**',
       '**/coverage/**',
       '**/node_modules/**',
+      '**/.astro/**',
       '**/*.generated.ts',
       'packages/*/src/generated/**',
     ],
@@ -49,6 +51,21 @@ export default tseslint.config(
         Buffer: 'readonly',
       },
     },
+  },
+  // Astro website (apps/web): parse `.astro` with the Astro parser and apply the
+  // plugin's recommended rules. Type-aware TS rules are disabled for `.astro`
+  // (the frontmatter is not part of a tsconfig program); `.ts` islands under
+  // apps/web are still fully type-checked by the global config above.
+  ...astro.configs['flat/recommended'],
+  {
+    files: ['**/*.astro'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    // Ambient declaration files (e.g. Astro's env.d.ts) legitimately use
+    // triple-slash references; that is their idiom.
+    files: ['**/*.d.ts'],
+    rules: { '@typescript-eslint/triple-slash-reference': 'off' },
   },
   prettier,
 );

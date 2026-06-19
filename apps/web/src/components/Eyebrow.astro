@@ -1,0 +1,37 @@
+---
+/**
+ * Eyebrow (DESIGN.md §5): a small oxblood dot + a Geist 600 label. One of the
+ * ≤4 oxblood touches per viewport. Use a short label; numbering is reserved for
+ * the genuine "how it works" sequence (CONTENT.md §3).
+ */
+interface Props {
+  text: string;
+  class?: string;
+}
+const { text, class: className } = Astro.props;
+---
+
+<p class:list={['eyebrow', className]}>
+  <span class="eyebrow__dot" aria-hidden="true"></span>
+  <span>{text}</span>
+</p>
+
+<style>
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: var(--t-2);
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+  }
+  .eyebrow__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--seal);
+    flex: none;
+  }
+</style>

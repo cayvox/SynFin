@@ -1,0 +1,28 @@
+{
+  "name": "@synfin/web",
+  "version": "0.1.0",
+  "description": "Synfin website — the open, neutral best-execution aggregation layer for Canton. Static Astro site (apps/web).",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "lint": "eslint --config ../../eslint.config.js .",
+    "format": "prettier --write \"src/**/*.{astro,ts,css}\" \"*.{mjs,json}\"",
+    "format:check": "prettier --check \"src/**/*.{astro,ts,css}\" \"*.{mjs,json}\""
+  },
+  "dependencies": {
+    "@astrojs/check": "0.9.9",
+    "@fontsource-variable/newsreader": "5.2.10",
+    "astro": "5.18.2",
+    "geist": "1.7.2",
+    "gsap": "3.15.0",
+    "typescript": "5.7.2"
+  }
+}
