@@ -7,11 +7,12 @@
 interface Props {
   text: string;
   class?: string;
+  [key: `data-${string}`]: string | undefined;
 }
-const { text, class: className } = Astro.props;
+const { text, class: className, ...rest } = Astro.props;
 ---
 
-<p class:list={['eyebrow', className]}>
+<p class:list={['eyebrow', className]} {...rest}>
   <span class="eyebrow__dot" aria-hidden="true"></span>
   <span>{text}</span>
 </p>
@@ -31,7 +32,7 @@ const { text, class: className } = Astro.props;
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--seal);
+    background: var(--ink);
     flex: none;
   }
 </style>

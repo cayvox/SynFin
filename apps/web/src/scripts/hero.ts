@@ -3,12 +3,16 @@ import { gsap } from 'gsap';
 /**
  * Hero load timeline (DESIGN.md §6): eyebrow → headline → sub → CTAs → card
  * stagger in (small y), then allocation bars fill, the edge number ticks up once
- * to +47.8 and locks, the settle seal-check draws in. Starts when the card
- * enters view (IntersectionObserver), with a timeout fallback.
+ * to +47.8 and locks, the settle seal-check draws in.
  *
- * The initial hidden state is applied via the `.anim` class (set in <head> only
- * when JS is on AND motion is allowed), so no-JS and reduced-motion render the
- * FINAL state with no flash. If reduced motion is on, this module is a no-op.
+ * Progressive enhancement (the whole point): the hero is fully visible by
+ * default. The hidden pre-animation state lives ONLY under `.is-animatable`,
+ * which this module adds to the hero root — and only after GSAP has loaded and
+ * motion is allowed. We animate TO the visible state, then `clearProps` and
+ * remove the class so elements rest in their natural CSS state. If GSAP never
+ * loads, motion is reduced, or anything throws, the class is never added (or is
+ * removed), so the hero simply renders its final, visible state. No content is
+ * hidden behind JS that might not run.
  */
 const prefersReduced = window.matchMedia(
   '(prefers-reduced-motion: reduce)',
@@ -20,9 +24,27 @@ function buildTimeline(hero: HTMLElement): void {
   const edge = hero.querySelector<HTMLElement>('.rc__edge-val');
   const check = hero.querySelector<SVGPathElement>('.seal-check');
 
-  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  const finish = (): void => {
+    gsap.set([...items, ...bars], {
+      clearProps: 'opacity,transform,width',
+    });
+    if (edge)
+      edge.textContent = `+${parseFloat(edge.dataset.countTo ?? '0').toFixed(1)}`;
+    if (check)
+      gsap.set(check, { clearProps: 'strokeDasharray,strokeDashoffset' });
+    hero.classList.remove('is-animatable');
+  };
 
-  tl.from(items, { opacity: 0, y: 16, duration: 0.6, stagger: 0.11 });
+  const tl = gsap.timeline({
+    defaults: { ease: 'power3.out' },
+    onComplete: finish,
+  });
+
+  tl.fromTo(
+    items,
+    { opacity: 0, y: 16 },
+    { opacity: 1, y: 0, duration: 0.6, stagger: 0.11 },
+  );
 
   if (bars.length) {
     tl.fromTo(
@@ -51,9 +73,6 @@ function buildTimeline(hero: HTMLElement): void {
         onUpdate: () => {
           edge.textContent = `+${counter.v.toFixed(1)}`;
         },
-        onComplete: () => {
-          edge.textContent = `+${target.toFixed(1)}`;
-        },
       },
       '<',
     );
@@ -68,14 +87,21 @@ function buildTimeline(hero: HTMLElement): void {
 
 function init(): void {
   const hero = document.querySelector<HTMLElement>('[data-hero]');
-  if (!hero || prefersReduced) return;
+  if (!hero || prefersReduced) return; // final visible state stands
+
+  const reveal = (): void => hero.classList.remove('is-animatable');
+  hero.classList.add('is-animatable');
 
   const card = hero.querySelector<HTMLElement>('.rc') ?? hero;
   let started = false;
   const start = (): void => {
     if (started) return;
     started = true;
-    buildTimeline(hero);
+    try {
+      buildTimeline(hero);
+    } catch {
+      reveal(); // never leave the hero hidden
+    }
   };
 
   if ('IntersectionObserver' in window) {
@@ -88,13 +114,18 @@ function init(): void {
           }
         }
       },
-      { threshold: 0.25 },
+      { threshold: 0.2 },
     );
     io.observe(card);
-    window.setTimeout(start, 1200); // fallback
+    window.setTimeout(start, 800); // fallback if IO never fires
   } else {
     start();
   }
+
+  // Hard safety net: if the timeline never started, reveal anyway.
+  window.setTimeout(() => {
+    if (!started) reveal();
+  }, 2500);
 }
 
 if (document.readyState === 'loading') {

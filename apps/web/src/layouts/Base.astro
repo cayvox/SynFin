@@ -36,17 +36,6 @@ const preloadFonts = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Mark the doc for animation ONLY when JS is on and motion is allowed, so
-         the hero's initial hidden state never flashes for no-JS / reduced-motion. -->
-    <script is:inline>
-      try {
-        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          document.documentElement.classList.add('anim');
-        }
-      } catch (_) {
-        /* no-op: render final state */
-      }
-    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
