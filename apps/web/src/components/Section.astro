@@ -1,0 +1,26 @@
+---
+/**
+ * Section — a reusable content band with the standard vertical rhythm
+ * (DESIGN.md §3) and a scroll-reveal hook (`data-reveal`, wired in reveal.ts;
+ * §6). Content sections 2–9 (CONTENT.md) will use this in a later phase.
+ */
+interface Props {
+  id?: string;
+  class?: string;
+  reveal?: boolean;
+  'aria-labelledby'?: string;
+}
+const { id, class: className, reveal = true, ...rest } = Astro.props;
+---
+
+<section id={id} class:list={['section', className]} {...rest}>
+  <div class="container" {...reveal ? { 'data-reveal': '' } : {}}>
+    <slot />
+  </div>
+</section>
+
+<style>
+  .section {
+    padding-block: var(--section-y);
+  }
+</style>
