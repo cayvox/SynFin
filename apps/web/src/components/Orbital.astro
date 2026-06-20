@@ -1,0 +1,319 @@
+---
+/**
+ * Orbital (DESIGN.md §12 §3; reference/synfin-orbital.png + .html) — the router
+ * "scan → lock best route → settle" instrument for §3. Concentric instrument
+ * rings + a center router core (the SealMark, ember center + glow) + a top meter
+ * arc ("best route · +47.8 bps · locked") + 5 venue nodes on the r=170 orbit
+ * (CantonSwap/OneSwap/RFQ desk = ember route; Cantex/CompassSwap = scanned) +
+ * ember route lines core→route venues carrying the 46/33/21 shares + faint
+ * dotted lines to the scanned venues.
+ *
+ * Geometry is the exact 560×560 viewBox from the reference. Overlays (core,
+ * meter, nodes, shares) are positioned in PERCENT of that box so the whole
+ * orbital scales UNIFORMLY (square aspect) with no stretch. The arc gradient is
+ * `userSpaceOnUse` so it renders on the wide span.
+ */
+import SealMark from './SealMark.astro';
+
+// Node centres as % of the 560 box (route = the chosen split).
+const nodes = [
+  { name: 'CantonSwap', q: '124.81', route: true, x: 27.5, y: 29.643 },
+  { name: 'OneSwap', q: '124.63', route: true, x: 21.429, y: 60.357 },
+  { name: 'RFQ desk', q: '125.04', route: true, x: 78.571, y: 60.357 },
+  { name: 'Cantex', q: '124.72', route: false, x: 72.5, y: 29.643 },
+  { name: 'CompassSwap', q: '124.55', route: false, x: 50, y: 80.357 },
+];
+const shares = [
+  { v: '46', x: 36.786, y: 38.036 },
+  { v: '33', x: 33.036, y: 57.143 },
+  { v: '21', x: 66.429, y: 57.143 },
+];
+const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
+---
+
+<div class="orb">
+  <div class="orb__glow" aria-hidden="true"></div>
+
+  <svg class="orb__rings" viewBox="0 0 560 560" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient
+        id="orbArc"
+        gradientUnits="userSpaceOnUse"
+        x1="80"
+        y1="220"
+        x2="484"
+        y2="114"
+      >
+        <stop offset="0" stop-color="#CC6A43" stop-opacity="0.25"></stop>
+        <stop offset="1" stop-color="#E68A5E" stop-opacity="0.9"></stop>
+      </linearGradient>
+      <filter id="orbGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="1.0" result="b"></feGaussianBlur>
+        <feMerge>
+          <feMergeNode in="b"></feMergeNode>
+          <feMergeNode in="SourceGraphic"></feMergeNode>
+        </feMerge>
+      </filter>
+    </defs>
+
+    <!-- concentric instrument rings -->
+    <circle
+      class="orb-ring"
+      cx="280"
+      cy="280"
+      r="250"
+      stroke="rgba(241,239,234,0.07)"
+      stroke-width="1"></circle>
+    <circle
+      class="orb-ring"
+      cx="280"
+      cy="280"
+      r="170"
+      stroke="rgba(241,239,234,0.10)"
+      stroke-width="1"></circle>
+    <circle
+      class="orb-ring"
+      cx="280"
+      cy="280"
+      r="108"
+      stroke="rgba(241,239,234,0.06)"
+      stroke-width="1"></circle>
+
+    <!-- bezel ticks (12) on the outer ring -->
+    <g
+      class="orb-ring orb-bezel"
+      stroke="rgba(241,239,234,0.16)"
+      stroke-width="1"
+    >
+      {
+        ticks.map((deg) => (
+          <line
+            x1="280"
+            y1="30"
+            x2="280"
+            y2="38"
+            transform={`rotate(${deg} 280 280)`}
+          />
+        ))
+      }
+    </g>
+
+    <!-- faint dotted lines: core → the 2 scanned (not chosen) venues -->
+    <g
+      class="orb-scan"
+      stroke="rgba(241,239,234,0.10)"
+      stroke-width="1"
+      stroke-dasharray="1.5 6"
+      stroke-linecap="round"
+    >
+      <path d="M280,280 C330,235 372,200 406,166"></path>
+      <path d="M280,280 L280,450"></path>
+    </g>
+
+    <!-- ember route lines: core → the 3 chosen venues (gentle bows) -->
+    <g
+      class="orb-routes"
+      filter="url(#orbGlow)"
+      stroke="#CC6A43"
+      stroke-opacity="0.5"
+      stroke-width="1.1"
+      stroke-linecap="round"
+    >
+      <path class="orb-route" d="M280,280 C235,235 190,200 154,166"></path>
+      <path class="orb-route" d="M280,280 C220,300 165,322 120,338"></path>
+      <path class="orb-route" d="M280,280 C345,300 400,322 440,338"></path>
+    </g>
+
+    <!-- top meter arc (best route locked) at r≈235 -->
+    <path
+      class="orb-arc"
+      d="M76.5,162.5 A235,235 0 0 1 483.5,162.5"
+      stroke="url(#orbArc)"
+      stroke-width="2"
+      stroke-linecap="round"
+      filter="url(#orbGlow)"></path>
+    <circle class="orb-arc-dot" cx="446" cy="114" r="3.2" fill="#E68A5E"
+    ></circle>
+  </svg>
+
+  <div class="orb__meter mono">
+    <span class="orb__meter-dot" aria-hidden="true"></span>
+    best route · +<span class="orb__meter-val" data-count-to="47.8">47.8</span> bps
+    · locked
+  </div>
+
+  <div class="orb__core">
+    <SealMark size={104} decorative class="orb__seal" title="Synfin router" />
+    <span class="orb__core-ring" aria-hidden="true"></span>
+  </div>
+
+  {
+    shares.map((s) => (
+      <span class="orb__share mono" style={`left:${s.x}%;top:${s.y}%`}>
+        {s.v}
+      </span>
+    ))
+  }
+
+  {
+    nodes.map((n) => (
+      <div
+        class:list={['vn', n.route && 'vn--route']}
+        style={`left:${n.x}%;top:${n.y}%`}
+        data-orb-node
+      >
+        <span class="vn__dot">
+          <span class="vn__inner" />
+        </span>
+        <span class="vn__name">{n.name}</span>
+        <span class="vn__q mono">
+          CC/USDCx · <b>{n.q}</b>
+        </span>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .orb {
+    position: relative;
+    width: min(560px, 100%);
+    aspect-ratio: 1 / 1;
+    margin-inline: auto;
+  }
+
+  .orb__glow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 53.6%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      var(--ember-glow),
+      rgba(204, 106, 67, 0.05) 40%,
+      transparent 68%
+    );
+    pointer-events: none;
+  }
+  .orb__rings {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Center router core — the SealMark instrument + ember center + ring. */
+  .orb__core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18.6%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+  }
+  .orb__core :global(.orb__seal) {
+    width: 100%;
+    height: 100%;
+  }
+  .orb__core-ring {
+    position: absolute;
+    width: 16%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid var(--ember-soft);
+    opacity: 0.5;
+  }
+
+  /* Top meter pill */
+  .orb__meter {
+    position: absolute;
+    left: 50%;
+    top: 2.5%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: var(--ember-hi);
+    background: color-mix(in srgb, var(--bg) 84%, var(--ember) 16%);
+    border: 1px solid var(--ember-soft);
+    border-radius: var(--r-pill);
+    box-shadow: 0 0 22px -2px var(--ember-glow);
+    white-space: nowrap;
+  }
+  .orb__meter-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
+  }
+  .orb__meter-val {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .orb__share {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    color: var(--ember);
+    z-index: 3;
+  }
+
+  /* Venue nodes */
+  .vn {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+  }
+  .vn__dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(
+      circle at 50% 34%,
+      rgba(241, 239, 234, 0.12),
+      rgba(20, 21, 25, 0.75)
+    );
+    border: 1px solid var(--line-2);
+  }
+  .vn__inner {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.25px solid var(--ink-2);
+  }
+  .vn--route .vn__inner {
+    border-color: var(--ember);
+    box-shadow: 0 0 7px 0 var(--ember-soft);
+  }
+  .vn__name {
+    margin-top: 7px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .vn__q {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .vn--route .vn__q b {
+    color: var(--ember);
+    font-weight: 500;
+  }
+</style>
