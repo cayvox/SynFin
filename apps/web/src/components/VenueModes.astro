@@ -204,11 +204,15 @@ const modeB = [
 
   .vm__grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* minmax(0, 1fr) so each card can shrink below its content's min-content
+       width at narrow widths (a bare 1fr floors at min-content → the card
+       overflows its container and the mono chip is clipped). */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px;
   }
 
   .vm-mode {
+    min-width: 0;
     padding: 26px;
     display: flex;
     flex-direction: column;
@@ -325,8 +329,10 @@ const modeB = [
     border-radius: var(--r-sm);
     font-size: 12px;
     color: var(--ink-3);
-    white-space: nowrap;
-    overflow-x: auto;
+    /* Wrap (never force a min-content width that overflows the card at narrow
+       widths); break the long quoted value if it can't fit on one line. */
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .vm-chip__val {
     color: var(--ink-2);
@@ -367,7 +373,7 @@ const modeB = [
   /* Mobile: cards stack 1-col (Mode A first, by source order). */
   @media (max-width: 720px) {
     .vm__grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   @media (max-width: 460px) {
