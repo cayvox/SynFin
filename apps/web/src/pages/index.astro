@@ -10,6 +10,8 @@ import HowItWorks from '../components/HowItWorks.astro';
 import ProofBento from '../components/ProofBento.astro';
 import Privacy from '../components/Privacy.astro';
 import VenueModes from '../components/VenueModes.astro';
+import Open from '../components/Open.astro';
+import Ecosystem from '../components/Ecosystem.astro';
 import { REPO, SPEC } from '../site.ts';
 ---
 
@@ -91,8 +93,11 @@ import { REPO, SPEC } from '../site.ts';
     <!-- §6 — How venues plug in (settlement modes) -->
     <VenueModes />
 
-    {/* TODO(later — CONTENT.md §7): Open by design (#open) */}
-    {/* TODO(later — CONTENT.md §8): For the ecosystem (#ecosystem) */}
+    <!-- §7 — Open by design -->
+    <Open />
+
+    <!-- §8 — For the ecosystem -->
+    <Ecosystem />
   </main>
 
   <Footer />
