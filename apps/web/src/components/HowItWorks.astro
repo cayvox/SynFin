@@ -78,9 +78,14 @@ const steps = [
     margin-inline: auto;
     padding-inline: var(--gutter);
     display: grid;
-    grid-template-columns: 0.82fr 1fr;
+    /* minmax(0, …) so neither column floors at min-content at narrow widths. */
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
     gap: 40px;
     align-items: center;
+  }
+  .how__copy,
+  .how__orb {
+    min-width: 0;
   }
 
   .how__title {
@@ -148,7 +153,7 @@ const steps = [
   /* Tablet: stack — copy on top, orbital centered below, scaled. */
   @media (max-width: 960px) {
     .how__grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 48px;
     }
     .how__orb :global(.orb) {
