@@ -1,0 +1,353 @@
+---
+/**
+ * §6 "Open by design" (CONTENT.md §7; DESIGN.md §8b.6) — a 2-column editorial
+ * split: left, the words (the 1inch / Jupiter precedent → "Synfin is that layer
+ * for Canton" → adopts & contributes to CIP-0056/0112), a row of open/neutral
+ * chips, and a neutral one-liner; right, a lit-glass STACK diagram that reads top
+ * to bottom — the venues, the Synfin aggregation layer (ember), and the Canton
+ * token-standard settlement rail it settles through.
+ *
+ * Ember is restrained: the Synfin layer card, the "Synfin — Canton" analogy, and
+ * the Apache-2.0 chip. Everything else is warm-grey monochrome. Connectors are
+ * thin neutral hairlines (solid stroke — no gradient on near-vertical spans).
+ */
+import Eyebrow from './Eyebrow.astro';
+import SealMark from './SealMark.astro';
+
+const venues = ['CantonSwap', 'OneSwap', 'CompassSwap', 'Cantex', 'RFQ desk'];
+const chips = [
+  { t: 'Open · Apache-2.0', on: true },
+  { t: 'Neutral — no venue of our own', on: false },
+  { t: 'Self-hostable', on: false },
+  { t: 'Adopts & contributes to CIP-0056 / 0112', on: false },
+];
+// Fan connector x-positions (% of the 300-wide band) — one per venue chip.
+const fanX = [22, 38, 50, 62, 78];
+---
+
+<section id="open" class="open">
+  <div class="container">
+    <div class="open__grid">
+      <header class="open__copy" data-reveal>
+        <Eyebrow text="06 — Open & neutral" />
+        <h2 class="open__title">
+          <span>An aggregation layer,</span>
+          <span class="open__muted">not a new standard.</span>
+        </h2>
+        <p class="open__lead">
+          The winning answer to fragmented liquidity is always an aggregation
+          layer on the settlement rail — <strong>1inch on EVM</strong>,
+          <strong>Jupiter on Solana</strong>. Neither is a token standard; both
+          are neutral routers that became default infrastructure.
+          <strong>Synfin is that layer for Canton</strong> — it adopts CIP-0056 /
+          0112 for settlement and contributes back as an early implementer.
+        </p>
+        <ul class="open__chips">
+          {
+            chips.map((c) => (
+              <li class:list={['open-chip', c.on && 'open-chip--on']}>
+                <span class="open-chip__dot" aria-hidden="true" />
+                {c.t}
+              </li>
+            ))
+          }
+        </ul>
+        <p class="open__oneline">
+          Synfin holds no liquidity and favors no venue — neutral infrastructure
+          on top of the token standard.
+        </p>
+      </header>
+
+      <div class="open__diagram card" data-reveal>
+        <p class="open-cap mono">
+          1inch — EVM · Jupiter — Solana ·
+          <span class="open-cap__on">Synfin — Canton</span>
+        </p>
+
+        <ul class="open-venues">
+          {venues.map((v) => <li class="open-venue mono">{v}</li>)}
+        </ul>
+
+        <svg
+          class="open-fan"
+          viewBox="0 0 300 30"
+          preserveAspectRatio="none"
+          fill="none"
+          aria-hidden="true"
+        >
+          {
+            fanX.map((x) => (
+              <path
+                d={`M${x} 0 C${x} 18 150 8 150 30`}
+                stroke="var(--line-2)"
+                stroke-width="1"
+                stroke-linecap="round"
+              />
+            ))
+          }
+        </svg>
+
+        <div class="open-layer open-layer--synfin">
+          <div class="open-layer__head">
+            <span class="open-layer__brand">
+              <SealMark size={20} decorative class="open-layer__seal" />
+              Synfin
+            </span>
+            <span class="open-badge open-badge--on mono">aggregation layer</span
+            >
+          </div>
+          <p class="open-layer__body">
+            aggregates quotes · routes to best price · settles the split
+            atomically
+          </p>
+        </div>
+
+        <p class="open-link mono" aria-hidden="true">↑ settles via ↑</p>
+
+        <div class="open-layer open-layer--canton">
+          <div class="open-layer__head">
+            <span class="open-layer__name">Canton Network</span>
+            <span class="open-badge mono">settlement rail</span>
+          </div>
+          <p class="open-layer__body">token standard · CIP-0056 / 0112</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .open {
+    position: relative;
+    padding-block: var(--section-y);
+    overflow: hidden;
+  }
+  .open::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        42% 38% at 16% 6%,
+        rgba(228, 232, 240, 0.06),
+        transparent 62%
+      ),
+      radial-gradient(34% 32% at 84% 92%, var(--ember-glow), transparent 64%);
+  }
+  .open > .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .open__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.84fr) minmax(0, 1fr);
+    gap: 56px;
+    align-items: center;
+  }
+  .open__copy,
+  .open__diagram {
+    min-width: 0;
+  }
+
+  /* Left copy */
+  .open__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(32px, 4.6vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .open__muted {
+    color: var(--ink-3);
+  }
+  .open__lead {
+    margin-top: 24px;
+    max-width: 46ch;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .open__lead strong {
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .open__chips {
+    list-style: none;
+    margin: 26px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .open-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    color: var(--ink-2);
+    background: rgba(241, 239, 234, 0.03);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    overflow-wrap: anywhere;
+  }
+  .open-chip__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-3);
+    flex: none;
+  }
+  .open-chip--on {
+    color: var(--ember-hi);
+    border-color: var(--ember-soft);
+  }
+  .open-chip--on .open-chip__dot {
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
+  }
+
+  .open__oneline {
+    margin-top: 26px;
+    padding-left: 16px;
+    border-left: 1px solid var(--line-2);
+    max-width: 48ch;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink-3);
+  }
+
+  /* Right stack diagram */
+  .open__diagram {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .open-cap {
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .open-cap__on {
+    color: var(--ember);
+  }
+
+  .open-venues {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .open-venue {
+    padding: 6px 11px;
+    font-size: 11.5px;
+    color: var(--ink-2);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+  }
+
+  .open-fan {
+    width: 100%;
+    height: 30px;
+  }
+
+  .open-layer {
+    padding: 15px 16px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--bg-2);
+    min-width: 0;
+  }
+  .open-layer--synfin {
+    border-color: var(--ember-soft);
+    background: color-mix(in srgb, var(--bg-2) 88%, var(--ember) 12%);
+  }
+  .open-layer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .open-layer__brand,
+  .open-layer__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .open-layer--synfin .open-layer__brand {
+    color: var(--ember);
+  }
+  .open-layer__seal {
+    flex: none;
+  }
+  .open-layer__body {
+    margin-top: 7px;
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  .open-badge {
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: var(--r-pill);
+    color: var(--ink-3);
+    border: 1px solid var(--line-2);
+    white-space: nowrap;
+  }
+  .open-badge--on {
+    color: var(--ember-hi);
+    border-color: var(--ember-soft);
+    background: color-mix(in srgb, var(--bg-1) 82%, var(--ember) 18%);
+  }
+
+  .open-link {
+    margin: 0;
+    padding: 9px 0;
+    text-align: center;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+  }
+
+  /* Tablet/mobile: stack — copy on top, diagram below. */
+  @media (max-width: 900px) {
+    .open__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 40px;
+    }
+    .open__lead,
+    .open__oneline {
+      max-width: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .open__diagram {
+      padding: 16px;
+    }
+  }
+</style>
