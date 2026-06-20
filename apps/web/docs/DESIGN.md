@@ -35,9 +35,16 @@ real venues to best execution); never decorative neon.
 --bg-3:#202126;   /* hover surface */
 
 /* ink — warm-grey ramp */
---ink:#F1EFEA;    /* primary (warm white) */
---ink-2:#A8A59D;  /* secondary */
---ink-3:#6F6C64;  /* faint / muted headline tone */
+--ink:#F1EFEA;             /* primary (warm white) */
+--ink-2:#A8A59D;           /* secondary */
+--ink-3:#8B887F;           /* small muted text — captions, meta, labels, sub/body,
+                              footer bottom bar, mono metas. WCAG AA 4.5:1 for
+                              normal text (5.68/5.24/4.91 on bg-0/1/2). */
+--ink-display-muted:#6F6C64; /* large muted DISPLAY clauses ONLY — the second clause
+                              of the tonal hero h1 + each section h2 (≥24px /
+                              ≥18.66px bold). At Display sizes WCAG AA needs only
+                              3:1, which #6F6C64 meets (3.84:1), preserving the
+                              deep tonal dimness. Never use below large-text size. */
 
 /* lines — hairline light */
 --line:rgba(241,239,234,.10);
@@ -84,8 +91,10 @@ Type scale (desktop; fluid down):
 - Body: 16px / 1.6 / 400
 - Label / eyebrow: 13px / .02em (mono or ui)
 - Mono data: 12.5–13px / .02em ; big mono stat: 30–48px / 500 / tabular
-- Tonal headline move: split the line — primary clause in `--ink`, secondary clause in `--ink-3`
-  (e.g. "Best execution," in ink / "native to Canton." in muted). One muted clause max.
+- Tonal headline move: split the line — primary clause in `--ink`, secondary clause in
+  `--ink-display-muted` (the deep #6F6C64 muted tone; AA-safe at 3:1 because the clause is Display-size)
+  (e.g. "Best execution," in ink / "native to Canton." in muted). One muted clause max. Use `--ink-3`
+  (the lighter, AA-4.5:1 tone) for any muted text below the large-text threshold — never the display tone.
 
 ---
 

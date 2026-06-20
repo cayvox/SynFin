@@ -8,11 +8,11 @@
 import Eyebrow from './Eyebrow.astro';
 ---
 
-<section id="problem" class="problem">
+<section id="problem" class="problem" aria-labelledby="problem-title">
   <div class="container">
     <header class="problem__head" data-reveal>
       <Eyebrow text="01 — The problem" />
-      <h2 class="problem__title">
+      <h2 class="problem__title" id="problem-title">
         Canton has a token standard.
         <span class="problem__muted"
           >It doesn't have a best-execution layer — yet.</span
@@ -84,7 +84,7 @@ import Eyebrow from './Eyebrow.astro';
     flex-direction: column;
   }
   .problem__muted {
-    color: var(--ink-3);
+    color: var(--ink-display-muted);
   }
 
   .problem__body {
