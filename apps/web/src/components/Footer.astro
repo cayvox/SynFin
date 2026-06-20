@@ -89,20 +89,6 @@ const cols = [
     border-top: 1px solid var(--line);
     overflow: hidden;
   }
-  /* §7 atmosphere — cool wash top-left + faint ember bottom-right. */
-  .footer::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(
-        40% 120% at 16% 0%,
-        rgba(228, 232, 240, 0.05),
-        transparent 60%
-      ),
-      radial-gradient(30% 120% at 92% 120%, var(--ember-glow), transparent 64%);
-  }
-
   .footer__wrap {
     position: relative;
     z-index: 1;

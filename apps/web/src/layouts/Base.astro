@@ -100,6 +100,16 @@ const preloadFonts = [
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <slot />
+    <!-- §7b — the whole body reads as one lit space: a single page-level light
+         field behind all content, plus one unified grain over the page. Both are
+         decorative (aria-hidden, pointer-events:none) and degrade under
+         forced-colors / reduced-transparency (base.css). -->
+    <div class="page">
+      <div class="page__field" aria-hidden="true"></div>
+      <div class="page__content">
+        <slot />
+      </div>
+    </div>
+    <div class="page__grain" aria-hidden="true"></div>
   </body>
 </html>
