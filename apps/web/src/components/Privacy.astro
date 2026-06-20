@@ -1,0 +1,505 @@
+---
+/**
+ * §4 "Per-leg privacy" (CONTENT.md §5; DESIGN.md §8b.4) — a 2-column editorial
+ * split: left, the words (tonal heading + lead + an honest caveat); right, a
+ * lit-glass diagram of the atomic transaction from one venue's point of view.
+ *
+ * The diagram tells the confidentiality story directly: the executor (Synfin
+ * coordinator) submits one atomic transaction and sees the whole route; an ember
+ * path leads to YOUR leg (OneSwap), which is fully visible with real mono data;
+ * the other two legs are SEALED — redacted, reachable from the executor by faint
+ * dotted lines only. Ember is the single "what you can see" accent. Numbers are
+ * consistent with the bento RouterCard (250,000 CC → 39,940 USDCx; OneSwap 33% /
+ * 13,181 USDCx / 124.63; 82,500 CC = 33% of 250,000). Illustrative demo — never
+ * labelled measured/live.
+ */
+import Eyebrow from './Eyebrow.astro';
+
+// Lanes left→right; the MIDDLE lane is your visible leg (source order keeps it
+// centred on desktop). On mobile the visible lane is pulled first via CSS
+// `order` at the narrow breakpoint ("your leg first").
+const lanes = [
+  { name: 'CantonSwap', sealed: true },
+  {
+    name: 'OneSwap',
+    sealed: false,
+    rows: [
+      { k: 'share', v: '33%', ember: true },
+      { k: 'in', v: '82,500 CC' },
+      { k: 'out', v: '13,181 USDCx' },
+      { k: 'price', v: '124.63' },
+    ],
+  },
+  { name: 'RFQ desk', sealed: true },
+];
+---
+
+<section id="privacy" class="pv">
+  <div class="container">
+    <div class="pv__grid">
+      <header class="pv__copy" data-reveal>
+        <Eyebrow text="04 — Confidentiality" />
+        <h2 class="pv__title">
+          <span>Each venue sees</span>
+          <span class="pv__muted">only its own leg.</span>
+        </h2>
+        <p class="pv__lead">
+          The executor coordinates the whole atomic transaction. Per-leg
+          authorizations keep each venue’s view <em>compartmentalized</em> — it verifies
+          and settles its own leg without ever seeing the others.
+        </p>
+        <p class="pv__body">
+          Settlement happens with no public mempool, so there is no
+          front-running surface — MEV is structurally prevented at settlement.
+        </p>
+        <p class="pv__caveat">
+          Per-leg confidentiality ≠ anonymity to your own counterparty. A venue
+          cannot see <em>other</em> venues’ legs; it does not make your own leg anonymous
+          to whoever you trade that leg with.
+        </p>
+      </header>
+
+      <div class="pv__diagram card" data-reveal>
+        <!-- Executor bar — sees the whole route -->
+        <div class="pv-exec">
+          <span class="pv-exec__seal" aria-hidden="true"></span>
+          <div class="pv-exec__id">
+            <span class="pv-exec__name">Executor — Synfin coordinator</span>
+            <span class="pv-exec__sub"
+              >submits one atomic transaction · sees the whole route</span
+            >
+          </div>
+          <span class="pv-exec__tag mono">250,000 CC → 39,940 USDCx</span>
+        </div>
+
+        <!-- Connector: ember to your leg (middle), faint dotted to the sealed -->
+        <svg
+          class="pv-fan"
+          viewBox="0 0 300 34"
+          preserveAspectRatio="none"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            class="pv-fan__seal"
+            d="M150 0 C150 18 50 12 50 34"
+            stroke="var(--line-2)"
+            stroke-width="1"
+            stroke-dasharray="1.5 5"
+            stroke-linecap="round"></path>
+          <path
+            class="pv-fan__seal"
+            d="M150 0 C150 18 250 12 250 34"
+            stroke="var(--line-2)"
+            stroke-width="1"
+            stroke-dasharray="1.5 5"
+            stroke-linecap="round"></path>
+          <path
+            class="pv-fan__route"
+            d="M150 0 L150 34"
+            stroke="var(--ember)"
+            stroke-opacity="0.7"
+            stroke-width="1.2"
+            stroke-linecap="round"></path>
+        </svg>
+
+        <ul class="pv-lanes">
+          {
+            lanes.map((lane) =>
+              lane.sealed ? (
+                <li class="pv-lane pv-lane--sealed">
+                  <div class="pv-lane__head">
+                    <span class="pv-lane__name">{lane.name}</span>
+                    <span class="pv-lane__state mono">
+                      <svg
+                        class="pv-ic"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="3"
+                          y="6.4"
+                          width="8"
+                          height="5.2"
+                          rx="1.1"
+                          stroke="currentColor"
+                        />
+                        <path
+                          d="M4.7 6.4V4.8a2.3 2.3 0 0 1 4.6 0v1.6"
+                          stroke="currentColor"
+                        />
+                      </svg>
+                      sealed
+                    </span>
+                  </div>
+                  <div class="pv-redact" aria-hidden="true">
+                    <span class="pv-redact__bar" style="width:64%" />
+                    <span class="pv-redact__bar" style="width:88%" />
+                    <span class="pv-redact__bar" style="width:46%" />
+                  </div>
+                  <div class="pv-lane__foot pv-lane__foot--hidden mono">
+                    <svg
+                      class="pv-ic"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <circle cx="7" cy="7" r="5.2" stroke="currentColor" />
+                      <path d="M3.3 3.3l7.4 7.4" stroke="currentColor" />
+                    </svg>
+                    hidden from you
+                  </div>
+                </li>
+              ) : (
+                <li class="pv-lane pv-lane--visible">
+                  <div class="pv-lane__head">
+                    <span class="pv-lane__name">
+                      {lane.name} <span class="pv-lane__you">— your leg</span>
+                    </span>
+                    <span class="pv-lane__state pv-lane__state--on mono">
+                      <svg
+                        class="pv-ic"
+                        viewBox="0 0 16 14"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M1 7s2.6-4.5 7-4.5S15 7 15 7s-2.6 4.5-7 4.5S1 7 1 7Z"
+                          stroke="currentColor"
+                        />
+                        <circle cx="8" cy="7" r="1.9" stroke="currentColor" />
+                      </svg>
+                      visible
+                    </span>
+                  </div>
+                  <dl class="pv-data">
+                    {(lane.rows ?? []).map((r) => (
+                      <div class="pv-data__row">
+                        <dt>{r.k}</dt>
+                        <dd class:list={['mono', r.ember && 'pv-data__em']}>
+                          {r.v}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <div class="pv-lane__foot pv-lane__foot--on mono">
+                    <span class="pv-dot" aria-hidden="true" />
+                    you see only this leg
+                  </div>
+                </li>
+              ),
+            )
+          }
+        </ul>
+
+        <p class="pv__demo mono">
+          Illustrative demo — not measured or live data.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pv {
+    position: relative;
+    padding-block: var(--section-y);
+    overflow: hidden;
+  }
+  /* §7 atmosphere — one quiet wash + a faint ember underglow (varied position). */
+  .pv::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        44% 38% at 80% 6%,
+        rgba(228, 232, 240, 0.06),
+        transparent 62%
+      ),
+      radial-gradient(36% 34% at 16% 94%, var(--ember-glow), transparent 64%);
+  }
+  .pv > .container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .pv__grid {
+    display: grid;
+    /* minmax(0, …) so the tracks can shrink below their content's min-content
+       width at narrow widths (a bare 1fr floors at min-content → overflow). */
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+    gap: 56px;
+    align-items: center;
+  }
+  /* Grid items must be allowed to shrink so their content wraps, not overflows. */
+  .pv__copy,
+  .pv__diagram {
+    min-width: 0;
+  }
+
+  /* Left copy */
+  .pv__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(32px, 4.6vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .pv__muted {
+    color: var(--ink-3);
+  }
+  .pv__lead {
+    margin-top: 24px;
+    max-width: 44ch;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .pv__body {
+    margin-top: 16px;
+    max-width: 44ch;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .pv__lead em,
+  .pv__body em,
+  .pv__caveat em {
+    font-style: normal;
+    color: var(--ink);
+  }
+  .pv__caveat {
+    margin-top: 26px;
+    padding-left: 16px;
+    border-left: 1px solid var(--line-2);
+    max-width: 46ch;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink-3);
+  }
+
+  /* Right diagram card */
+  .pv__diagram {
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .pv-exec {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 13px 15px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--ember-soft);
+    background: color-mix(in srgb, var(--bg-2) 86%, var(--ember) 14%);
+  }
+  .pv-exec__seal {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 9px 0 var(--ember-soft);
+    flex: none;
+  }
+  .pv-exec__id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .pv-exec__name {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .pv-exec__sub {
+    font-family: var(--font-ui);
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+  .pv-exec__tag {
+    margin-left: auto;
+    flex: none;
+    font-size: 11.5px;
+    color: var(--ember-hi);
+    white-space: nowrap;
+  }
+
+  .pv-fan {
+    width: 100%;
+    height: 34px;
+  }
+
+  .pv-lanes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .pv-lane {
+    min-width: 0;
+    padding: 12px 13px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .pv-lane--visible {
+    border-color: var(--ember-soft);
+    background: color-mix(in srgb, var(--bg-2) 92%, var(--ember) 8%);
+    box-shadow: 0 0 0 1px rgba(204, 106, 67, 0.06);
+  }
+
+  .pv-lane__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .pv-lane__name {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .pv-lane__you {
+    color: var(--ember);
+    font-weight: 500;
+  }
+  .pv-lane__state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+    flex: none;
+  }
+  .pv-lane__state--on {
+    color: var(--ember);
+  }
+  .pv-ic {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Redacted (sealed) body — hatched bars, nothing legible. */
+  .pv-redact {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 4px 0 2px;
+  }
+  .pv-redact__bar {
+    height: 8px;
+    border-radius: 2px;
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(241, 239, 234, 0.1),
+      rgba(241, 239, 234, 0.1) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+    border: 1px solid var(--line);
+  }
+
+  /* Visible body — real mono data. */
+  .pv-data {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .pv-data__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .pv-data__row dt {
+    font-family: var(--font-ui);
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+  .pv-data__row dd {
+    margin: 0;
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .pv-data__row dd.pv-data__em {
+    color: var(--ember);
+  }
+
+  .pv-lane__foot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.01em;
+  }
+  .pv-lane__foot--hidden {
+    color: var(--ink-3);
+  }
+  .pv-lane__foot--on {
+    color: var(--ember-hi);
+  }
+  .pv-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 7px 0 var(--ember-soft);
+    flex: none;
+  }
+
+  .pv__demo {
+    margin-top: 16px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+  }
+
+  /* Tablet/mobile: stack — copy on top, diagram below. */
+  @media (max-width: 900px) {
+    .pv__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 40px;
+    }
+    .pv__lead,
+    .pv__body,
+    .pv__caveat {
+      max-width: none;
+    }
+  }
+
+  /* Narrow: lanes stack one-per-row, your leg first. */
+  @media (max-width: 560px) {
+    .pv-lanes {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .pv-lane--visible {
+      order: -1;
+    }
+    .pv-fan {
+      display: none;
+    }
+    .pv__diagram {
+      padding: 16px;
+    }
+  }
+</style>
