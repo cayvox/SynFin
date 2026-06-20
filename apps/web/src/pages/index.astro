@@ -21,7 +21,7 @@ import { REPO, SPEC } from '../site.ts';
 
   <main id="main">
     <!-- ===================== HERO — routing constellation (DESIGN.md §6/§8) ===================== -->
-    <section class="hero" data-hero>
+    <section class="hero" data-hero aria-labelledby="hero-title">
       <div class="container">
         <div class="hero__panel">
           <Constellation />
@@ -29,7 +29,7 @@ import { REPO, SPEC } from '../site.ts';
           <div class="hero__content">
             <Eyebrow text="Open best-execution layer · Canton" data-anim />
 
-            <h1 class="hero__headline" data-anim>
+            <h1 class="hero__headline" id="hero-title" data-anim>
               <span class="hero__line">Best execution,</span>
               <span class="hero__line hero__line--muted">native to Canton.</span
               >

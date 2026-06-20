@@ -125,6 +125,12 @@ const links = [
     border-radius: var(--r-pill);
     backdrop-filter: blur(14px);
   }
+  /* Without the blur the translucent pill must read on its own — make it solid. */
+  @media (prefers-reduced-transparency: reduce) {
+    .pill {
+      background: #14151a;
+    }
+  }
   .pill__link {
     padding: 7px 13px;
     border-radius: var(--r-pill);
