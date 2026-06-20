@@ -172,3 +172,27 @@ h3 {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Reduced transparency — drop backdrop blur and make glass surfaces opaque so
+   nothing depends on translucency to be legible. (Per-component glass overrides
+   its own background; this is the global backstop.) */
+@media (prefers-reduced-transparency: reduce) {
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Forced colors (Windows high-contrast) — keep a visible keyboard focus ring in
+   the system highlight colour, and don't let purely-decorative atmosphere washes
+   paint over text. Borders/text already map to system colours automatically. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 3px;
+  }
+  .card::before,
+  .card::after {
+    display: none;
+  }
+}

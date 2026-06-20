@@ -13,7 +13,16 @@
   /* §1 Ink — warm-grey ramp */
   --ink: #f1efea; /* primary (warm white) */
   --ink-2: #a8a59d; /* secondary */
-  --ink-3: #6f6c64; /* faint / muted headline tone */
+  /* Small muted text (captions, meta, labels, sub/body, footer bottom bar, mono
+     metas). #6f6c64 was 3.84:1 on the page bg — fails WCAG AA 4.5:1 for normal
+     text — so it is #8b887f: 5.68 / 5.24 / 4.91:1 on bg-0 / bg-1 / bg-2, clearing
+     AA on every surface while staying the dimmest tone. */
+  --ink-3: #8b887f;
+  /* Large muted DISPLAY clauses only — the second clause of the tonal hero h1 and
+     each section h2 (Display sizes ≥24px / ≥18.66px bold). At those sizes WCAG AA
+     needs only 3:1, which the original #6f6c64 meets (3.84:1), so the intended
+     deep tonal dimness is preserved. Never use on text below the large threshold. */
+  --ink-display-muted: #6f6c64;
 
   /* §1 Lines — hairline light */
   --line: rgba(241, 239, 234, 0.1);
