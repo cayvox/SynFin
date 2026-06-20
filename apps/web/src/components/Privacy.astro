@@ -227,9 +227,16 @@ const lanes = [
 
   .pv__grid {
     display: grid;
-    grid-template-columns: 0.78fr 1fr;
+    /* minmax(0, …) so the tracks can shrink below their content's min-content
+       width at narrow widths (a bare 1fr floors at min-content → overflow). */
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
     gap: 56px;
     align-items: center;
+  }
+  /* Grid items must be allowed to shrink so their content wraps, not overflows. */
+  .pv__copy,
+  .pv__diagram {
+    min-width: 0;
   }
 
   /* Left copy */
@@ -287,7 +294,8 @@ const lanes = [
   .pv-exec {
     display: flex;
     align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 6px 12px;
     padding: 13px 15px;
     border-radius: var(--r-sm);
     border: 1px solid var(--ember-soft);
@@ -341,6 +349,7 @@ const lanes = [
     align-items: start;
   }
   .pv-lane {
+    min-width: 0;
     padding: 12px 13px;
     background: var(--bg-2);
     border: 1px solid var(--line);
@@ -468,7 +477,7 @@ const lanes = [
   /* Tablet/mobile: stack — copy on top, diagram below. */
   @media (max-width: 900px) {
     .pv__grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 40px;
     }
     .pv__lead,
@@ -481,7 +490,7 @@ const lanes = [
   /* Narrow: lanes stack one-per-row, your leg first. */
   @media (max-width: 560px) {
     .pv-lanes {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
     }
     .pv-lane--visible {
       order: -1;
