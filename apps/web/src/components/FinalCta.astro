@@ -1,0 +1,129 @@
+---
+/**
+ * Final CTA strip (DESIGN.md §15; reference/synfin-footer.png) — the closing
+ * nudge above the footer: a lit card (radial top-light, inset highlight + soft
+ * shadow, a faint ember underglow bottom-right) with a tonal heading + sub on the
+ * left and the primary/ghost actions on the right. Reuses the shared Button.
+ * ≤760 stacks (text over full-width actions).
+ */
+import Button from './Button.astro';
+import { REPO, SPEC } from '../site.ts';
+---
+
+<section class="cta" aria-labelledby="cta-title">
+  <div class="cta__wrap">
+    <div class="cta__card" data-reveal>
+      <div class="cta__text">
+        <h2 id="cta-title" class="cta__title">
+          Build best execution into Canton.
+          <span class="cta__muted">Start with the spec.</span>
+        </h2>
+        <p class="cta__sub">
+          Open, neutral, and built on the token standard. Read the specification
+          or pull the SDK and route your first trade.
+        </p>
+      </div>
+      <div class="cta__actions">
+        <Button
+          variant="primary"
+          href={SPEC}
+          target="_blank"
+          rel="noopener noreferrer">Read the spec ↗</Button
+        >
+        <Button
+          variant="ghost"
+          href={REPO}
+          target="_blank"
+          rel="noopener noreferrer">View on GitHub</Button
+        >
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta {
+    padding-top: clamp(40px, 7vw, 96px);
+  }
+  .cta__wrap {
+    max-width: 1320px;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  .cta__card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    padding: clamp(28px, 4vw, 46px) clamp(20px, 4vw, 48px);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: radial-gradient(
+      80% 140% at 50% -20%,
+      #16171c 0%,
+      #101013 50%,
+      #0b0b0d 100%
+    );
+    box-shadow: var(--card-inset), var(--card-shadow);
+  }
+  /* faint ember underglow, bottom-right */
+  .cta__card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      50% 120% at 88% 120%,
+      var(--ember-glow),
+      transparent 60%
+    );
+  }
+  .cta__text {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+  .cta__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(24px, 3vw, 30px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .cta__muted {
+    color: var(--ink-3);
+  }
+  .cta__sub {
+    margin-top: 10px;
+    max-width: 46ch;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+  .cta__actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 12px;
+    flex: none;
+  }
+
+  /* ≤760: stack — text over full-width actions. */
+  @media (max-width: 760px) {
+    .cta__card {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 24px;
+    }
+    .cta__actions {
+      flex-direction: column;
+    }
+    .cta__actions :global(.btn) {
+      width: 100%;
+    }
+  }
+</style>
