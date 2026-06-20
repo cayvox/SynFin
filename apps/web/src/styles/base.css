@@ -160,6 +160,87 @@ h3 {
   transform: translateY(-2px);
 }
 
+/* §7b — page-level continuous light field + unified grain. Replaces the old
+   per-section ::before washes so the body reads as ONE lit space, not a stack of
+   separately-lit blocks. Both layers are decorative and never trap pointer/focus.
+   The field spans the full document height; content sits above it. */
+.page {
+  position: relative; /* containing block for the absolute field */
+}
+.page__field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* LARGE overlapping sources travelling cool(top) → ember(mid) → cool+ember
+     (bottom); page-fraction positions, alternating sides, generous radii so no
+     section falls into a flat dark band. Tuned in-browser for the real height. */
+  background: radial-gradient(
+      60% 18% at 78% 3%,
+      rgba(228, 232, 240, 0.085),
+      transparent 66%
+    ),
+    radial-gradient(
+      54% 16% at 20% 13%,
+      rgba(214, 220, 230, 0.055),
+      transparent 68%
+    ),
+    radial-gradient(
+      58% 16% at 76% 23%,
+      rgba(214, 220, 230, 0.05),
+      transparent 68%
+    ),
+    radial-gradient(
+      60% 17% at 30% 33%,
+      rgba(204, 106, 67, 0.085),
+      transparent 66%
+    ),
+    radial-gradient(
+      64% 18% at 74% 44%,
+      rgba(204, 106, 67, 0.12),
+      transparent 64%
+    ),
+    radial-gradient(
+      56% 16% at 24% 54%,
+      rgba(214, 220, 230, 0.06),
+      transparent 68%
+    ),
+    radial-gradient(
+      58% 16% at 72% 64%,
+      rgba(204, 106, 67, 0.08),
+      transparent 66%
+    ),
+    radial-gradient(
+      54% 16% at 28% 74%,
+      rgba(214, 220, 230, 0.052),
+      transparent 68%
+    ),
+    radial-gradient(
+      58% 17% at 74% 85%,
+      rgba(204, 106, 67, 0.062),
+      transparent 66%
+    ),
+    radial-gradient(
+      76% 20% at 50% 98%,
+      rgba(228, 232, 240, 0.05),
+      transparent 72%
+    );
+}
+.page__content {
+  position: relative;
+  z-index: 1; /* all content renders above the field */
+}
+.page__grain {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -173,26 +254,33 @@ h3 {
   }
 }
 
-/* Reduced transparency — drop backdrop blur and make glass surfaces opaque so
-   nothing depends on translucency to be legible. (Per-component glass overrides
-   its own background; this is the global backstop.) */
+/* Reduced transparency — drop backdrop blur AND the decorative page field + grain
+   so nothing depends on translucency to be legible. (Per-component glass
+   overrides its own background; this is the global backstop.) */
 @media (prefers-reduced-transparency: reduce) {
   * {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+  .page__field,
+  .page__grain {
+    display: none;
+  }
 }
 
 /* Forced colors (Windows high-contrast) — keep a visible keyboard focus ring in
-   the system highlight colour, and don't let purely-decorative atmosphere washes
-   paint over text. Borders/text already map to system colours automatically. */
+   the system highlight colour, and drop purely-decorative layers (the card washes
+   and the page field/grain) so nothing paints over text. Borders/text already map
+   to system colours automatically. */
 @media (forced-colors: active) {
   :focus-visible {
     outline: 2px solid Highlight;
     outline-offset: 3px;
   }
   .card::before,
-  .card::after {
+  .card::after,
+  .page__field,
+  .page__grain {
     display: none;
   }
 }
