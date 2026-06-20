@@ -8,6 +8,8 @@ import Constellation from '../components/Constellation.astro';
 import Problem from '../components/Problem.astro';
 import HowItWorks from '../components/HowItWorks.astro';
 import ProofBento from '../components/ProofBento.astro';
+import Privacy from '../components/Privacy.astro';
+import VenueModes from '../components/VenueModes.astro';
 import { REPO, SPEC } from '../site.ts';
 ---
 
@@ -83,8 +85,12 @@ import { REPO, SPEC } from '../site.ts';
     <!-- §4 — Proof / Insights bento -->
     <ProofBento />
 
-    {/* TODO(later — CONTENT.md §5): Per-leg privacy (#privacy) */}
-    {/* TODO(later — CONTENT.md §6): How venues plug in (#architecture) */}
+    <!-- §5 — Per-leg privacy -->
+    <Privacy />
+
+    <!-- §6 — How venues plug in (settlement modes) -->
+    <VenueModes />
+
     {/* TODO(later — CONTENT.md §7): Open by design (#open) */}
     {/* TODO(later — CONTENT.md §8): For the ecosystem (#ecosystem) */}
   </main>
