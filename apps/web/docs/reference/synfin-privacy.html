@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Synfin — per-leg privacy §4</title>
+<style>
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-400.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-500.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-600.woff2') format('woff2');font-weight:600}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Medium.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Medium.woff2') format('woff2');font-weight:500}
+  :root{--bg-0:#070708;--bg-1:#121316;--bg-2:#17181c;--ink:#F1EFEA;--ink-2:#A8A59D;--ink-3:#6F6C64;
+    --line:rgba(241,239,234,.10);--line-2:rgba(241,239,234,.16);
+    --ember:#CC6A43;--ember-hi:#E68A5E;--ember-soft:rgba(204,106,67,.55);--ember-glow:rgba(204,106,67,.16);
+    --display:'Mona Sans',sans-serif;--ui:'Geist',sans-serif;--mono:'Geist Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg-0);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased}
+  .section{position:relative;padding:120px 60px;overflow:hidden}
+  .section::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(40% 46% at 82% 6%, rgba(228,232,240,.06), transparent 60%),
+    radial-gradient(34% 40% at 14% 100%, var(--ember-glow), transparent 64%);}
+  .grid{position:relative;max-width:1320px;margin:0 auto;display:grid;grid-template-columns:0.78fr 1fr;gap:56px;align-items:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);border:1px solid var(--line-2);
+    background:rgba(20,21,25,.5);border-radius:999px;padding:7px 15px 7px 12px;letter-spacing:.02em}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px 1px var(--ember-soft)}
+  h2{font-family:var(--display);font-weight:600;font-size:50px;line-height:1.04;letter-spacing:-.025em;margin:22px 0 0;max-width:14ch}
+  h2 .muted{color:var(--ink-3)}
+  .lead{font-size:16.5px;line-height:1.6;color:var(--ink-2);max-width:44ch;margin:24px 0 0}
+  .caveat{font-size:13px;line-height:1.5;color:var(--ink-3);max-width:44ch;margin:22px 0 0;padding-left:13px;border-left:1px solid var(--line-2)}
+
+  /* privacy diagram */
+  .priv{position:relative;background:var(--bg-1);border:1px solid var(--line);border-radius:18px;padding:24px;
+    box-shadow:0 1px 0 rgba(241,239,234,.06) inset,0 24px 60px -30px rgba(0,0,0,.8)}
+  .priv::before{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;
+    background:radial-gradient(60% 50% at 50% 0%, rgba(241,239,234,.05), transparent 70%)}
+  .exec{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:13px 16px;border:1px solid var(--line-2);border-radius:12px;background:rgba(204,106,67,.05)}
+  .exec .l{display:flex;align-items:center;gap:11px}
+  .exec .seal{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--ember-soft);background:rgba(204,106,67,.08)}
+  .exec .seal b{width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 8px 1px var(--ember-soft)}
+  .exec .t{font-size:13.5px;font-weight:500}
+  .exec .s{font-size:12px;color:var(--ink-2);margin-top:1px}
+  .exec .tag{font-family:var(--mono);font-size:11px;color:var(--ember);border:1px solid var(--ember-soft);border-radius:999px;padding:5px 11px;background:rgba(204,106,67,.06)}
+  .conn{position:relative;height:26px;margin:0 2px}
+  .lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .lane{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg-2)}
+  .lane .hd{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-bottom:1px solid var(--line)}
+  .lane .hd .nm{font-size:12.5px;font-weight:500}
+  .lane .hd .lk{font-family:var(--mono);font-size:10px;color:var(--ink-3);display:flex;align-items:center;gap:5px}
+  .lane.me .hd{background:rgba(204,106,67,.06)}
+  .lane.me .hd .nm{color:var(--ember)}
+  .lane .bd{padding:13px;display:flex;flex-direction:column;gap:8px;min-height:118px}
+  .row{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11.5px}
+  .row .k{color:var(--ink-3)}
+  .row .v{color:var(--ink-2)}
+  .lane.me .row .v{color:var(--ink)}
+  .lane.me .row .v b{color:var(--ember);font-weight:500}
+  /* redacted (other venues' legs) */
+  .red{height:9px;border-radius:3px;background:repeating-linear-gradient(135deg,rgba(241,239,234,.06) 0 6px,rgba(241,239,234,.02) 6px 12px)}
+  .red.w1{width:78%}.red.w2{width:54%}.red.w3{width:66%}.red.w4{width:42%}
+  .lane .seeonly{margin-top:auto;font-family:var(--mono);font-size:10px;color:var(--ink-3);display:flex;align-items:center;gap:6px;padding-top:6px}
+  .lane.me .seeonly{color:var(--ember)}
+  .ic{width:11px;height:11px;flex:none}
+</style></head>
+<body>
+  <section class="section">
+    <div class="grid">
+      <div class="copy">
+        <span class="eyebrow"><span class="dot"></span>04 — Confidentiality</span>
+        <h2>Each venue sees<br><span class="muted">only its own leg.</span></h2>
+        <p class="lead">Synfin settles the split so every venue verifies and executes its own leg without seeing the others. The executor coordinates the whole atomic transaction; each venue's view is compartmentalized — and with no public mempool, there is no front-running surface.</p>
+        <p class="caveat">Per-leg confidentiality ≠ anonymity to your own counterparty. A venue does not see other venues' legs; it still sees its own.</p>
+      </div>
+
+      <div class="priv">
+        <!-- executor: sees the whole route -->
+        <div class="exec">
+          <div class="l">
+            <span class="seal"><b></b></span>
+            <div><div class="t">Executor — Synfin coordinator</div><div class="s">submits one atomic transaction · sees the whole route</div></div>
+          </div>
+          <span class="tag">250,000 CC → 39,940 USDCx</span>
+        </div>
+        <!-- connector -->
+        <svg class="conn" viewBox="0 0 600 26" preserveAspectRatio="none" fill="none">
+          <g stroke="#CC6A43" stroke-opacity=".5" stroke-width="1.1" stroke-linecap="round" vector-effect="non-scaling-stroke">
+            <path d="M300,0 C160,12 120,14 100,26"/>
+            <path d="M300,0 L300,26"/>
+            <path d="M300,0 C440,12 480,14 500,26"/>
+          </g>
+        </svg>
+        <!-- three legs, the middle one is "you / this venue" -->
+        <div class="lanes">
+          <div class="lane">
+            <div class="hd"><span class="nm">CantonSwap</span><span class="lk"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6F6C64" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> sealed</span></div>
+            <div class="bd">
+              <div class="red w1"></div><div class="red w3"></div><div class="red w2"></div><div class="red w4"></div>
+              <div class="seeonly"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6F6C64" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><line x1="3" y1="3" x2="21" y2="21"/></svg> hidden from you</div>
+            </div>
+          </div>
+          <div class="lane me">
+            <div class="hd"><span class="nm">OneSwap — your leg</span><span class="lk"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#CC6A43" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> visible</span></div>
+            <div class="bd">
+              <div class="row"><span class="k">share</span><span class="v"><b>33%</b></span></div>
+              <div class="row"><span class="k">in</span><span class="v">82,500 CC</span></div>
+              <div class="row"><span class="k">out</span><span class="v">13,181 USDCx</span></div>
+              <div class="row"><span class="k">price</span><span class="v">124.63</span></div>
+              <div class="seeonly"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#CC6A43" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> you see only this leg</div>
+            </div>
+          </div>
+          <div class="lane">
+            <div class="hd"><span class="nm">RFQ desk</span><span class="lk"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6F6C64" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> sealed</span></div>
+            <div class="bd">
+              <div class="red w2"></div><div class="red w1"></div><div class="red w4"></div><div class="red w3"></div>
+              <div class="seeonly"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6F6C64" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><line x1="3" y1="3" x2="21" y2="21"/></svg> hidden from you</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body></html>

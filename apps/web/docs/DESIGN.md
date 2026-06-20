@@ -55,7 +55,10 @@ real venues to best execution); never decorative neon.
 ```
 
 Rules: monochrome + ONE accent (ember). **Ember budget ≤ 4 instances per viewport** (e.g. seal center,
-edge/payoff number, best-route line+marker, one live dot). NO blue/teal/green/purple/cyan. NO saturated
+edge/payoff number, best-route line+marker, one live dot). EXCEPTION: the §3 router orbital is a
+deliberate "ember-instrument" that runs hot (~17 ember marks: meter + 3 route lines + core dot + 3
+route-node rings + 3 prices + 3 shares + arc) — intentional and documented; the ≤4 budget applies to
+general sections, not the orbital. NO blue/teal/green/purple/cyan. NO saturated
 neon. NO multi-color gradients. Color comes from *light* (cool-white washes) and the single warm accent.
 
 ---
@@ -322,3 +325,108 @@ Responsive: desktop = the 2-col split (match PNG). ≤~960: stack — copy on to
 scaled (~420px) with labels still legible. ≤~560: orbital simplifies (may drop the faint scanned lines /
 shrink further) but keeps the core + the 3 route venues + the meter readable; NO clipping, NO horizontal
 scroll, clean order.
+
+---
+
+## 13. Detailed build specs — §4 Per-leg privacy + §5 How venues plug in (approved renders)
+
+Page order (these come AFTER the Proof bento): Hero → §2 Problem → §3 How-it-works → Proof bento →
+§4 Privacy → §5 Venue modes → (§6 Open → §7 Ecosystem → Footer, later).
+
+### §4 — Per-leg privacy (eyebrow `04 — Confidentiality`, CONTENT §5) — MATCH `reference/synfin-privacy.png`
+A 2-column split (max-width 1320, gap ~56, align center):
+- LEFT (~0.78fr): eyebrow; tonal h2 "Each venue sees" (--ink) + "only its own leg." (--ink-3 muted),
+  Display L; a ~44ch lead (CONTENT §5 — executor coordinates the atomic tx; each venue's view is
+  compartmentalized; no public mempool → no front-running surface); then the honest caveat in --ink-3
+  with a left hairline rule: "Per-leg confidentiality ≠ anonymity to your own counterparty. A venue does
+  not see other venues' legs; it still sees its own."
+- RIGHT (1fr): a lit-glass `.card` containing the privacy diagram:
+  • **Executor bar** (top): a rounded row, faint ember tint, with a small ember seal dot + "Executor —
+    Synfin coordinator" + "submits one atomic transaction · sees the whole route", and a right-aligned
+    mono ember tag "250,000 CC → 39,940 USDCx".
+  • **Ember connector** (thin, ~1.1px, .5, subtle): from the executor center fanning down to the 3 lanes.
+  • **3 lane cards** (grid, gap 12): the MIDDLE lane = "OneSwap — your leg" is the visible one (ember
+    header tint, eye icon "visible"), showing real mono data — share **33%** (ember) · in **82,500 CC** ·
+    out **13,181 USDCx** · price **124.63** — and a footer "● you see only this leg" (ember). The OTHER
+    two lanes (CantonSwap, RFQ desk) = "sealed" (lock icon), their bodies are **redacted hatched bars**
+    (repeating-linear-gradient at low alpha) + a footer "⦰ hidden from you" (eye-off, --ink-3).
+  • Numbers must stay consistent with the bento/constellation (OneSwap 33% / 13,181 USDCx / quote 124.63;
+    82,500 CC = 33% of 250,000). Illustrative demo — never label measured/live.
+- Quiet §7 atmosphere. Motion: lanes + executor reveal on scroll; the "visible" lane's numbers may fade
+  in; redacted bars static. PE: reduced-motion/JS-off → final state, no flash.
+- Responsive: ≤~960 stack copy over the diagram; lanes stay 3-up as long as they fit, else 1-up stacked
+  (your leg first), no clipping, no h-scroll.
+- OPTIONAL interactivity (progressive enhancement, desktop): hovering a venue node elsewhere could focus
+  its lane — but the DEFAULT static state already tells the story (your leg visible, others sealed). Keep
+  the static render faithful first.
+
+### §5 — How venues plug in (eyebrow `05 — Architecture`, CONTENT §6) — MATCH `reference/synfin-modes.png`
+Centered, max-width ~1180:
+- Head: eyebrow `05 — Architecture`; tonal h2 "Two settlement modes." (--ink) + "One adapter interface."
+  (--ink-3 muted), Display L.
+- Two `.card` columns (grid 1fr 1fr, gap 20):
+  • **Mode A — Atomic-allocation** (the card gets a faint **ember** border + ember top-glow; badge
+    "atomic" ember): label "settlementMode"; title "Atomic-allocation"; sub "The venue co-settles through
+    the token standard's allocation flow. Eligible for Synfin's atomic, per-leg-private settlement.";
+    3 ember-check feature rows (hairline-separated): **Atomic co-settlement** — all legs in one
+    transaction · **Per-leg privacy** — each venue sees only its leg · **All-or-nothing** — settles via
+    CIP-0056 / 0112; a mono code chip `settlementMode: 'atomic-allocation'` (value in ember).
+  • **Mode B — Managed-deposit** (neutral card; badge "deferred" neutral): title "Managed-deposit"; sub
+    "Quote-and-deposit venues. Synfin still aggregates their quotes, but execution is deferred and settles
+    separately."; 3 neutral feature rows with distinct icons (＋ Quote & deposit — included in routing ·
+    ◷ Deferred execution — not same-transaction · ✕ Non-atomic — outside the all-or-nothing guarantee);
+    code chip `settlementMode: 'managed-deposit'` (neutral value).
+- **Honest note** below (lit row, ember dot): "**Atomic settlement is valid only when every leg is Mode A**
+  — the router enforces it. Honest status: most accessible Canton venues today are `managed-deposit`, and
+  CIP-0112's native batch settlement is rolling out. Quote aggregation works across both now; the atomic
+  path turns on as venues adopt the allocation flow."
+- Quiet §7 atmosphere. Motion: cards reveal on scroll (staggered). PE: reduced-motion/JS-off → final
+  state, no flash.
+- Responsive: ≤~860 the two cards stack 1-col (Mode A first); the note reflows; no clipping/h-scroll.
+
+---
+
+## 14. Detailed build specs — §6 Open by design + §7 Ecosystem (approved renders)
+
+Page order (after §5 venue modes): … → §5 Modes → §6 Open by design → §7 Ecosystem → Footer.
+
+### §6 — Open by design (eyebrow `06 — Open & neutral`, CONTENT §7) — MATCH `reference/synfin-open.png`
+2-col split (left ~0.84fr copy, right 1fr stack diagram, gap ~56, align center):
+- LEFT: eyebrow; tonal h2 "An aggregation layer," (--ink) + "not a new standard." (--ink-3 muted),
+  Display L; ~46ch lead (the 1inch/Jupiter precedent → "Synfin is that layer for Canton" → adopts
+  CIP-0056/0112 + contributes; bold the key phrases); open-property **chips** row: "Open · Apache-2.0"
+  (ember chip) · "Neutral — no venue of our own" · "Self-hostable" · "Adopts & contributes to
+  CIP-0056/0112"; then the neutral one-liner (left hairline rule, --ink-3): "Synfin holds no liquidity
+  and favors no venue. It is neutral infrastructure on top of the token standard."
+- RIGHT: a lit-glass `.card` **stack diagram** (the architecture — this is the anti-generic element):
+  • top caption (mono, centered): "1inch — EVM · Jupiter — Solana · **Synfin — Canton**" (Synfin in ember).
+  • a row of 5 **venue chips** (CantonSwap/OneSwap/CompassSwap/Cantex/RFQ desk) with thin neutral
+    connectors fanning DOWN into…
+  • the **Synfin layer** card (ember-tinted, ember title, badge "aggregation layer"): "Synfin" +
+    "aggregates quotes · routes to best price · settles the split atomically".
+  • a "↑ settles via ↑" connector label, resting on…
+  • the **Canton Network layer** card (neutral, badge "settlement rail"): "Canton Network" + "token
+    standard · CIP-0056 / 0112".
+  Reads top-to-bottom: venues → Synfin aggregation layer → Canton token standard. Ember only on the
+  Synfin layer + the analogy's Synfin + the Apache chip.
+- Quiet §7 atmosphere. Motion: reveal on scroll (chips → layers → connectors draw). Responsive: ≤~960
+  stack copy over the diagram; chips wrap; the two layer cards stay full-width; no clip/h-scroll.
+
+### §7 — Ecosystem (eyebrow `07 — Who it's for`, CONTENT §8) — MATCH `reference/synfin-eco.png`
+Centered (max-width ~1180): eyebrow `07 — Who it's for`; tonal h2 "Built for everyone" (--ink) +
+"routing on Canton." (--ink-3 muted), Display L. Three lit-glass `.card` columns (grid repeat(3,
+minmax(0,1fr)), gap 20, left-aligned text):
+- **Venues** (icon: building/exchange): "Implement **one adapter** and become reachable through every
+  Synfin integration — more flow, no new counterparties to chase." meta "● one adapter · every integration".
+- **Wallets & apps** (icon: wallet): "**One SDK** for best-execution swaps across all of Canton's
+  liquidity — drop it in and route every trade to the best price." meta "● one SDK · all of Canton".
+- **Institutions** (icon: columns/bank): "**Best execution** with settlement atomicity and per-leg
+  confidentiality — provable, to the basis point, on neutral open infrastructure." meta "● provable
+  best-ex · per-leg private".
+  Each card: 44px rounded icon tile (lit, neutral stroke) + Display-M title + ~14.5px --ink-2 body (bold
+  key phrase) + a mono meta line (ember dot, --ink-3) above a hairline.
+- Honest **Canton context** line below (centered, --ink-3, ~64ch): "**Canton is where regulated,
+  institutional liquidity is moving on-chain — on a common token standard.** Synfin is the neutral
+  best-execution layer on top of it." (no overclaiming).
+- Quiet §7 atmosphere. Motion: cards reveal staggered. Responsive: 3→2→1 col (minmax(0,1fr), min-width:0
+  on cards), no clip/h-scroll.

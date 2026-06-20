@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Synfin — venue modes §5</title>
+<style>
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-400.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-500.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-600.woff2') format('woff2');font-weight:600}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Medium.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Medium.woff2') format('woff2');font-weight:500}
+  :root{--bg-0:#070708;--bg-1:#121316;--bg-2:#17181c;--ink:#F1EFEA;--ink-2:#A8A59D;--ink-3:#6F6C64;
+    --line:rgba(241,239,234,.10);--line-2:rgba(241,239,234,.16);
+    --ember:#CC6A43;--ember-hi:#E68A5E;--ember-soft:rgba(204,106,67,.55);--ember-glow:rgba(204,106,67,.16);
+    --display:'Mona Sans',sans-serif;--ui:'Geist',sans-serif;--mono:'Geist Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg-0);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased}
+  .section{position:relative;padding:120px 60px;overflow:hidden}
+  .section::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(38% 44% at 16% 6%, rgba(228,232,240,.06), transparent 60%),
+    radial-gradient(36% 40% at 88% 100%, var(--ember-glow), transparent 64%);}
+  .wrap{position:relative;max-width:1180px;margin:0 auto}
+  .head{max-width:900px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);border:1px solid var(--line-2);
+    background:rgba(20,21,25,.5);border-radius:999px;padding:7px 15px 7px 12px;letter-spacing:.02em}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px 1px var(--ember-soft)}
+  h2{font-family:var(--display);font-weight:600;font-size:48px;line-height:1.04;letter-spacing:-.025em;margin:22px 0 0;max-width:18ch}
+  h2 .muted{color:var(--ink-3)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:48px 0 0}
+  .card{position:relative;background:var(--bg-1);border:1px solid var(--line);border-radius:18px;padding:28px;
+    box-shadow:0 1px 0 rgba(241,239,234,.06) inset,0 24px 60px -30px rgba(0,0,0,.8)}
+  .card::before{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;
+    background:radial-gradient(60% 50% at 50% 0%, rgba(241,239,234,.05), transparent 70%)}
+  .card.a{border-color:var(--ember-soft)}
+  .card.a::before{background:radial-gradient(64% 54% at 50% 0%, rgba(204,106,67,.08), transparent 70%)}
+  .ch{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .mode{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.04em}
+  .badge{font-family:var(--mono);font-size:11px;border-radius:999px;padding:5px 11px;border:1px solid var(--line-2);color:var(--ink-2)}
+  .card.a .badge{color:var(--ember);border-color:var(--ember-soft);background:rgba(204,106,67,.06)}
+  .ct{font-family:var(--display);font-weight:600;font-size:24px;letter-spacing:-.01em;margin:16px 0 0}
+  .csub{font-size:14px;color:var(--ink-2);line-height:1.55;margin:9px 0 0}
+  .feat{margin:22px 0 0;display:flex;flex-direction:column;gap:0}
+  .fi{display:flex;align-items:flex-start;gap:11px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+  .fi:first-child{border-top:0}
+  .fi .ic{width:16px;height:16px;flex:none;margin-top:2px}
+  .fi .ftx{color:var(--ink-2)}
+  .card.a .fi .ftx b{color:var(--ink);font-weight:500}
+  .code{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:24px;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)}
+  .code .k{color:var(--ink-3)}
+  .card.a .code .v{color:var(--ember)}
+  .note{display:flex;align-items:flex-start;gap:12px;margin:22px 0 0;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--bg-1)}
+  .note .r{width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 9px 1px var(--ember-soft);margin-top:6px;flex:none}
+  .note .nt{font-size:13.5px;color:var(--ink-2);line-height:1.55}
+  .note .nt b{color:var(--ink);font-weight:500}
+  .note .nt .mono{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+</style></head>
+<body>
+  <section class="section">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow"><span class="dot"></span>05 — Architecture</span>
+        <h2>Two settlement modes.<br><span class="muted">One adapter interface.</span></h2>
+      </div>
+      <div class="cols">
+        <div class="card a">
+          <div class="ch"><span class="mode">settlementMode</span><span class="badge">atomic</span></div>
+          <div class="ct">Atomic-allocation</div>
+          <div class="csub">The venue co-settles through the token standard's allocation flow. Eligible for Synfin's atomic, per-leg-private settlement.</div>
+          <div class="feat">
+            <div class="fi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#CC6A43" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4L19 7"/></svg><span class="ftx"><b>Atomic co-settlement</b> — all legs in one transaction</span></div>
+            <div class="fi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#CC6A43" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4L19 7"/></svg><span class="ftx"><b>Per-leg privacy</b> — each venue sees only its leg</span></div>
+            <div class="fi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#CC6A43" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4L19 7"/></svg><span class="ftx"><b>All-or-nothing</b> — settles via CIP-0056 / 0112</span></div>
+          </div>
+          <div class="code"><span class="k">settlementMode:</span> <span class="v">'atomic-allocation'</span></div>
+        </div>
+        <div class="card">
+          <div class="ch"><span class="mode">settlementMode</span><span class="badge">deferred</span></div>
+          <div class="ct">Managed-deposit</div>
+          <div class="csub">Quote-and-deposit venues. Synfin still aggregates their quotes, but execution is deferred and settles separately.</div>
+          <div class="feat">
+            <div class="fi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#A8A59D" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="ftx">Quote &amp; deposit — included in routing</span></div>
+            <div class="fi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6F6C64" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/></svg><span class="ftx">Deferred execution — not same-transaction</span></div>
+            <div class="fi"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#6F6C64" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg><span class="ftx">Non-atomic — outside the all-or-nothing guarantee</span></div>
+          </div>
+          <div class="code"><span class="k">settlementMode:</span> <span style="color:var(--ink-2)">'managed-deposit'</span></div>
+        </div>
+      </div>
+      <div class="note"><span class="r"></span><div class="nt"><b>Atomic settlement is valid only when every leg is Mode A</b> — the router enforces it. Honest status: most accessible Canton venues today are <span class="mono">managed-deposit</span>, and CIP-0112's native batch settlement is rolling out. Quote aggregation works across both now; the atomic path turns on as venues adopt the allocation flow.</div></div>
+    </div>
+  </section>
+</body></html>

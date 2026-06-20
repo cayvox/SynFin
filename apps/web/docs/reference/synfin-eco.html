@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Synfin — ecosystem §7</title>
+<style>
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-400.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-500.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Mona Sans';src:url('fonts/MonaSans-600.woff2') format('woff2');font-weight:600}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Regular.woff2') format('woff2');font-weight:400}
+  @font-face{font-family:'Geist';src:url('fonts/Geist-Medium.woff2') format('woff2');font-weight:500}
+  @font-face{font-family:'Geist Mono';src:url('fonts/GeistMono-Regular.woff2') format('woff2');font-weight:400}
+  :root{--bg-0:#070708;--bg-1:#121316;--bg-2:#17181c;--ink:#F1EFEA;--ink-2:#A8A59D;--ink-3:#6F6C64;
+    --line:rgba(241,239,234,.10);--line-2:rgba(241,239,234,.16);
+    --ember:#CC6A43;--ember-hi:#E68A5E;--ember-soft:rgba(204,106,67,.55);--ember-glow:rgba(204,106,67,.16);
+    --display:'Mona Sans',sans-serif;--ui:'Geist',sans-serif;--mono:'Geist Mono',monospace;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg-0);color:var(--ink);font-family:var(--ui);-webkit-font-smoothing:antialiased}
+  .section{position:relative;padding:120px 60px;overflow:hidden}
+  .section::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(40% 46% at 50% 0%, rgba(228,232,240,.06), transparent 62%),
+    radial-gradient(40% 40% at 50% 116%, var(--ember-glow), transparent 60%);}
+  .wrap{position:relative;max-width:1180px;margin:0 auto;text-align:center}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);border:1px solid var(--line-2);background:rgba(20,21,25,.5);border-radius:999px;padding:7px 15px 7px 12px;letter-spacing:.02em}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px 1px var(--ember-soft)}
+  h2{font-family:var(--display);font-weight:600;font-size:48px;line-height:1.04;letter-spacing:-.025em;margin:22px 0 0}
+  h2 .muted{color:var(--ink-3)}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin:52px 0 0;text-align:left}
+  .card{position:relative;background:var(--bg-1);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 1px 0 rgba(241,239,234,.06) inset,0 24px 60px -30px rgba(0,0,0,.8)}
+  .card::before{content:"";position:absolute;inset:0;border-radius:18px;pointer-events:none;background:radial-gradient(60% 50% at 50% 0%, rgba(241,239,234,.05), transparent 70%)}
+  .ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--line-2);background:var(--bg-2)}
+  .ico svg{width:21px;height:21px}
+  .ct{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:-.01em;margin:20px 0 0}
+  .cd{font-size:14.5px;line-height:1.55;color:var(--ink-2);margin:10px 0 0}
+  .cd b{color:var(--ink);font-weight:500}
+  .cmeta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  .cmeta .d{width:5px;height:5px;border-radius:50%;background:var(--ember);box-shadow:0 0 7px 1px var(--ember-soft)}
+  .ctx{font-size:14px;line-height:1.6;color:var(--ink-3);max-width:64ch;margin:40px auto 0}
+  .ctx b{color:var(--ink-2);font-weight:400}
+</style></head>
+<body>
+  <section class="section">
+    <div class="wrap">
+      <span class="eyebrow"><span class="dot"></span>07 — Who it's for</span>
+      <h2>Built for everyone <span class="muted">routing on Canton.</span></h2>
+      <div class="cards">
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#A8A59D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M5 21V8l7-4 7 4v13M9 21v-6h6v6"/></svg></div>
+          <div class="ct">Venues</div>
+          <div class="cd">Implement <b>one adapter</b> and become reachable through every Synfin integration — more flow, no new counterparties to chase.</div>
+          <div class="cmeta"><span class="d"></span>one adapter · every integration</div>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#A8A59D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14h2"/></svg></div>
+          <div class="ct">Wallets &amp; apps</div>
+          <div class="cd"><b>One SDK</b> for best-execution swaps across all of Canton's liquidity — drop it in and route every trade to the best price.</div>
+          <div class="cmeta"><span class="d"></span>one SDK · all of Canton</div>
+        </div>
+        <div class="card">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#A8A59D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M10 21V10M14 21V10M19 21V10M3 10l9-6 9 6"/></svg></div>
+          <div class="ct">Institutions</div>
+          <div class="cd"><b>Best execution</b> with settlement atomicity and per-leg confidentiality — provable, to the basis point, on neutral open infrastructure.</div>
+          <div class="cmeta"><span class="d"></span>provable best-ex · per-leg private</div>
+        </div>
+      </div>
+      <p class="ctx"><b>Canton is where regulated, institutional liquidity is moving on-chain — on a common token standard.</b> Synfin is the neutral best-execution layer on top of it.</p>
+    </div>
+  </section>
+</body></html>
