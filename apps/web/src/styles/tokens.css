@@ -54,6 +54,13 @@
   --gutter: 30px;
   --section-y: clamp(72px, 11vw, 148px);
 
+  /* §16 Move C — whole-page rhythm. Section vertical spacing scale; the clamps
+     give the desktop rhythm (tight 88 / default 120 / act 192 at ≥~1440) and
+     scale down on phones (≈ 56 / 80 / 112 at ≤720) so gaps never feel enormous. */
+  --sp-tight: clamp(56px, 6.1vw, 88px);
+  --sp-default: clamp(80px, 8.3vw, 120px);
+  --sp-act: clamp(112px, 13.3vw, 192px);
+
   /* §3 Motion */
   --e-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --e-inout: cubic-bezier(0.65, 0.05, 0.36, 1);

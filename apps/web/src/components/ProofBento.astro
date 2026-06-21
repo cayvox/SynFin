@@ -18,7 +18,9 @@ import VenueSplit from './VenueSplit.astro';
   <div class="container">
     <header class="proof__head" data-reveal>
       <Eyebrow text="03 — Already delivered" />
-      <h2 class="proof__title" id="proof-title">Proven, not promised.</h2>
+      <h2 class="proof__title" id="proof-title">
+        Proven,<span class="proof__muted"> not promised.</span>
+      </h2>
     </header>
 
     <div class="bento">
@@ -72,7 +74,8 @@ import VenueSplit from './VenueSplit.astro';
 <style>
   .proof {
     position: relative;
-    padding-block: var(--section-y);
+    padding-top: clamp(96px, 10.5vw, 152px);
+    padding-bottom: clamp(88px, 9.7vw, 140px);
     overflow: hidden;
   }
   .proof > .container {
@@ -80,19 +83,27 @@ import VenueSplit from './VenueSplit.astro';
     z-index: 1;
   }
 
+  /* §16 Move C — the page's single mid APEX: eyebrow + heading centered, h2
+     enlarged (~64px). The bento grid below stays full-width/left as-is. */
   .proof__head {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
     gap: 16px;
-    margin-bottom: 40px;
-    max-width: 640px;
+    margin: 0 auto 48px;
+    max-width: 760px;
   }
   .proof__title {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: clamp(34px, 5vw, 56px);
+    font-size: clamp(40px, 6vw, 64px);
     line-height: 1.02;
     letter-spacing: -0.025em;
+  }
+  /* tonal apex move — bright clause + muted clause (large display → AA at 3:1) */
+  .proof__muted {
+    color: var(--ink-display-muted);
   }
 
   .bento {
