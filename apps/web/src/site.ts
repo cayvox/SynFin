@@ -1,5 +1,5 @@
 /**
- * Site-wide constants (URLs, contact). Local to apps/web — the website is a leaf
+ * Site-wide constants (URLs, contact). Local to apps/web - the website is a leaf
  * app and does not import from the protocol/Daml/tools packages. Domain is
  * pending (CONTENT.md), so the canonical is configurable via SITE_URL.
  */

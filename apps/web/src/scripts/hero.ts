@@ -9,13 +9,13 @@ import { gsap } from 'gsap';
  * Progressive enhancement (QA fixes 1 & 7):
  * - The base routing lines are server-rendered COMPLETE hairlines. On load we
  *   draw them once via stroke-dashoffset, then CLEAR the dash so they rest fully
- *   drawn. The flow pulse is a SEPARATE additive overlay path — it never touches
+ *   drawn. The flow pulse is a SEPARATE additive overlay path - it never touches
  *   the resting base line.
  * - Content is visible by default. The hidden pre-state lives only under
  *   `.is-animatable` (set pre-paint by a guarded <head> snippet, with a failsafe
  *   reveal). We animate to visible, then clearProps + remove the class.
  * - prefers-reduced-motion (or no JS): SKIP all build-in/flow/parallax and show
- *   the FINAL state immediately — headline opacity 1, no transform, ember lines
+ *   the FINAL state immediately - headline opacity 1, no transform, ember lines
  *   fully drawn (the server-rendered state), no parallax residue.
  */
 const prefersReduced = window.matchMedia(
@@ -100,7 +100,7 @@ function buildTimeline(hero: HTMLElement): void {
     { opacity: 0, y: 12 },
     { opacity: 1, y: 0, duration: 0.42, stagger: 0.06 },
   );
-  // Opacity only — nodes/conv keep their CSS translate(-50%,-50%) centering.
+  // Opacity only - nodes/conv keep their CSS translate(-50%,-50%) centering.
   tl.fromTo(
     fadeItems,
     { opacity: 0 },
@@ -139,7 +139,7 @@ function init(): void {
   const hero = document.querySelector<HTMLElement>('[data-hero]');
   if (!hero) return;
   if (prefersReduced) {
-    reveal(); // final, fully-drawn state (server-rendered) — no animation
+    reveal(); // final, fully-drawn state (server-rendered) - no animation
     return;
   }
   try {

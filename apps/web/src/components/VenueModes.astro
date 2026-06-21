@@ -1,28 +1,32 @@
 ---
 /**
- * §5 "How venues plug in" (CONTENT.md §6; DESIGN.md §8b.5) — a centered compare
+ * §5 "How venues plug in" (CONTENT.md §6; DESIGN.md §8b.5) - a centered compare
  * of the two settlement modes every venue adapter declares. Mode A
  * (atomic-allocation) is the ember-blessed path: it co-settles via the token
  * standard and is eligible for Synfin's atomic, per-leg-private settlement. Mode
  * B (managed-deposit) is neutral: quote-and-deposit, deferred, non-atomic. One
  * adapter interface, one `settlementMode` field. The honest note states the real
- * status — most accessible venues today are Mode B; the atomic path turns on as
+ * status - most accessible venues today are Mode B; the atomic path turns on as
  * venues adopt CIP-0112's V2 batch settlement.
  */
 import Eyebrow from './Eyebrow.astro';
 
-const modeA = ['Atomic co-settlement', 'Per-leg privacy', 'All-or-nothing'];
+const modeA = [
+  'Atomic co-settlement: all legs in one transaction.',
+  'Per-leg privacy: each venue sees only its leg.',
+  'All or nothing: settles via CIP-0056 / 0112.',
+];
 const modeB = [
-  { t: 'quote & deposit', icon: 'plus' },
-  { t: 'deferred execution', icon: 'clock' },
-  { t: 'non-atomic', icon: 'x' },
+  { t: 'Quote and deposit: included in routing.', icon: 'plus' },
+  { t: 'Deferred execution: not same-transaction.', icon: 'clock' },
+  { t: 'Non-atomic: outside the all-or-nothing guarantee.', icon: 'x' },
 ];
 ---
 
 <section id="architecture" class="vm" aria-labelledby="architecture-title">
   <div class="container">
     <header class="vm__head" data-reveal>
-      <Eyebrow text="05 — Architecture" />
+      <Eyebrow text="05 · Settlement" />
       <h2 class="vm__title" id="architecture-title">
         <span>Two settlement modes.</span>
         <span class="vm__muted">One adapter interface.</span>
@@ -30,17 +34,16 @@ const modeB = [
     </header>
 
     <div class="vm__grid">
-      <!-- Mode A — atomic-allocation (ember-blessed) -->
+      <!-- Mode A - atomic-allocation (ember-blessed) -->
       <article class="vm-mode vm-mode--a card" data-reveal>
         <div class="vm-mode__top">
           <span class="vm-mode__label mono">settlementMode</span>
           <span class="vm-badge vm-badge--on mono">atomic</span>
         </div>
-        <h3 class="vm-mode__name">Atomic-allocation</h3>
+        <h3 class="vm-mode__name">Atomic allocation</h3>
         <p class="vm-mode__sub">
-          Co-settles via the token standard’s allocation / batch-settlement flow
-          (CIP-0056 / 0112) — eligible for Synfin’s atomic, per-leg-private
-          settlement.
+          The venue co-settles through the token standard’s allocation flow.
+          Eligible for Synfin’s atomic, per-leg-private settlement.
         </p>
         <ul class="vm-rows">
           {
@@ -65,9 +68,6 @@ const modeB = [
             ))
           }
         </ul>
-        <p class="vm-mode__settles">
-          settles via <span class="mono">CIP-0056 / 0112</span>
-        </p>
         <p class="vm-chip mono">
           settlementMode: <span class="vm-chip__val vm-chip__val--on"
             >'atomic-allocation'</span
@@ -75,16 +75,16 @@ const modeB = [
         </p>
       </article>
 
-      <!-- Mode B — managed-deposit (neutral) -->
+      <!-- Mode B - managed-deposit (neutral) -->
       <article class="vm-mode vm-mode--b card" data-reveal>
         <div class="vm-mode__top">
           <span class="vm-mode__label mono">settlementMode</span>
           <span class="vm-badge mono">deferred</span>
         </div>
-        <h3 class="vm-mode__name">Managed-deposit</h3>
+        <h3 class="vm-mode__name">Managed deposit</h3>
         <p class="vm-mode__sub">
-          Quote-and-deposit venues; execution is deferred and non-atomic. They
-          quote today and route value, but cannot co-settle in one transaction.
+          Quote-and-deposit venues. Synfin still aggregates their quotes, but
+          execution is deferred and settles separately.
         </p>
         <ul class="vm-rows">
           {
@@ -136,9 +136,6 @@ const modeB = [
             ))
           }
         </ul>
-        <p class="vm-mode__settles vm-mode__settles--muted">
-          quote aggregation today · settlement deferred
-        </p>
         <p class="vm-chip mono">
           settlementMode: <span class="vm-chip__val">'managed-deposit'</span>
         </p>
@@ -148,11 +145,11 @@ const modeB = [
     <p class="vm__note" data-reveal>
       <span class="vm__note-dot" aria-hidden="true"></span>
       <span>
-        Atomic settlement is valid only when <em>every</em> leg is Mode A — the router
-        enforces it. Most accessible Canton venues today are managed-deposit, and
-        CIP-0112’s native batch settlement is rolling out. Synfin’s quote aggregation
-        works against venues now; the atomic path is proven and turns on as venues
-        adopt the V2 settlement flow.
+        Atomic settlement is valid only when <em>every</em> leg is Mode A, and the
+        router enforces it. Most accessible Canton venues today are managed-deposit,
+        and CIP-0112’s native batch settlement is rolling out. Quote aggregation
+        works across both now, and the atomic path turns on as venues adopt the allocation
+        flow.
       </span>
     </p>
   </div>
@@ -208,7 +205,7 @@ const modeB = [
     flex-direction: column;
     gap: 14px;
   }
-  /* Mode A — faint ember border + an ember top-glow over the card's lit glass. */
+  /* Mode A - faint ember border + an ember top-glow over the card's lit glass. */
   .vm-mode--a {
     border-color: var(--ember-soft);
   }

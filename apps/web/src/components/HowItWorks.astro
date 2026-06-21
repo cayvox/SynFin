@@ -1,6 +1,6 @@
 ---
 /**
- * §3 "How it works" (CONTENT.md §3; DESIGN.md §12) — a 2-column editorial split:
+ * §3 "How it works" (CONTENT.md §3; DESIGN.md §12) - a 2-column editorial split:
  * left, the words (tonal heading + intro + a 4-row step list, "Route & settle"
  * active in ember); right, the router Orbital. Reads as: scan every venue →
  * lock the best route (46/33/21) → settle atomically → +47.8 bps edge.
@@ -9,40 +9,40 @@ import Eyebrow from './Eyebrow.astro';
 import Orbital from './Orbital.astro';
 
 const steps = [
-  {
-    n: '01',
-    t: 'Intent',
-    d: 'You set the terms — give, want, limits.',
-    on: false,
-  },
+  { n: '01', t: 'Quote', d: 'pull live prices from every venue', on: false },
   {
     n: '02',
-    t: 'Quote',
-    d: 'Quotes gathered across every venue, once.',
+    t: 'Compare',
+    d: 'find the best execution across all of them',
     on: false,
   },
   {
     n: '03',
+    t: 'Split',
+    d: 'route the order to the venues that fill it best',
+    on: false,
+  },
+  {
+    n: '04',
     t: 'Route & settle',
-    d: 'Best split, settled in one atomic transaction.',
+    d: 'execute the split as one atomic, private transaction',
     on: true,
   },
-  { n: '04', t: 'Edge', d: '+47.8 bps vs the best single venue.', on: false },
 ];
 ---
 
 <section id="how-it-works" class="how" aria-labelledby="how-title">
   <div class="how__grid">
     <div class="how__copy" data-reveal>
-      <Eyebrow text="02 — How it works" />
+      <Eyebrow text="02 · How it works" />
       <h2 class="how__title" id="how-title">
-        <span>One engine.</span>
+        <span>One call.</span>
         <span class="how__muted">The whole market.</span>
       </h2>
       <p class="how__intro">
-        Synfin scans every Canton venue at once, locks the best route — one
-        venue or a split across several — and settles it atomically, with
-        per-leg privacy.
+        Tell Synfin what you want to trade. It quotes every venue, splits your
+        order for the best price, and settles the whole thing in one
+        transaction.
       </p>
       <div class="how__steps">
         {
@@ -151,7 +151,7 @@ const steps = [
     place-items: center;
   }
 
-  /* Tablet: stack — copy on top, orbital centered below, scaled. */
+  /* Tablet: stack - copy on top, orbital centered below, scaled. */
   @media (max-width: 960px) {
     .how__grid {
       grid-template-columns: minmax(0, 1fr);
