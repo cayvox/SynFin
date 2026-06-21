@@ -141,7 +141,6 @@ are versioned independently; each release records the spec version it targets.
   consistency — SPEC §4.4); and the three ports `VenueAdapter`, `Router`, `Settlement`
   (interfaces only — ADR‑0005). Unit + property tests (fast‑check) at 100% coverage on the
   decimal and validation paths.
-- ADR‑0006: competitive design study (1inch, Jupiter, CoW, ParaSwap/Odos) — Accepted.
 
 - **`@synfin/router-ref` (0.1.0):** open reference implementation of the `Router` port
   ([ADR‑0007](docs/decisions/0007-reference-router-scope.md)) — a correct, deterministic,
@@ -176,6 +175,6 @@ are versioned independently; each release records the spec version it targets.
 ### Notes
 - Pre‑alpha. All interfaces are unstable until `v1.0.0`. Spec changes follow the RFC process
   in GOVERNANCE.md.
-- Multi‑hop routing remains a FUTURE spec extension (ADR‑0006) requiring its own RFC.
+- Multi‑hop routing remains a FUTURE spec extension requiring its own RFC.
 
 [Unreleased]: https://example.com/synfin/commits/main

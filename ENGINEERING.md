@@ -22,7 +22,7 @@ These standards make Synfin safe for institutions to depend on. They are enforce
 ## 3. Commits, branches, reviews
 
 - **Conventional Commits** (`feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `spec`). Drives changelog + SemVer.
-- **Trunk‑based**, short‑lived branches. **No direct pushes to `main`** — everything via PR (agents included; see CLAUDE.md).
+- **Trunk‑based**, short‑lived branches. **No direct pushes to `main`** — everything via PR (agents included).
 - **DCO sign‑off** (`git commit -s`) on every commit.
 - Review: ≥ 1 maintainer approval + green CI. Spec‑affecting changes require an accepted RFC (GOVERNANCE.md §5). High‑sensitivity changes (Daml settlement, allocation handling) require a maintainer with ledger expertise.
 
@@ -49,7 +49,7 @@ A change is Done only when all hold:
 
 - **No secrets in the repository, ever.** Only `.env.example` with placeholder keys.
 - Runtime secrets come from the environment / a secrets manager, never hard‑coded.
-- **npm publish doctrine:** publish tokens are provided directly in the terminal at publish time and scrubbed immediately afterward; they are never written to disk in the repo, never echoed, never committed. Automated agents must never read, print, or persist tokens (see CLAUDE.md).
+- **npm publish doctrine:** publish tokens are provided directly in the terminal at publish time and scrubbed immediately afterward; they are never written to disk in the repo, never echoed, never committed. Automated agents must never read, print, or persist tokens.
 - Logs must never contain secrets, tokens, private keys, or a taker's full intent/route.
 
 ## 7. Releases & versioning

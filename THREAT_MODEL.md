@@ -35,10 +35,10 @@ This is a living document. It uses a STRIDE lens over Synfin's components and tr
 - **Decimal/rounding exploits.** Exact decimal math; rounding direction tested to never favor the protocol; overflow/precision covered by property tests.
 - **Allocation‑lock DoS / griefing.** Expiry bounds how long funds can be locked; unreliable counterparties are de‑prioritized; settlement deadlines enforced on‑ledger.
 - **Supply‑chain compromise.** Pinned deps, signed tags, SBOM, npm provenance, minimal dependency surface (see ENGINEERING.md §5).
-- **Key/secret exposure.** Strict secrets doctrine (ENGINEERING.md §6); agents never read/print/persist secrets (CLAUDE.md).
+- **Key/secret exposure.** Strict secrets doctrine (ENGINEERING.md §6); agents never read/print/persist secrets.
 - **Privacy leakage via observability.** Telemetry is aggregate and non‑identifying; redaction enforced; reviewed as part of Definition of Done.
 
 ## Residual risk & audit
 
 - Compromised taker devices and compromised Canton validators are out of scope.
-- An **independent third‑party security audit** of the Daml library and allocation handling is **required before mainnet** (ROADMAP.md, SECURITY.md). This threat model defines the audit's starting scope.
+- An **independent third‑party security audit** of the Daml library and allocation handling is **required before mainnet** (SECURITY.md). This threat model defines the audit's starting scope.

@@ -15,7 +15,7 @@ export interface ValidationError {
   /**
    * Stable machine code for the failure (e.g. `schema`, `expired`,
    * `non_positive_amount`, `conservation`, `slippage_exceeded`). Never contains
-   * taker intent totals, routes, or other privacy-sensitive data (CLAUDE.md §4).
+   * taker intent totals, routes, or other privacy-sensitive data (privacy invariant).
    */
   readonly code: string;
   /** Human-readable, privacy-safe description of the failure. */

@@ -2,8 +2,7 @@
 
 A small, dependency-light tool that collects **read-only** quotes for the same
 pairs across Canton venues (CantonSwap, OneSwap) over time and quantifies the
-**cross-venue spread (bps)** — the evidence the Phase-0 decision gate rests on
-(`ROADMAP.md`). **No funds, no settlement, no side effects** — it only requests
+**cross-venue spread (bps)**: the evidence the Phase-0 decision gate rests on. **No funds, no settlement, no side effects** — it only requests
 quotes via the existing `@synfin/adapters`.
 
 ## What it records

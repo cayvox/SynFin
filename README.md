@@ -6,7 +6,7 @@
 
 *Find the best price across every Canton venue — split optimally, settle atomically, leak nothing.*
 
-[Specification](docs/spec/SPECIFICATION.md) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Governance](GOVERNANCE.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+[Specification](docs/spec/SPECIFICATION.md) · [Architecture](ARCHITECTURE.md) · [Governance](GOVERNANCE.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 `Status: pre‑alpha — interfaces are unstable until v1.0.0`
 
@@ -71,11 +71,11 @@ synfin/
 ├── tools/price-monitor/         # (code) Phase-0 evidence tool
 ├── ARCHITECTURE.md  ENGINEERING.md  TESTING.md  THREAT_MODEL.md
 ├── GOVERNANCE.md    SECURITY.md     CONTRIBUTING.md  CODE_OF_CONDUCT.md
-├── GLOSSARY.md      ROADMAP.md      CHANGELOG.md      CLAUDE.md
+├── GLOSSARY.md      CHANGELOG.md
 └── LICENSE
 ```
 
-> Directories marked `(code)` are scaffolded during M1–M3 (see [ROADMAP.md](ROADMAP.md)). This bundle establishes the documentation, contracts and engineering rules first — by design.
+> Directories marked `(code)` are scaffolded in later milestones. This bundle establishes the documentation, contracts and engineering rules first, by design.
 
 ## Quickstart (will be populated as code lands)
 

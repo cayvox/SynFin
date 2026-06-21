@@ -49,7 +49,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) §Repository layout. In short: `docs/spec
 
 - **Trunk‑based.** Short‑lived feature branches off `main`. Branch names: `feat/...`, `fix/...`, `docs/...`, `chore/...`, `spec/...`.
 - **Conventional Commits** are required: `feat(adapter): add Cantex quote adapter`, `fix(daml): reject expired allocation`. This drives the changelog and SemVer.
-- **No direct pushes to `main`.** All changes land via pull request. (This applies to automated agents too — see [CLAUDE.md](CLAUDE.md).)
+- **No direct pushes to `main`.** All changes land via pull request. This applies to automated agents too.
 - **DCO sign‑off:** add `Signed-off-by: Name <email>` to every commit (`git commit -s`).
 
 ## Pull requests

@@ -4,7 +4,7 @@ The Synfin website — the open, neutral **best-execution aggregation layer** fo
 Canton (built on CIP-0056/0112; not a venue, not a competing standard). A
 bespoke, fast, static **Astro 5** site that lives in the monorepo as `apps/web`.
 
-**Visual system: dark / cinematic** (DESIGN.md) — warm near-black, a warm-grey
+**Visual system: dark / cinematic**: warm near-black, a warm-grey
 monochrome, and a single **ember** accent; the hero is a routing **constellation**
 of Canton venues whose best-route lines converge to `+47.8 bps`.
 
@@ -12,11 +12,7 @@ This package is **Phase 1**: the locked dark identity (tokens, self-hosted fonts
 base) + **Nav · Hero (the constellation) · Footer**. Content sections 2–9 (the
 proof bento — which is where the `RouterCard` lives — how-it-works, privacy,
 venues, open-by-design, ecosystem) are marked with `TODO` comments and land in
-later phases. The approved hero reference is
-[`docs/reference/synfin-dark-hero.png`](docs/reference/synfin-dark-hero.png).
-
-Source of truth: [`docs/DESIGN.md`](docs/DESIGN.md), [`docs/CONTENT.md`](docs/CONTENT.md),
-[`docs/STACK.md`](docs/STACK.md). Do not contradict them.
+later phases.
 
 ## Run (from the repo root)
 
@@ -43,7 +39,7 @@ It is a **leaf app**: it does not import from the protocol/Daml/tools packages.
 
 ## Deploy
 
-Cloudflare Pages, built from the repo root (STACK.md):
+Cloudflare Pages, built from the repo root:
 build command `pnpm install --frozen-lockfile && pnpm --filter @synfin/web build`,
 output `apps/web/dist`. Domain `synfin.xyz` is pending — the canonical is
 configurable via the `SITE_URL` env var.

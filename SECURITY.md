@@ -30,7 +30,7 @@ Out of scope: third‑party venues, the (separate) proprietary optimizer and hos
 ## Security posture
 
 - The atomic settlement library and any allocation‑handling code are the highest‑sensitivity surface and require Daml Script tests covering all‑or‑nothing semantics, abort paths, and expiry. See [THREAT_MODEL.md](THREAT_MODEL.md).
-- An **independent third‑party audit is required before any mainnet deployment** (tracked in [ROADMAP.md](ROADMAP.md)).
+- An **independent third‑party audit is required before any mainnet deployment**.
 - Supply‑chain controls (pinned dependencies, signed tags, SBOM) are described in [ENGINEERING.md](ENGINEERING.md).
 
 ## Safe harbor

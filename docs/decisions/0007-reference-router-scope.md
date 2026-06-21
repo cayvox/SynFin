@@ -9,7 +9,7 @@
 
 `@synfin/spec` (v0.2.0) froze the `Router` port and the `RoutePlan` constraints
 (SPEC §4.4, RFC‑0001). We now ship the first **open** implementation of that port,
-`@synfin/router-ref`. The competitive study (ADR‑0006: 1inch Pathfinder, Jupiter
+`@synfin/router-ref`. The competitive study (1inch Pathfinder, Jupiter
 Metis/Iris, Titan) and Canton's constraints (no readable reserves — ARCHITECTURE.md §1
 invariant #2; private contracts; same‑synchronizer atomicity) bound what the *open
 reference* router should do versus what belongs to the separate, proprietary optimizer
@@ -30,8 +30,7 @@ numerical optimizer. It is the neutral yardstick conformance is measured against
    quotes gathered at multiple sizes (buckets) and the **net rate** each bucket implies, never
    by reading pool reserves. Larger buckets that price worse are naturally deprioritized.
 3. **Optimize net `receive`.** Fees are already reflected in `Quote.receive` (SPEC §4.3); the
-   router ranks and allocates by net receipt, not nominal output (the ParaSwap/Odos principle
-   from ADR‑0006).
+   router ranks and allocates by net receipt, not nominal output (the ParaSwap/Odos principle).
 4. **Deterministic greedy / marginal‑net allocation.** The reference router allocates the
    `give` greedily to the best net‑rate venue buckets, one leg per venue, splitting the
    remainder onto the next‑best venue (see *Allocation* below). It is pure and deterministic;

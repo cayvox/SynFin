@@ -16,9 +16,5 @@ daml/**
 # Throwaway research spikes (evidence, not production)
 spikes/**
 
-# Vendored design reference artifacts (the orbital/hero source snapshots used to
-# match the build pixel-for-pixel) are kept verbatim, not auto-formatted.
-apps/web/docs/reference/**
-
 # Release-verify consumer fixtures (resolve against the PUBLISHED packages, not the workspace)
 scripts/fixtures/**

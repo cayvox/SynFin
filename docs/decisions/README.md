@@ -16,7 +16,6 @@ We record significant architecture decisions as ADRs so the *why* is never lost 
 | [0003](0003-atomic-split-execution-on-cip56.md) | Atomic split execution on CIP‑0056 | Accepted |
 | [0004](0004-open-closed-boundary.md) | The open/closed boundary | Accepted |
 | [0005](0005-ports-and-adapters.md) | Ports & adapters (hexagonal) architecture | Accepted |
-| [0006](0006-competitive-design-study.md) | Competitive design study (what Synfin adopts and rejects) | Accepted |
 | [0007](0007-reference-router-scope.md) | Reference router scope & competitive grounding | Accepted |
 | [0008](0008-atomic-multileg-settlement.md) | On‑ledger atomic multi‑leg settlement on real CIP‑0056 interfaces | Accepted |
 | [0009](0009-venue-integration-dual-architecture.md) | Venue integration — dual architecture (atomic CIP‑0056 + managed deposit) | Accepted |

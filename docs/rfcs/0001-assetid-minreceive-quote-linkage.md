@@ -8,13 +8,12 @@
   under the current single‑steward governance fallback (GOVERNANCE.md §4). The waiver is
   recorded here explicitly; it applies only while the project has a single steward and is
   expected to lapse once a broader council exists.
-- **Related:** [ADR‑0006](../decisions/0006-competitive-design-study.md) (competitive design
-  study); SPEC §3, §4.1, §4.3, §4.4, Appendix A.
+- **Related:** SPEC §3, §4.1, §4.3, §4.4, Appendix A.
 
 ## Summary
 
 Task 001, which built `@synfin/spec`, deliberately surfaced three under‑specified contracts
-rather than inventing behaviour (the zero‑assumption rule, CLAUDE.md). This RFC turns those
+rather than inventing behaviour (the zero‑assumption rule). This RFC turns those
 three into normative decisions so that downstream work (adapters, the reference router, the
 Daml settlement library) binds to a stable contract. It is a normative change and therefore
 bumps SQSS to `0.2.0`.
@@ -134,7 +133,7 @@ assets do not match the referenced quote. The aggregate‑consistency invariant 
   field, predicate signatures that need the quote set). Acceptable pre‑1.0.
 - **Open/closed boundary:** preserved — all changes are to open types/validation; nothing here
   requires the proprietary optimizer or any hosted service (GOVERNANCE.md §3).
-- **Follow‑ups:** multi‑hop routing remains a FUTURE spec extension (ADR‑0006) and is out of
+- **Follow‑ups:** multi‑hop routing remains a FUTURE spec extension and is out of
   scope here.
 
 ## Alternatives considered
