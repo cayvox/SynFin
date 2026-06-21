@@ -1,32 +1,19 @@
 # @synfin/spec
 
-The single source of truth for the **Synfin Quote & Swap‑Intent Standard (SQSS)** —
-see [`docs/spec/SPECIFICATION.md`](../../docs/spec/SPECIFICATION.md). This package
-ships **no business logic** (no adapter/router/settlement bodies); only the
-contracts everything else depends on.
+> **Pre-alpha.** The API is unstable and may change without notice. Not for production use. Published under the `next` dist-tag.
 
-It provides:
+The single source of truth for the Synfin Quote and Swap-Intent Standard (SQSS). It ships the off-ledger wire types, runtime validators, exact-decimal helpers, the cross-field constraint predicates, and the three ports (VenueAdapter, Router, Settlement). It contains no business logic: only the contracts the rest of Synfin depends on.
 
-- **Wire types** for the off‑ledger SQSS messages (SPEC §4), generated from the
-  JSON Schemas in [`schemas/`](./schemas) — the authoritative shapes. Run
-  `pnpm --filter @synfin/spec gen` to regenerate; CI fails on drift.
-- **Runtime validators** (`validateSwapIntent`, `validateQuote`, …) returning a
-  `Result` — types are not validation; venue input is adversarial (SPEC §4, §8).
-- **Exact decimals** (`Decimal`, `roundTakerFavorable`) — no binary floats for
-  value math; rounding never overstates receipts nor understates spend (SPEC §3).
-- **Cross‑field constraint predicates** (`checkRoutePlan`, `checkConservation`, …)
-  for the `RoutePlan` invariants (SPEC §4.4).
-- **The three ports** — `VenueAdapter`, `Router`, `Settlement` (interfaces only;
-  ADR‑0005). Implementations live in `@synfin/adapters`, `@synfin/router-ref`,
-  and `daml/synfin-settlement`.
+## Install
 
-```ts
-import { validateQuote, checkRoutePlan, Decimal } from '@synfin/spec';
-
-const result = validateQuote(untrustedQuote, { now: new Date() });
-if (!result.ok) {
-  // result.errors: structured, privacy-safe ValidationError[]
-}
+```sh
+npm install @synfin/spec@next
 ```
 
-Apache‑2.0. Pre‑alpha: interfaces are unstable until `v1.0.0`.
+## Spec
+
+See the [Synfin specification](https://github.com/cayvox/SynFin/blob/main/docs/spec/SPECIFICATION.md). Synfin is ESM only and targets Node 20 or newer.
+
+## License
+
+Apache-2.0

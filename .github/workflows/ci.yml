@@ -63,6 +63,32 @@ jobs:
         # (TESTING.md §7). A threshold miss fails this job.
         run: pnpm test
 
+  release-verify:
+    name: release-verify · publint · attw · pack · tarball assertions
+    # Static publish readiness for the public @synfin packages (RELEASING.md).
+    # No registry and no publish: it builds, then runs publint + attw + pnpm pack
+    # and asserts each tarball ships only build output, README, and LICENSE. The
+    # deeper Verdaccio publish + clean-room install + smoke flow is local
+    # (pnpm release:verify:verdaccio), documented in RELEASING.md.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Static publish checks (no registry, no publish)
+        run: pnpm release:verify
+
   daml:
     name: daml build + daml test (settlement library) — TESTING.md §3
     runs-on: ubuntu-latest
