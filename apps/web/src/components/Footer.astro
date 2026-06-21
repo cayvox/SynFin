@@ -162,6 +162,7 @@ const cols = [
     margin-bottom: 16px;
   }
   .footer__link {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -169,14 +170,35 @@ const cols = [
     font-family: var(--font-ui);
     font-size: 14px;
     color: var(--ink-2);
-    transition: color var(--d-fast) var(--e-out);
+    transition: color var(--d-hover) var(--e-hover);
+  }
+  /* §17 — ember underline slides 0→100% from the left on hover. */
+  .footer__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 5px;
+    height: 1px;
+    width: 0;
+    background: var(--ember);
+    transition: width var(--d-hover) var(--e-hover);
   }
   .footer__link:hover {
     color: var(--ink);
   }
+  .footer__link:hover::after {
+    width: 100%;
+  }
   .footer__ar {
     font-size: 12px;
     color: var(--ink-3);
+    transition:
+      transform var(--d-hover) var(--e-hover),
+      color var(--d-hover) var(--e-hover);
+  }
+  .footer__link:hover .footer__ar {
+    transform: translate(2px, -2px);
+    color: var(--ember);
   }
 
   .footer__bar {
