@@ -104,44 +104,22 @@ jobs:
       - name: Static release gate (publint · attw · pack · tarball assertions)
         run: pnpm release:verify
 
-      - name: Resolve internal workspace deps to the release version
-        # npm does not understand pnpm's `workspace:*` protocol. Every publish-set
-        # package shares one version, so we pin each internal @synfin dependency to
-        # that exact version before publishing from the package directory. This
-        # keeps the publish pure npm (so OIDC + provenance run from the checkout)
-        # while shipping valid, concrete version ranges to consumers.
-        run: |
-          set -euo pipefail
-          VERSION="${{ steps.version.outputs.version }}"
-          node -e '
-            const fs = require("fs");
-            const v = process.argv[1];
-            for (const p of ["spec", "adapters", "router-ref", "conformance", "cli"]) {
-              const f = `packages/${p}/package.json`;
-              const j = JSON.parse(fs.readFileSync(f, "utf8"));
-              for (const field of ["dependencies", "peerDependencies", "optionalDependencies"]) {
-                const d = j[field];
-                if (!d) continue;
-                for (const k of Object.keys(d)) {
-                  if (k.startsWith("@synfin/") && /^workspace:/.test(String(d[k]))) d[k] = v;
-                }
-              }
-              fs.writeFileSync(f, JSON.stringify(j, null, 2) + "\n");
-            }
-            console.log("resolved workspace:* -> " + v);
-          ' "$VERSION"
-          git --no-pager diff -- 'packages/*/package.json' || true
-
       - name: Publish to npm (OIDC + provenance, topological order)
-        # Pure OIDC trusted publishing: no token, no NODE_AUTH_TOKEN. --provenance
-        # is explicit (belt and suspenders) even though trusted publishing also
-        # attaches provenance. Each package runs its prepublishOnly (build +
-        # typecheck) first. Order is the dependency order.
+        # Pure OIDC trusted publishing: no token, no NODE_AUTH_TOKEN. Each package
+        # is published by the shared scripts/release/publish-package.mjs, which
+        # resolves pnpm's workspace:* deps to concrete ranges (npm cannot) and
+        # asserts no "workspace:" leaks before publishing. The same script proves
+        # the artifact against Verdaccio (pnpm release:verify:verdaccio), so the
+        # proven artifact is the shipped artifact. --provenance is explicit (belt
+        # and suspenders) even though trusted publishing also attaches provenance.
+        # Each package runs its prepublishOnly (build + typecheck) first. Order is
+        # the dependency order.
         run: |
           set -euo pipefail
           for p in spec adapters router-ref conformance cli; do
             echo "::group::npm publish @synfin/$p"
-            ( cd "packages/$p" && npm publish --tag next --access public --provenance )
+            node scripts/release/publish-package.mjs "packages/$p" \
+              --tag next --access public --provenance
             echo "::endgroup::"
           done
 
