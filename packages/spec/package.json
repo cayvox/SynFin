@@ -1,6 +1,6 @@
 {
   "name": "@synfin/spec",
-  "version": "0.4.0",
+  "version": "0.1.0-alpha.1",
   "description": "Normative TypeScript types, JSON Schemas, runtime validators and the three Synfin ports (single source of truth for SQSS).",
   "license": "Apache-2.0",
   "type": "module",
@@ -8,8 +8,11 @@
     "node": ">=20"
   },
   "files": [
-    "dist",
-    "schemas"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "schemas",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -24,7 +27,8 @@
     "gen:check": "node scripts/gen.mjs --check",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run typecheck"
   },
   "dependencies": {
     "ajv": "8.17.1",
@@ -37,5 +41,19 @@
     "prettier": "3.4.2",
     "typescript": "5.7.2",
     "vitest": "2.1.8"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cayvox/SynFin.git",
+    "directory": "packages/spec"
+  },
+  "homepage": "https://github.com/cayvox/SynFin/tree/main/packages/spec#readme",
+  "bugs": {
+    "url": "https://github.com/cayvox/SynFin/issues"
+  },
+  "sideEffects": false
 }

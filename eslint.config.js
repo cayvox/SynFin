@@ -14,6 +14,7 @@ export default tseslint.config(
       '**/.astro/**',
       '**/*.generated.ts',
       'packages/*/src/generated/**',
+      'scripts/fixtures/**',
     ],
   },
   js.configs.recommended,
