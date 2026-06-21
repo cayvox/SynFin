@@ -1,0 +1,152 @@
+name: Release (npm trusted publishing)
+
+# Tag-triggered publish of the public @synfin packages to npm using npm trusted
+# publishing (OIDC). Authentication is OIDC only: there is no npm token, no
+# NODE_AUTH_TOKEN, and no secret anywhere in this file. The first publish of each
+# package is bootstrapped manually by a human (see RELEASING.md), because a
+# trusted publisher cannot be configured for a package that does not exist yet.
+# Steady state (this workflow) is token free and adds provenance automatically.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Serialize releases; never cancel a publish in flight.
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish · OIDC trusted publishing + provenance
+    runs-on: ubuntu-latest # OIDC trusted publishing requires a GitHub-hosted runner.
+    environment: release # Gate: repo settings can require manual approval/reviewers here.
+    permissions:
+      contents: read
+      id-token: write # REQUIRED for OIDC: lets npm exchange a short-lived token.
+    steps:
+      - name: Checkout (full history, tags included)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm (pinned to the repo version)
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Set up Node 22 + the npmjs registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+          # No NODE_AUTH_TOKEN is set anywhere: auth is OIDC trusted publishing.
+
+      - name: Upgrade npm to an OIDC-capable version and assert >= 11.5.1
+        run: |
+          set -euo pipefail
+          npm install -g npm@latest
+          NPM_VERSION="$(npm --version)"
+          echo "npm $NPM_VERSION"
+          node -e '
+            const cur = process.argv[1].split("-")[0].split(".").map(Number);
+            const min = [11, 5, 1];
+            for (let i = 0; i < 3; i++) {
+              const c = cur[i] || 0;
+              if (c > min[i]) process.exit(0);
+              if (c < min[i]) {
+                console.error("npm " + process.argv[1] + " does not support OIDC trusted publishing (need >= 11.5.1)");
+                process.exit(1);
+              }
+            }
+          ' "$NPM_VERSION"
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the publish-set packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Tag / version consistency gate (single source of truth)
+        id: version
+        run: |
+          set -euo pipefail
+          PKGS="spec adapters router-ref conformance cli"
+          VERSION="$(node -p "require('./packages/spec/package.json').version")"
+          for p in $PKGS; do
+            V="$(node -p "require('./packages/$p/package.json').version")"
+            if [ "$V" != "$VERSION" ]; then
+              echo "::error::version mismatch: @synfin/$p is $V, expected $VERSION (every publish-set version must match)"
+              exit 1
+            fi
+          done
+          case "$GITHUB_REF" in
+            refs/tags/*)
+              TAG="$GITHUB_REF_NAME"
+              TAG_VERSION="${TAG#v}"
+              if [ "$TAG_VERSION" != "$VERSION" ]; then
+                echo "::error::tag $TAG (= $TAG_VERSION) does not match the package version $VERSION"
+                exit 1
+              fi
+              echo "tag $TAG matches the package version $VERSION"
+              ;;
+            *)
+              echo "manual dispatch (no tag): publishing the package version $VERSION"
+              ;;
+          esac
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Static release gate (publint · attw · pack · tarball assertions)
+        run: pnpm release:verify
+
+      - name: Publish to npm (OIDC + provenance, topological order)
+        # Pure OIDC trusted publishing: no token, no NODE_AUTH_TOKEN. Each package
+        # is published by the shared scripts/release/publish-package.mjs, which
+        # resolves pnpm's workspace:* deps to concrete ranges (npm cannot) and
+        # asserts no "workspace:" leaks before publishing. The same script proves
+        # the artifact against Verdaccio (pnpm release:verify:verdaccio), so the
+        # proven artifact is the shipped artifact. --provenance is explicit (belt
+        # and suspenders) even though trusted publishing also attaches provenance.
+        # Each package runs its prepublishOnly (build + typecheck) first. Order is
+        # the dependency order.
+        run: |
+          set -euo pipefail
+          for p in spec adapters router-ref conformance cli; do
+            echo "::group::npm publish @synfin/$p"
+            node scripts/release/publish-package.mjs "packages/$p" \
+              --tag next --access public --provenance
+            echo "::endgroup::"
+          done
+
+      - name: Verify published versions on npm
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          {
+            echo "### Published to npm (@next)"
+            echo ""
+            echo "| package | version on npm | expected |"
+            echo "| --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          for p in spec adapters router-ref conformance cli; do
+            got=""
+            for _ in 1 2 3 4 5 6; do
+              got="$(npm view "@synfin/$p@next" version 2>/dev/null || true)"
+              [ "$got" = "$VERSION" ] && break
+              sleep 5
+            done
+            if [ "$got" = "$VERSION" ]; then
+              echo "| @synfin/$p | $got | $VERSION |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| @synfin/$p | ${got:-<none>} | $VERSION |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::post-publish check failed for @synfin/$p (npm has '${got:-<none>}', expected '$VERSION')"
+              fail=1
+            fi
+          done
+          [ "$fail" = "0" ] || exit 1
