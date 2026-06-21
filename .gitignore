@@ -3,7 +3,12 @@ node_modules/
 
 # Build output
 dist/
+build/
 *.tsbuildinfo
+.astro/
+.next/
+.turbo/
+.cache/
 
 # Daml build output (the .daml/ dir per package). Vendored DARs in daml/dars/
 # are committed deliberately (see daml/dars/README.md).
@@ -14,7 +19,19 @@ coverage/
 
 # Editor / OS
 .DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
 *.log
+
+# Temp / backup
+*.bak
+*.orig
+*.tmp
+*~
 
 # Secrets — never commit (see ENGINEERING.md §6). Only .env.example is tracked.
 .env
