@@ -1,15 +1,15 @@
 ---
 /**
- * §6 "Open by design" (CONTENT.md §7; DESIGN.md §8b.6) — a 2-column editorial
+ * §6 "Open by design" (CONTENT.md §7; DESIGN.md §8b.6) - a 2-column editorial
  * split: left, the words (the 1inch / Jupiter precedent → "Synfin is that layer
  * for Canton" → adopts & contributes to CIP-0056/0112), a row of open/neutral
  * chips, and a neutral one-liner; right, a lit-glass STACK diagram that reads top
- * to bottom — the venues, the Synfin aggregation layer (ember), and the Canton
+ * to bottom - the venues, the Synfin aggregation layer (ember), and the Canton
  * token-standard settlement rail it settles through.
  *
- * Ember is restrained: the Synfin layer card, the "Synfin — Canton" analogy, and
+ * Ember is restrained: the Synfin layer card, the "Synfin - Canton" analogy, and
  * the Apache-2.0 chip. Everything else is warm-grey monochrome. Connectors are
- * thin neutral hairlines (solid stroke — no gradient on near-vertical spans).
+ * thin neutral hairlines (solid stroke - no gradient on near-vertical spans).
  */
 import Eyebrow from './Eyebrow.astro';
 import SealMark from './SealMark.astro';
@@ -17,11 +17,11 @@ import SealMark from './SealMark.astro';
 const venues = ['CantonSwap', 'OneSwap', 'CompassSwap', 'Cantex', 'RFQ desk'];
 const chips = [
   { t: 'Open · Apache-2.0', on: true },
-  { t: 'Neutral — no venue of our own', on: false },
+  { t: 'Neutral: no venue of our own', on: false },
   { t: 'Self-hostable', on: false },
-  { t: 'Adopts & contributes to CIP-0056 / 0112', on: false },
+  { t: 'Adopts and contributes to CIP-0056 / 0112', on: false },
 ];
-// Fan connector x-positions (% of the 300-wide band) — one per venue chip.
+// Fan connector x-positions (% of the 300-wide band) - one per venue chip.
 const fanX = [22, 38, 50, 62, 78];
 ---
 
@@ -29,18 +29,18 @@ const fanX = [22, 38, 50, 62, 78];
   <div class="container">
     <div class="open__grid">
       <header class="open__copy" data-reveal>
-        <Eyebrow text="06 — Open & neutral" />
+        <Eyebrow text="06 · Open & neutral" />
         <h2 class="open__title" id="open-title">
           <span>An aggregation layer,</span>
           <span class="open__muted">not a new standard.</span>
         </h2>
         <p class="open__lead">
           The winning answer to fragmented liquidity is always an aggregation
-          layer on the settlement rail — <strong>1inch on EVM</strong>,
-          <strong>Jupiter on Solana</strong>. Neither is a token standard; both
+          layer on top of the settlement rail: <strong>1inch on EVM</strong>,
+          <strong>Jupiter on Solana</strong>. Neither is a token standard. Both
           are neutral routers that became default infrastructure.
-          <strong>Synfin is that layer for Canton</strong> — it adopts CIP-0056 /
-          0112 for settlement and contributes back as an early implementer.
+          <strong>Synfin is that layer for Canton</strong>. It adopts CIP-0056 /
+          0112 for settlement and contributes to it as an early implementer.
         </p>
         <ul class="open__chips">
           {
@@ -53,15 +53,15 @@ const fanX = [22, 38, 50, 62, 78];
           }
         </ul>
         <p class="open__oneline">
-          Synfin holds no liquidity and favors no venue — neutral infrastructure
-          on top of the token standard.
+          Synfin holds no liquidity and favors no venue. It is neutral
+          infrastructure on top of the token standard.
         </p>
       </header>
 
       <div class="open__diagram card" data-reveal>
         <p class="open-cap mono">
-          1inch — EVM · Jupiter — Solana ·
-          <span class="open-cap__on">Synfin — Canton</span>
+          1inch · EVM&nbsp;&nbsp;&nbsp; Jupiter · Solana&nbsp;&nbsp;&nbsp;
+          <span class="open-cap__on">Synfin · Canton</span>
         </p>
 
         <ul class="open-venues">
@@ -323,7 +323,7 @@ const fanX = [22, 38, 50, 62, 78];
     color: var(--ink-3);
   }
 
-  /* Tablet/mobile: stack — copy on top, diagram below. */
+  /* Tablet/mobile: stack - copy on top, diagram below. */
   @media (max-width: 900px) {
     .open__grid {
       grid-template-columns: minmax(0, 1fr);

@@ -1,6 +1,6 @@
 ---
 /**
- * §7 "For the ecosystem" (CONTENT.md §8; DESIGN.md §8b.7) — a centered trio of
+ * §7 "For the ecosystem" (CONTENT.md §8; DESIGN.md §8b.7) - a centered trio of
  * lit-glass audience cards (Venues · Wallets & apps · Institutions), each with a
  * rounded lit icon tile, a Display-M title, a short body with one bold key
  * phrase, and a mono meta line (ember dot) above a hairline. Closes with the
@@ -16,7 +16,7 @@ const cards = [
       { t: 'Implement ', em: false },
       { t: 'one adapter', em: true },
       {
-        t: ' and become reachable through every Synfin integration — more flow, no new counterparties to chase.',
+        t: ' and become reachable through every Synfin integration. More flow, no new counterparties to chase.',
         em: false,
       },
     ],
@@ -28,7 +28,7 @@ const cards = [
     body: [
       { t: 'One SDK', em: true },
       {
-        t: ' for best-execution swaps across all of Canton’s liquidity — quotes, routing, and atomic settlement in a few calls.',
+        t: ' for best-execution swaps across all of Canton’s liquidity. Drop it in and route every trade to the best price.',
         em: false,
       },
     ],
@@ -40,7 +40,7 @@ const cards = [
     body: [
       { t: 'Best execution', em: true },
       {
-        t: ' with settlement atomicity and per-leg confidentiality — provable, to the basis point, on neutral open infrastructure.',
+        t: ' with settlement atomicity and per-leg confidentiality, provable to the basis point, on neutral open infrastructure.',
         em: false,
       },
     ],
@@ -52,7 +52,7 @@ const cards = [
 <section id="ecosystem" class="eco" aria-labelledby="ecosystem-title">
   <div class="container">
     <header class="eco__head" data-reveal>
-      <Eyebrow text="07 — Who it's for" />
+      <Eyebrow text="07 · Who it's for" />
       <h2 class="eco__title" id="ecosystem-title">
         <span>Built for everyone</span>
         <span class="eco__muted">routing on Canton.</span>
@@ -148,7 +148,7 @@ const cards = [
     </div>
 
     <p class="eco__context" data-reveal>
-      Canton is where regulated, institutional liquidity is moving on-chain — on
+      Canton is where regulated, institutional liquidity is moving on-chain, on
       a common token standard. Synfin is the neutral best-execution layer on top
       of it.
     </p>
@@ -217,7 +217,7 @@ const cards = [
     border: 1px solid var(--line-2);
     transition: border-color var(--d-hover) var(--e-hover);
   }
-  /* §17 — the icon tile warms when its card lifts. */
+  /* §17 - the icon tile warms when its card lifts. */
   .eco-card:hover .eco-card__icon {
     border-color: var(--ember-soft);
   }

@@ -1,6 +1,6 @@
 ---
 /**
- * ProofBento (CONTENT.md §4; DESIGN.md §5/§7/§8b) — the "Proof / Insights"
+ * ProofBento (CONTENT.md §4; DESIGN.md §5/§7/§8b) - the "Proof / Insights"
  * section below the hero: a 12-col responsive bento of dark-glass cards built to
  * the hero's bar (same material, layered light, ember restraint, mono data).
  * Cards: RouterCard (centerpiece) · edge stat + TickRule · per-leg privacy ·
@@ -17,7 +17,7 @@ import VenueSplit from './VenueSplit.astro';
 <section id="proof" class="proof" aria-labelledby="proof-title">
   <div class="container">
     <header class="proof__head" data-reveal>
-      <Eyebrow text="03 — Already delivered" />
+      <Eyebrow text="03 · Proof" />
       <h2 class="proof__title" id="proof-title">
         Proven,<span class="proof__muted"> not promised.</span>
       </h2>
@@ -33,23 +33,23 @@ import VenueSplit from './VenueSplit.astro';
           <span class="stat__num mono" data-count-to="47.8">+47.8</span>
           <span class="stat__unit mono">bps</span>
         </div>
-        <p class="cell__label">best execution vs the best single venue</p>
+        <p class="cell__label">better than the best single venue</p>
         <TickRule marker={47.8} max={120} class="cell__tick" />
       </div>
 
       <div class="cell cell--privacy card" data-reveal>
         <h3 class="cell__title">Per-leg privacy</h3>
-        <p class="cell__lead">Each venue sees only its own leg.</p>
+        <p class="cell__lead">each venue sees only its own leg</p>
         <PrivacyDiagram />
         <p class="cell__note">
-          Per-leg confidentiality ≠ anonymity to your own counterparty.
+          Per-leg privacy is not anonymity to your own counterparty.
         </p>
       </div>
 
       <div class="cell cell--tests card" data-reveal>
-        <span class="stat__num mono">8</span>
+        <h3 class="cell__title">Atomic, on-ledger settlement</h3>
         <p class="cell__label">
-          on-ledger settlement tests · incl. a per-leg-privacy proof
+          every leg in one transaction, proven on Canton
         </p>
       </div>
 
@@ -59,7 +59,7 @@ import VenueSplit from './VenueSplit.astro';
           <span>Built on Canton's token standard</span>
         </div>
         <p class="cell__strong mono">CIP-0056 / 0112</p>
-        <p class="cell__label">We adopt it — and contribute to it.</p>
+        <p class="cell__label">We adopt it, and contribute to it.</p>
       </div>
 
       <div class="cell cell--split card" data-reveal>
@@ -82,7 +82,7 @@ import VenueSplit from './VenueSplit.astro';
     z-index: 1;
   }
 
-  /* §16 Move C — the page's single mid APEX: eyebrow + heading centered, h2
+  /* §16 Move C - the page's single mid APEX: eyebrow + heading centered, h2
      enlarged (~64px). The bento grid below stays full-width/left as-is. */
   .proof__head {
     display: flex;
@@ -100,7 +100,7 @@ import VenueSplit from './VenueSplit.astro';
     line-height: 1.02;
     letter-spacing: -0.025em;
   }
-  /* tonal apex move — bright clause + muted clause (large display → AA at 3:1) */
+  /* tonal apex move - bright clause + muted clause (large display → AA at 3:1) */
   .proof__muted {
     color: var(--ink-display-muted);
   }

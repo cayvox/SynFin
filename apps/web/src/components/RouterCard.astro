@@ -1,11 +1,11 @@
 ---
 /**
- * RouterCard (DESIGN.md §5; CONTENT.md §4) — the best-execution card, dark-glass
+ * RouterCard (DESIGN.md §5; CONTENT.md §4) - the best-execution card, dark-glass
  * re-skin, living in the Proof bento (NOT the hero). The canonical illustrative
  * demo: 250,000 CC → split 46/33/21 across CantonSwap/OneSwap/RFQ desk, +47.8 bps
  * edge, atomic per-leg-private settlement. Allocation bars fill with warm-white
  * (--ink), NOT ember; ember appears only on the +47.8 edge and the seal-check.
- * No fake "live" pulse. Numbers are illustrative — never measured/live.
+ * No fake "live" pulse. Numbers are illustrative - never measured/live.
  *
  * Animation hooks for proof.ts: each `.rc-bar__fill` carries its final width as
  * `--pct` (full by default → no-JS/reduced shows it full); the edge number's
@@ -34,7 +34,7 @@ const venues = [
 
   <div class="rc__split">
     <div class="rc__split-head">
-      <span class="rc__label">Best route — split across 3 venues</span>
+      <span class="rc__label">Best route, split across 3 venues</span>
       <span class="rc__tag mono">RFQ + AMM</span>
     </div>
     <ul class="rc__venues">
@@ -62,19 +62,22 @@ const venues = [
       <span class="rc__edge-unit">bps</span>
     </div>
     <div class="rc__edge-meta">
-      <span class="rc__label">Edge vs the best single venue</span>
-      <span class="rc__edge-abs mono">≈ +191 USDCx · receive 39,940</span>
+      <span class="rc__label">better than the best single venue</span>
+      <span class="rc__edge-abs mono"
+        >≈ +191 USDCx more, you receive 39,940</span
+      >
     </div>
   </div>
 
   <div class="rc__settle">
     <SealMark size={20} check decorative class="rc__seal" />
     <span
-      >Atomic settlement. All legs in one transaction — per-leg private.</span
+      >Settles atomically. Every leg in one transaction, each venue sees only
+      its own.</span
     >
   </div>
 
-  <p class="rc__demo mono">Illustrative demo — not measured or live data.</p>
+  <p class="rc__demo mono">Illustrative example. Not live or measured data.</p>
 </article>
 
 <style>

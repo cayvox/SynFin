@@ -1,16 +1,16 @@
 ---
 /**
- * Constellation (DESIGN.md §6/§7/§8) — the hero's signature layer: layered light
+ * Constellation (DESIGN.md §6/§7/§8) - the hero's signature layer: layered light
  * + grain (§7), the routing connector SVG to the LINE SPEC (§6), the venue nodes
  * + convergence marker (§8).
  *
  * Rendering strategy (QA fixes 1 & 6): the lines are rendered server-side and
- * are COMPLETE, fully-drawn hairlines at rest (no permanent dash) — so they show
+ * are COMPLETE, fully-drawn hairlines at rest (no permanent dash) - so they show
  * with JS off and under reduced-motion. The hero panel is given the viewBox's
  * aspect-ratio (1440:856) at desktop, so this fixed-viewBox SVG maps 1:1 with no
  * non-uniform stretch and the line ends meet the node centres exactly. hero.ts
  * only (a) draws the base lines once on load via stroke-dashoffset then clears
- * the dash, and (b) layers a separate low-opacity flow pulse on top — neither
+ * the dash, and (b) layers a separate low-opacity flow pulse on top - neither
  * touches the resting base line. The whole constellation is hidden below 1024px
  * (Fix 5); the hero then shows a single static chip instead.
  */
@@ -71,7 +71,7 @@ const nodes = [
 ];
 const conv = { x: 720, y: 736 };
 
-// Ember best-route lines — the approved clean control points (Fix 2). No control
+// Ember best-route lines - the approved clean control points (Fix 2). No control
 // point dips below y≈736 or bows past the marker; all three feed into the pill.
 const emberLines = [
   {
@@ -100,7 +100,7 @@ const emberLines = [
   },
 ];
 
-// Neutral network arcs — routed down the gutters / along the bottom, clear of
+// Neutral network arcs - routed down the gutters / along the bottom, clear of
 // the centred text column (Fix 4).
 const netLines = [
   {
@@ -262,7 +262,7 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
     pointer-events: none;
   }
 
-  /* §7 atmosphere — layered washes, never one blob */
+  /* §7 atmosphere - layered washes, never one blob */
   .atmos {
     position: absolute;
     inset: 0;
@@ -316,7 +316,7 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
     opacity: 0;
   }
 
-  /* Convergence marker (§6) — above the lines (Fix 2), opaque enough that the
+  /* Convergence marker (§6) - above the lines (Fix 2), opaque enough that the
      three line ends tuck cleanly behind it. */
   .conv {
     position: absolute;
@@ -346,7 +346,7 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
   }
 
   /* Fix 5: the constellation is desktop-only. Below 1024px it is hidden entirely
-     (no dots, lines, labels or marker) — the hero shows a static chip instead. */
+     (no dots, lines, labels or marker) - the hero shows a static chip instead. */
   @media (max-width: 1023px) {
     .constellation {
       display: none;

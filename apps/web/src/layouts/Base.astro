@@ -1,6 +1,6 @@
 ---
 /**
- * Base layout — document head (CONTENT.md meta), self-hosted font preloads
+ * Base layout - document head (CONTENT.md meta), self-hosted font preloads
  * (STACK.md), global styles, a visible skip-link, and semantic landmarks.
  */
 import '../styles/tokens.css';
@@ -14,8 +14,8 @@ interface Props {
   canonical?: string;
 }
 const {
-  title = 'Synfin — Best execution for Canton',
-  description = "The open, neutral best-execution aggregation layer for the Canton Network: aggregate quotes across venues, route to the best price, and settle atomically with per-leg privacy — built on Canton's token standard (CIP-0056/0112).",
+  title = 'Synfin: best execution for Canton',
+  description = 'The open, neutral routing layer that finds the best price across every Canton venue, then settles it in one atomic, private transaction.',
   canonical = CANONICAL,
 } = Astro.props;
 
@@ -39,7 +39,7 @@ const preloadFonts = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Progressive enhancement (DESIGN.md §9): set the hidden pre-animation
-         state BEFORE first paint, but ONLY when JS is on AND motion is allowed —
+         state BEFORE first paint, but ONLY when JS is on AND motion is allowed -
          so there is no visible→hide flash, and no-JS / reduced-motion render the
          final state. A failsafe reveals the content even if the animation module
          never loads (never hide content behind JS that may not run). -->
@@ -79,7 +79,7 @@ const preloadFonts = [
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Synfin — best execution, native to Canton."
+      content="Synfin: best execution, native to Canton."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
@@ -100,7 +100,7 @@ const preloadFonts = [
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <!-- §7b — the whole body reads as one lit space: a single page-level light
+    <!-- §7b - the whole body reads as one lit space: a single page-level light
          field behind all content, plus one unified grain over the page. Both are
          decorative (aria-hidden, pointer-events:none) and degrade under
          forced-colors / reduced-transparency (base.css). -->

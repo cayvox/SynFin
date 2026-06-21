@@ -3,7 +3,7 @@
  * Display = Mona Sans (GitHub, OFL); UI = Geist; numerics = Geist Mono (tabular).
  */
 
-/* Display — Mona Sans (400–800) */
+/* Display - Mona Sans (400-800) */
 @font-face {
   font-family: 'Mona Sans';
   src: url('/fonts/MonaSans-400.woff2') format('woff2');
@@ -40,7 +40,7 @@
   font-display: swap;
 }
 
-/* UI — Geist */
+/* UI - Geist */
 @font-face {
   font-family: 'Geist';
   src: url('/fonts/Geist-Regular.woff2') format('woff2');
@@ -63,7 +63,7 @@
   font-display: swap;
 }
 
-/* Mono — Geist Mono (tabular numerics) */
+/* Mono - Geist Mono (tabular numerics) */
 @font-face {
   font-family: 'Geist Mono';
   src: url('/fonts/GeistMono-Regular.woff2') format('woff2');

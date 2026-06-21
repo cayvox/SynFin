@@ -1,10 +1,10 @@
 ---
 /**
- * Footer (DESIGN.md §15; CONTENT.md §9; reference/synfin-footer.png) — the rich
+ * Footer (DESIGN.md §15; CONTENT.md §9; reference/synfin-footer.png) - the rich
  * site footer that replaces the earlier simple row. A top hairline + quiet
  * atmosphere (cool wash top-left, faint ember bottom-right); a 3-col grid (brand
  * + Protocol + More); and a bottom bar (copyright/contact · licence chips).
- * STRICT single accent: ember is the only colour anywhere here — the brand meta
+ * STRICT single accent: ember is the only colour anywhere here - the brand meta
  * dot and the "Open source" chip; everything else is warm-grey monochrome.
  */
 import SealMark from './SealMark.astro';
@@ -41,7 +41,7 @@ const cols = [
       </p>
       <p class="footer__meta mono">
         <span class="footer__meta-dot" aria-hidden="true"></span>
-        built on CIP-0056 / 0112 · 8/8 on-ledger settlement tests
+        built on CIP-0056 / 0112 · atomic, on-ledger settlement
       </p>
     </div>
 
@@ -172,7 +172,7 @@ const cols = [
     color: var(--ink-2);
     transition: color var(--d-hover) var(--e-hover);
   }
-  /* §17 — ember underline slides 0→100% from the left on hover. */
+  /* §17 - ember underline slides 0→100% from the left on hover. */
   .footer__link::after {
     content: '';
     position: absolute;
@@ -257,7 +257,7 @@ const cols = [
       grid-column: 1 / -1;
     }
   }
-  /* Mobile: single column stack — brand, then each link col. */
+  /* Mobile: single column stack - brand, then each link col. */
   @media (max-width: 560px) {
     .footer__wrap {
       grid-template-columns: minmax(0, 1fr);

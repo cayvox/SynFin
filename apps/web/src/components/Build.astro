@@ -1,6 +1,6 @@
 ---
 /**
- * §8 "Build" (DESIGN.md §18; eyebrow 08) — dev-credibility section between §7
+ * §8 "Build" (DESIGN.md §18; eyebrow 08) - dev-credibility section between §7
  * Ecosystem and the Final CTA: one REAL @synfin SDK example tied to the
  * canonical demo. The code is the actual exported API from the monorepo
  * `packages/`:
@@ -23,9 +23,9 @@
 import Eyebrow from './Eyebrow.astro';
 
 const ticks = [
-  { b: 'One call', t: ' — quote, route, settle' },
-  { b: 'Best price', t: ' across all of Canton’s liquidity' },
-  { b: 'Atomic', t: ' & per-leg-private settlement' },
+  { b: 'One call', t: ': quote, route, settle.' },
+  { b: 'Best price', t: ' across all of Canton’s liquidity.' },
+  { b: 'Atomic', t: ' and per-leg-private settlement.' },
 ];
 
 // Hand-highlighted REAL-API snippet. Tones: .k keyword + .c comment → ink-3,
@@ -34,8 +34,8 @@ const codeHtml = `<span class="k">import</span> { route } <span class="k">from</
 <span class="k">import</span> { isAtomicRoute } <span class="k">from</span> <span class="s">'@synfin/spec'</span>;
 <span class="k">import type</span> { AssetId, Quote, SwapIntent } <span class="k">from</span> <span class="s">'@synfin/spec'</span>;
 
-<span class="c">// Sell 250,000 CC for USDCx. minReceive is enforced on-ledger —</span>
-<span class="c">// a bad quote aborts the trade; it never loses funds.</span>
+<span class="c">// Sell 250,000 CC for USDCx. minReceive is enforced on-ledger,</span>
+<span class="c">// so a bad quote aborts the trade and never loses funds.</span>
 <span class="k">const</span> intent: SwapIntent = {
   intentId: <span class="s">'demo-1'</span>,
   taker: <span class="s">'alice::canton'</span>,
@@ -46,28 +46,28 @@ const codeHtml = `<span class="k">import</span> { route } <span class="k">from</
 };
 
 <span class="c">// \`quotes\`: one Quote per venue, gathered through the VenueAdapter</span>
-<span class="c">// port (adapter.quote(req) — each request is a single size bucket,</span>
+<span class="c">// port (adapter.quote(req), each request is a single size bucket,</span>
 <span class="c">// so no venue ever sees the whole intent). Then route.</span>
 <span class="k">const</span> result = <span class="f">route</span>(intent, quotes, <span class="k">new</span> <span class="f">Date</span>());
 <span class="k">if</span> (!result.ok) <span class="k">throw new</span> <span class="f">Error</span>(result.reason);
 
 <span class="k">const</span> { plan } = result;
 plan.legs;             <span class="c">// CantonSwap 46% · OneSwap 33% · RFQ desk 21%</span>
-plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</span> bps vs the best single venue</span>
-<span class="f">isAtomicRoute</span>(plan, quotes); <span class="c">// → <span class="e">true</span> · atomic settlement via CIP-0056/0112</span>`;
+plan.aggregateReceive; <span class="c">// '39940', +<span class="e">47.8</span> bps vs the best single venue</span>
+<span class="f">isAtomicRoute</span>(plan, quotes); <span class="c">// → <span class="e">true</span> · atomic settlement via CIP-0056 / 0112</span>`;
 ---
 
 <section id="build" class="build" aria-labelledby="build-title">
   <div class="build__grid">
     <header class="build__copy" data-reveal>
-      <Eyebrow text="08 — Build" />
+      <Eyebrow text="08 · Build" />
       <h2 class="build__title" id="build-title">
         <span>From quote to settled,</span>
         <span class="build__muted">in a few lines.</span>
       </h2>
       <p class="build__lead">
         One SDK call routes across every venue, splits for the best price, and
-        settles the whole thing atomically — with per-leg privacy. No routing
+        settles the whole thing atomically, with per-leg privacy. No routing
         logic to rebuild.
       </p>
       <ul class="build__ticks">
@@ -112,12 +112,10 @@ plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</spa
       </div>
       <pre
         class="editor__pre"><code class="editor__code mono" set:html={codeHtml} /></pre>
+      <p class="editor__note mono">Illustrative example output.</p>
       <p class="editor__note mono">
-        Illustrative example output — not live or measured.
-      </p>
-      <p class="editor__note mono">
-        Routing + atomicity shown; on-ledger settlement via the token standard
-        (CIP-0056/0112).
+        Routing and atomicity shown. On-ledger settlement via the token standard
+        (CIP-0056 / 0112).
       </p>
     </div>
   </div>
@@ -244,7 +242,7 @@ plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</spa
   .editor__pre {
     margin: 0;
     padding: 18px 16px 20px;
-    overflow-x: auto; /* the code scrolls INTERNALLY — never the page */
+    overflow-x: auto; /* the code scrolls INTERNALLY - never the page */
     font-size: 12.5px;
     line-height: 1.7;
     color: var(--ink-2);
@@ -296,7 +294,7 @@ plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</spa
 </style>
 
 <script>
-  // §18 copy button — tiny + accessible. Reads the rendered code's textContent
+  // §18 copy button - tiny + accessible. Reads the rendered code's textContent
   // (so it always matches what's shown), copies it, shows "Copied" ~1.5s.
   // No-JS: the <pre> is fully visible + selectable, so this only enhances.
   async function copyText(text: string): Promise<boolean> {
