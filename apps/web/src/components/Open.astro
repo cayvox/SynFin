@@ -122,18 +122,6 @@ const fanX = [22, 38, 50, 62, 78];
     padding-block: var(--section-y);
     overflow: hidden;
   }
-  .open::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(
-        42% 38% at 16% 6%,
-        rgba(228, 232, 240, 0.06),
-        transparent 62%
-      ),
-      radial-gradient(34% 32% at 84% 92%, var(--ember-glow), transparent 64%);
-  }
   .open > .container {
     position: relative;
     z-index: 1;
