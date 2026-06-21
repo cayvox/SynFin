@@ -1,6 +1,6 @@
 {
   "name": "@synfin/cli",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Synfin reference CLI — Demo 1: cross-venue quote aggregation against real Canton venues (CantonSwap, OneSwap). Read-only, no funds.",
   "license": "Apache-2.0",
   "type": "module",
@@ -11,7 +11,10 @@
     "synfin": "./dist/main.js"
   },
   "files": [
-    "dist"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -24,7 +27,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run typecheck"
   },
   "dependencies": {
     "@synfin/adapters": "workspace:*",
@@ -36,5 +40,19 @@
     "@vitest/coverage-v8": "2.1.8",
     "typescript": "5.7.2",
     "vitest": "2.1.8"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cayvox/SynFin.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/cayvox/SynFin/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/cayvox/SynFin/issues"
+  },
+  "sideEffects": false
 }

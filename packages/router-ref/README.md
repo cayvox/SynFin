@@ -1,55 +1,19 @@
 # @synfin/router-ref
 
-The **open reference** implementation of the SQSS `Router` port (ADR-0005,
-[ADR-0007](../../docs/decisions/0007-reference-router-scope.md)).
+> **Pre-alpha.** The API is unstable and may change without notice. Not for production use. Published under the `next` dist-tag.
 
-> This is a **correct, deterministic, depth-aware baseline — not the optimizer.**
-> Heavy numerical optimization (full marginal-curve depth models, global optima)
-> is out of scope and lives behind the *same* `Router` port in the separate,
-> closed optimizer (ADR-0004). Because they share the port, the optimizer is a
-> drop-in replacement; the system runs fully on this open baseline alone
-> (open/closed boundary, GOVERNANCE.md §3).
+The open reference implementation of the SQSS Router port: a correct, deterministic, depth-aware baseline that selects and splits quotes into a RoutePlan. It is the reference, not the optimizer. Given the same intent, quotes, and time it always returns the same result.
 
-## What it does (SPEC §4.2–§4.4, ADR-0007)
+## Install
 
-- Single-hop, multi-venue split (multi-hop is a future RFC).
-- Considers only quotes whose assets match the intent, that are unexpired at the
-  supplied `now`, and whose venue is allowed by `venueAllowList`.
-- Ranks eligible quotes by **net `receive`** rate (fees already reflected in
-  `Quote.receive`), compared exactly by cross-multiplication (no floating point).
-- Allocates greedily, **one leg per venue**, splitting the remainder onto the
-  next-best venue; the final leg may be a partial fill whose receipt is rounded
-  **in the taker's favour** (never above the referenced quote).
-- **Self-validates** every plan with `checkRoutePlan(plan, intent, quotes, now)`;
-  if `minReceive`/`maxSlippageBps` cannot be met it returns a typed
-  **no-viable-route** result instead of a constraint-violating plan.
-
-### Tie-breaking (deterministic)
-
-Higher net rate first; then lower `venueId`; then larger `give` (more capacity);
-then lower `quoteId`. Identical inputs (including `now`) always yield identical
-output — no clock, I/O, or randomness.
-
-## Usage
-
-It implements the `Router` port directly (SPEC §4.5; RFC-0002): `now` is a
-**per-call** parameter and the result is a typed `RouteResult` — it never throws
-for control flow.
-
-```ts
-import { route, referenceRouter } from '@synfin/router-ref';
-
-const result = route(intent, quotes, new Date()); // or referenceRouter.route(...)
-if (result.ok) {
-  // result.plan is guaranteed to pass checkRoutePlan
-} else {
-  // result.reason: 'no-eligible-quotes' | 'min-receive-unreachable' | 'slippage-exceeded'
-}
+```sh
+npm install @synfin/router-ref@next
 ```
 
-`referenceRouter` is a `Router`-typed value for wherever the port is expected.
-The reference router adds zero slippage, so it returns only `'no-eligible-quotes'`
-or `'min-receive-unreachable'`; `'slippage-exceeded'` is part of the port contract
-for routers that model slippage.
+## Spec
 
-Apache-2.0. Pre-alpha: interfaces are unstable until `v1.0.0`.
+See the [Synfin specification](https://github.com/cayvox/SynFin/blob/main/docs/spec/SPECIFICATION.md). Synfin is ESM only and targets Node 20 or newer.
+
+## License
+
+Apache-2.0

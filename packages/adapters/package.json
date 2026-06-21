@@ -1,6 +1,6 @@
 {
   "name": "@synfin/adapters",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Synfin venue adapters implementing the VenueAdapter port. Includes a deterministic MockVenueAdapter for development and tests (not a real venue).",
   "license": "Apache-2.0",
   "type": "module",
@@ -8,21 +8,24 @@
     "node": ">=20"
   },
   "files": [
-    "dist"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./fixtures/*": "./fixtures/*"
+    }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "prepublishOnly": "pnpm run build && pnpm run typecheck"
   },
   "dependencies": {
     "@synfin/spec": "workspace:*"
@@ -33,5 +36,19 @@
     "fast-check": "3.23.1",
     "typescript": "5.7.2",
     "vitest": "2.1.8"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cayvox/SynFin.git",
+    "directory": "packages/adapters"
+  },
+  "homepage": "https://github.com/cayvox/SynFin/tree/main/packages/adapters#readme",
+  "bugs": {
+    "url": "https://github.com/cayvox/SynFin/issues"
+  },
+  "sideEffects": false
 }
