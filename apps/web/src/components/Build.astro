@@ -54,7 +54,7 @@ const codeHtml = `<span class="k">import</span> { route } <span class="k">from</
 <span class="k">const</span> { plan } = result;
 plan.legs;             <span class="c">// CantonSwap 46% · OneSwap 33% · RFQ desk 21%</span>
 plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</span> bps vs the best single venue</span>
-<span class="f">isAtomicRoute</span>(plan, quotes); <span class="c">// <span class="e">true</span> — one atomic, per-leg-private settlement</span>`;
+<span class="f">isAtomicRoute</span>(plan, quotes); <span class="c">// → <span class="e">true</span> · atomic settlement via CIP-0056/0112</span>`;
 ---
 
 <section id="build" class="build" aria-labelledby="build-title">
@@ -114,6 +114,10 @@ plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</spa
         class="editor__pre"><code class="editor__code mono" set:html={codeHtml} /></pre>
       <p class="editor__note mono">
         Illustrative example output — not live or measured.
+      </p>
+      <p class="editor__note mono">
+        Routing + atomicity shown; on-ledger settlement via the token standard
+        (CIP-0056/0112).
       </p>
     </div>
   </div>
