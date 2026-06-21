@@ -219,7 +219,7 @@ Centered text column, clear of all lines; venue nodes at the periphery; converge
   CompassSwap (432,736) · Cantex (1253,222) · RFQ desk (1267,548) · convergence (720,736). Route nodes =
   CantonSwap, OneSwap, RFQ desk.
 - Bottom band: left scroll indicator "01 / 03 · SCROLL"; right proof tag "● built on CIP-0056 / 0112 ·
-  10/10 on-ledger tests".
+  8/8 on-ledger settlement tests".
 - Mobile: nodes reduce to a tasteful subset or collapse below the headline; the constellation must
   degrade gracefully (never a tangle). Headline reflows; text column centered.
 
@@ -228,7 +228,7 @@ Centered text column, clear of all lines; venue nodes at the periphery; converge
 Same dark-glass material, layered light, ember restraint, mono data — every section. Copy from CONTENT.md.
 1. **Hero** — constellation (above).
 2. **Proof / "Insights" bento** — a bento grid of dark-glass cards: the **RouterCard**, the **+47.8 bps**
-   edge stat, a **per-leg-privacy** mini-diagram, **10/10 on-ledger tests**, a **CIP-0056/0112** badge,
+   edge stat, a **per-leg-privacy** mini-diagram, **8/8 on-ledger settlement tests**, a **CIP-0056/0112** badge,
    a **venue-split** chart (46/33/21). Mixed spans, lit glass, one ember payoff.
 3. **How it works** — the 5-stage route→atomic-settlement as an elegant **orbital / flow** visual
    (a luminous arc/dial or a horizontal flow of lit nodes); restrained, not a gimmick.
@@ -267,7 +267,7 @@ no flash, no drift, line-draw skipped (lines shown drawn). Never hide content be
 Precise, institutional, confident, **honest**. Active voice. We are the open best-execution **aggregation
 layer** on top of Canton's token standard — like 1inch/Jupiter, not a venue, not a competing settlement
 standard. We **adopt** CIP-0056/0112 and **contribute** to it. "Proven" only where literally proven
-(10/10 on-ledger tests; settles via CIP-0056/0112). Complementary to venues, never "first/only". Numbers
+(8/8 on-ledger settlement tests; settles via CIP-0056/0112). Complementary to venues, never "first/only". Numbers
 are illustrative unless explicitly from tests/spec; never imply measured/live production data.
 
 ---

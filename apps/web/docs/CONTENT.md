@@ -24,12 +24,12 @@ Canonical: `https://synfin.xyz` (domain pending — keep configurable).
 - Headline (display): **Best execution, *native* to Canton.**
 - Subhead: *Synfin gathers quotes across Canton's venues, routes to the best price, and settles the split in one atomic transaction, with proven per-leg privacy. The open, neutral aggregation layer for Canton — built on the token standard, not a venue.*
 - Primary CTA: `Read the specification` → (spec). Secondary: `View on GitHub` → repo.
-- Proof row: `Open · Apache-2.0` · `Built on CIP-0056 & 0112` · `10/10 on-ledger tests`
+- Proof row: `Open · Apache-2.0` · `Built on CIP-0056 & 0112` · `8/8 on-ledger settlement tests`
 - Centerpiece: the **routing constellation** (see DESIGN.md §6/§8). Venue nodes around the periphery,
   with quotes (CC/USDCx): CantonSwap `124.81` · OneSwap `124.63` · CompassSwap `124.55` · Cantex `124.72`
   · RFQ desk `125.04`. Thin ember lines from the three best-route venues (CantonSwap + OneSwap + RFQ desk)
   converge to a low-center marker: `● best route · +47.8 bps`.
-- Bottom band: left `01 / 03 · SCROLL`; right proof tag `● built on CIP-0056 / 0112 · 10/10 on-ledger tests`.
+- Bottom band: left `01 / 03 · SCROLL`; right proof tag `● built on CIP-0056 / 0112 · 8/8 on-ledger settlement tests`.
 - The detailed best-execution **RouterCard** does NOT live in the hero — it moves to §4 (Proof bento).
 
 > These figures are an **illustrative demo**, not measured production numbers. Do not label them
@@ -81,7 +81,7 @@ Body:
   batch-settlement (`SettlementFactory_SettleBatch`) introduced in **CIP-0112 (Token Standard V2)**.
   A multi-venue split settles in a **single atomic transaction**, enforcing conservation, min-receive,
   slippage floor, single-use allocations, and all-or-nothing.
-- We built and proved this end-to-end: **10/10 on-ledger tests pass**, including a test that proves
+- We built and proved this end-to-end: **8/8 on-ledger settlement tests pass**, including a test that proves
   **one venue cannot see another venue's leg**. We are early implementers of the V2 batch-settlement
   flow — and we contribute that real-world experience back to the standard.
 - Two honest demonstrations:
@@ -89,14 +89,14 @@ Body:
   - **Atomic split settlement** against our own CIP-0056 test venue — the architecture is proven and
     moves to native V2 batch settlement as the standard rolls out.
 
-Proof chips (mono): `Built on CIP-0056 / 0112` · `Atomic settlement 10/10` · `2 live venue adapters` · `Apache-2.0`.
+Proof chips (mono): `Built on CIP-0056 / 0112` · `Atomic settlement 8/8` · `2 live venue adapters` · `Apache-2.0`.
 
 **RouterCard (the bento centerpiece — dark-glass, see DESIGN.md §5):** the canonical illustrative demo —
 route `250,000 CC` → receive `39,940 USDCx`, slippage `0.30%`, pair `CC → USDCx`; split CantonSwap `46%`
 `18,372 USDCx` · OneSwap `33%` `13,181 USDCx` · RFQ desk `21%` `8,387 USDCx`; edge `+47.8 bps` vs the best
 single venue (`≈ +191 USDCx`); `Atomic settlement. All legs in one transaction — per-leg private.`
 (Illustrative demo — never label as measured/live.) Sits in the bento alongside the +47.8 edge stat, a
-per-leg-privacy mini-diagram, 10/10 on-ledger tests, a CIP-0056/0112 badge, and a 46/33/21 venue-split chart.
+per-leg-privacy mini-diagram, 8/8 on-ledger settlement tests, a CIP-0056/0112 badge, and a 46/33/21 venue-split chart.
 
 > Honesty: the settlement demo runs against our own CIP-0056 test venue (no mainnet funds). Say so.
 
@@ -184,7 +184,7 @@ moving on-chain — on a common token standard. Synfin is the neutral best-execu
 
 ## Global copy rules
 - Honest and specific. No "first/only", no invented metrics or partners, no hype, no emoji.
-- "Proven" only where literally proven (10/10 tests). Otherwise "designed to" / "turns on as".
+- "Proven" only where literally proven (8/8 tests). Otherwise "designed to" / "turns on as".
 - **We are an aggregation layer on top of CIP-0056/0112 — never a venue, never a competing standard.**
   We adopt and contribute to the token standard; we don't reinvent settlement.
 - We are complementary to venues, never their competitor in copy.
