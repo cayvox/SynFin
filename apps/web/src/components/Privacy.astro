@@ -207,19 +207,6 @@ const lanes = [
     padding-block: var(--section-y);
     overflow: hidden;
   }
-  /* §7 atmosphere — one quiet wash + a faint ember underglow (varied position). */
-  .pv::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(
-        44% 38% at 80% 6%,
-        rgba(228, 232, 240, 0.06),
-        transparent 62%
-      ),
-      radial-gradient(36% 34% at 16% 94%, var(--ember-glow), transparent 64%);
-  }
   .pv > .container {
     position: relative;
     z-index: 1;
