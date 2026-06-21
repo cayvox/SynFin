@@ -215,6 +215,11 @@ const cards = [
       var(--bg-2)
     );
     border: 1px solid var(--line-2);
+    transition: border-color var(--d-hover) var(--e-hover);
+  }
+  /* §17 — the icon tile warms when its card lifts. */
+  .eco-card:hover .eco-card__icon {
+    border-color: var(--ember-soft);
   }
   .eco-card__icon svg {
     width: 22px;
