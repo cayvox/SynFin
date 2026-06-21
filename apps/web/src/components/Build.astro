@@ -1,0 +1,345 @@
+---
+/**
+ * §8 "Build" (DESIGN.md §18; eyebrow 08) — dev-credibility section between §7
+ * Ecosystem and the Final CTA: one REAL @synfin SDK example tied to the
+ * canonical demo. The code is the actual exported API from the monorepo
+ * `packages/`:
+ *   - `route(intent, quotes, now)` from `@synfin/router-ref` → RouteResult
+ *     ({ ok: true, plan } | { ok: false, reason }); plan has legs[],
+ *     aggregateReceive, worstCaseReceive, slippageBps.
+ *   - `isAtomicRoute(plan, quotes)` + types `SwapIntent`/`Quote`/`AssetId` from
+ *     `@synfin/spec`.
+ * There is no `synfin.route()` facade and no literal `edge`/`atomic` fields, so
+ * the two payoff values are the DERIVED edge (+47.8 bps, illustrative) and
+ * `isAtomicRoute(...) === true`. Output values are framed as illustrative
+ * example output (never live/measured). Highlight is restrained: ink/ink-2 with
+ * keywords+comments in ink-3 and EMBER only on the two payoff values.
+ *
+ * The code is rendered via `set:html` (a static, hand-highlighted string) so the
+ * code's literal `{ }` are not parsed as Astro expressions. The Copy button (the
+ * only JS here) reads the rendered <code> textContent, so what's copied always
+ * matches what's shown; with no JS the <pre> stays selectable/readable.
+ */
+import Eyebrow from './Eyebrow.astro';
+
+const ticks = [
+  { b: 'One call', t: ' — quote, route, settle' },
+  { b: 'Best price', t: ' across all of Canton’s liquidity' },
+  { b: 'Atomic', t: ' & per-leg-private settlement' },
+];
+
+// Hand-highlighted REAL-API snippet. Tones: .k keyword + .c comment → ink-3,
+// .s string + .n number → ink-2, .f key identifier → ink, .e payoff → EMBER.
+const codeHtml = `<span class="k">import</span> { route } <span class="k">from</span> <span class="s">'@synfin/router-ref'</span>;
+<span class="k">import</span> { isAtomicRoute } <span class="k">from</span> <span class="s">'@synfin/spec'</span>;
+<span class="k">import type</span> { AssetId, Quote, SwapIntent } <span class="k">from</span> <span class="s">'@synfin/spec'</span>;
+
+<span class="c">// Sell 250,000 CC for USDCx. minReceive is enforced on-ledger —</span>
+<span class="c">// a bad quote aborts the trade; it never loses funds.</span>
+<span class="k">const</span> intent: SwapIntent = {
+  intentId: <span class="s">'demo-1'</span>,
+  taker: <span class="s">'alice::canton'</span>,
+  give: { asset: CC, amount: <span class="s">'250000'</span> },
+  want: { asset: USDCx, minReceive: <span class="s">'39800'</span> },
+  maxSlippageBps: <span class="n">30</span>,
+  deadline: <span class="s">'2026-01-01T00:00:00Z'</span>,
+};
+
+<span class="c">// \`quotes\`: one Quote per venue, gathered through the VenueAdapter</span>
+<span class="c">// port (adapter.quote(req) — each request is a single size bucket,</span>
+<span class="c">// so no venue ever sees the whole intent). Then route.</span>
+<span class="k">const</span> result = <span class="f">route</span>(intent, quotes, <span class="k">new</span> <span class="f">Date</span>());
+<span class="k">if</span> (!result.ok) <span class="k">throw new</span> <span class="f">Error</span>(result.reason);
+
+<span class="k">const</span> { plan } = result;
+plan.legs;             <span class="c">// CantonSwap 46% · OneSwap 33% · RFQ desk 21%</span>
+plan.aggregateReceive; <span class="c">// '39940' — +<span class="e">47.8</span> bps vs the best single venue</span>
+<span class="f">isAtomicRoute</span>(plan, quotes); <span class="c">// → <span class="e">true</span> · atomic settlement via CIP-0056/0112</span>`;
+---
+
+<section id="build" class="build" aria-labelledby="build-title">
+  <div class="build__grid">
+    <header class="build__copy" data-reveal>
+      <Eyebrow text="08 — Build" />
+      <h2 class="build__title" id="build-title">
+        <span>From quote to settled,</span>
+        <span class="build__muted">in a few lines.</span>
+      </h2>
+      <p class="build__lead">
+        One SDK call routes across every venue, splits for the best price, and
+        settles the whole thing atomically — with per-leg privacy. No routing
+        logic to rebuild.
+      </p>
+      <ul class="build__ticks">
+        {
+          ticks.map((t) => (
+            <li class="build__tick">
+              <svg
+                class="build__check"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3.5 8.4l3 3 6-6.8"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>
+                <b>{t.b}</b>
+                {t.t}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </header>
+
+    <div class="editor" data-reveal>
+      <div class="editor__bar">
+        <span class="editor__tab mono">route.ts</span>
+        <button
+          type="button"
+          class="editor__copy mono"
+          data-copy
+          aria-label="Copy code"
+        >
+          <span class="editor__copy-label">Copy</span>
+        </button>
+      </div>
+      <pre
+        class="editor__pre"><code class="editor__code mono" set:html={codeHtml} /></pre>
+      <p class="editor__note mono">
+        Illustrative example output — not live or measured.
+      </p>
+      <p class="editor__note mono">
+        Routing + atomicity shown; on-ledger settlement via the token standard
+        (CIP-0056/0112).
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .build {
+    position: relative;
+    padding-top: var(--sp-tight);
+    padding-bottom: var(--sp-default);
+  }
+  .build__grid {
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: center;
+  }
+  .build__copy,
+  .editor {
+    min-width: 0;
+  }
+
+  /* Left copy */
+  .build__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(32px, 4.6vw, 52px);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .build__muted {
+    color: var(--ink-display-muted);
+  }
+  .build__lead {
+    margin-top: 24px;
+    max-width: 42ch;
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .build__ticks {
+    list-style: none;
+    margin: 26px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .build__tick {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    font-family: var(--font-ui);
+    font-size: 14.5px;
+    color: var(--ink-2);
+  }
+  .build__tick b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .build__check {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--ember);
+  }
+
+  /* Right editor */
+  .editor {
+    position: relative;
+    background: #0e0f12;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--card-inset), var(--card-shadow);
+    overflow: hidden;
+  }
+  .editor__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px 10px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .editor__tab {
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .editor__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 11.5px;
+    color: var(--ink-2);
+    background: rgba(241, 239, 234, 0.03);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    transition:
+      background var(--d-hover) var(--e-hover),
+      border-color var(--d-hover) var(--e-hover),
+      color var(--d-hover) var(--e-hover),
+      transform var(--d-hover) var(--e-hover);
+  }
+  .editor__copy:hover {
+    background: rgba(241, 239, 234, 0.08);
+    border-color: rgba(241, 239, 234, 0.28);
+    color: var(--ink);
+    transform: translateY(-1px);
+  }
+  .editor__copy:active {
+    transform: translateY(0) scale(0.99);
+  }
+  .editor__copy[data-copied] {
+    color: var(--ember-hi);
+    border-color: var(--ember-soft);
+  }
+  .editor__pre {
+    margin: 0;
+    padding: 18px 16px 20px;
+    overflow-x: auto; /* the code scrolls INTERNALLY — never the page */
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    tab-size: 2;
+  }
+  .editor__code {
+    font-size: 12.5px;
+    white-space: pre;
+  }
+  /* Restrained highlight: ink-2 default, keywords + comments ink-3, key idents
+     ink, strings ink-2; EMBER only on the two payoff values. No rainbow. */
+  .editor__code :global(.k),
+  .editor__code :global(.c) {
+    color: var(--ink-3);
+  }
+  .editor__code :global(.s),
+  .editor__code :global(.n) {
+    color: var(--ink-2);
+  }
+  .editor__code :global(.f) {
+    color: var(--ink);
+  }
+  .editor__code :global(.e) {
+    color: var(--ember);
+  }
+  .editor__note {
+    margin: 0;
+    padding: 0 16px 14px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--ink-3);
+  }
+
+  /* ≤900: stack (copy over editor). */
+  @media (max-width: 900px) {
+    .build__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 36px;
+    }
+    .build__lead {
+      max-width: none;
+    }
+  }
+  @media (max-width: 460px) {
+    .editor__pre {
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  // §18 copy button — tiny + accessible. Reads the rendered code's textContent
+  // (so it always matches what's shown), copies it, shows "Copied" ~1.5s.
+  // No-JS: the <pre> is fully visible + selectable, so this only enhances.
+  async function copyText(text: string): Promise<boolean> {
+    // Prefer the async Clipboard API; fall back to a temporary-selection
+    // execCommand for contexts where it's unavailable/blocked.
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      /* fall through */
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) => {
+    const editor = btn.closest('.editor');
+    const code = editor?.querySelector('.editor__code');
+    const label = btn.querySelector('.editor__copy-label');
+    if (!code || !label) return;
+    btn.addEventListener('click', async () => {
+      // Code stays selectable, so even a total failure leaves a manual path.
+      if (!(await copyText(code.textContent ?? ''))) return;
+      const prev = label.textContent;
+      label.textContent = 'Copied';
+      btn.setAttribute('data-copied', '');
+      window.setTimeout(() => {
+        label.textContent = prev;
+        btn.removeAttribute('data-copied');
+      }, 1500);
+    });
+  });
+</script>
