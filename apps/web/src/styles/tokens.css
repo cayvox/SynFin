@@ -1,35 +1,35 @@
 /*
- * Synfin design tokens — DARK / CINEMATIC (DESIGN.md §1–§3). Single source of
+ * Synfin design tokens - DARK / CINEMATIC (DESIGN.md §1-§3). Single source of
  * truth in CSS. Warm-grey monochrome on warm near-black + ONE ember accent.
  */
 :root {
-  /* §1 Canvas — warm near-black (never clinical #000) */
+  /* §1 Canvas - warm near-black (never clinical #000) */
   --bg-0: #070708; /* page */
   --bg: #0b0b0d; /* hero panel base */
   --bg-1: #121316; /* cards */
   --bg-2: #191a1e; /* raised card / inputs */
   --bg-3: #202126; /* hover surface */
 
-  /* §1 Ink — warm-grey ramp */
+  /* §1 Ink - warm-grey ramp */
   --ink: #f1efea; /* primary (warm white) */
   --ink-2: #a8a59d; /* secondary */
   /* Small muted text (captions, meta, labels, sub/body, footer bottom bar, mono
-     metas). #6f6c64 was 3.84:1 on the page bg — fails WCAG AA 4.5:1 for normal
-     text — so it is #8b887f: 5.68 / 5.24 / 4.91:1 on bg-0 / bg-1 / bg-2, clearing
+     metas). #6f6c64 was 3.84:1 on the page bg - fails WCAG AA 4.5:1 for normal
+     text - so it is #8b887f: 5.68 / 5.24 / 4.91:1 on bg-0 / bg-1 / bg-2, clearing
      AA on every surface while staying the dimmest tone. */
   --ink-3: #8b887f;
-  /* Large muted DISPLAY clauses only — the second clause of the tonal hero h1 and
+  /* Large muted DISPLAY clauses only - the second clause of the tonal hero h1 and
      each section h2 (Display sizes ≥24px / ≥18.66px bold). At those sizes WCAG AA
      needs only 3:1, which the original #6f6c64 meets (3.84:1), so the intended
      deep tonal dimness is preserved. Never use on text below the large threshold. */
   --ink-display-muted: #6f6c64;
 
-  /* §1 Lines — hairline light */
+  /* §1 Lines - hairline light */
   --line: rgba(241, 239, 234, 0.1);
   --line-2: rgba(241, 239, 234, 0.16);
   --line-3: rgba(241, 239, 234, 0.06);
 
-  /* §1 Accent — ember (the ONLY accent) */
+  /* §1 Accent - ember (the ONLY accent) */
   --ember: #cc6a43;
   --ember-hi: #e68a5e; /* hover / line terminus */
   --ember-soft: rgba(204, 106, 67, 0.55);
@@ -38,7 +38,7 @@
   /* §1 on-light (for the white primary button) */
   --on-light: #0b0b0d;
 
-  /* §2 Type — self-hosted (fonts.css). --font-display is the swap lever. */
+  /* §2 Type - self-hosted (fonts.css). --font-display is the swap lever. */
   --font-display: 'Mona Sans', system-ui, -apple-system, sans-serif;
   --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
@@ -54,7 +54,7 @@
   --gutter: 30px;
   --section-y: clamp(72px, 11vw, 148px);
 
-  /* §16 Move C — whole-page rhythm. Section vertical spacing scale; the clamps
+  /* §16 Move C - whole-page rhythm. Section vertical spacing scale; the clamps
      give the desktop rhythm (tight 88 / default 120 / act 192 at ≥~1440) and
      scale down on phones (≈ 56 / 80 / 112 at ≤720) so gaps never feel enormous. */
   --sp-tight: clamp(56px, 6.1vw, 88px);
@@ -67,7 +67,7 @@
   --d-fast: 0.18s;
   --d: 0.4s;
   --d-slow: 1.1s;
-  /* §17 Move D — hover/micro-interaction timing (180–220ms ease-out) */
+  /* §17 Move D - hover/micro-interaction timing (180-220ms ease-out) */
   --d-hover: 0.2s;
   --e-hover: cubic-bezier(0.2, 0.6, 0.2, 1);
 

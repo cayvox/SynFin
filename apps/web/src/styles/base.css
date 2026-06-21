@@ -1,4 +1,4 @@
-/* Reset + base type + structural primitives — DARK (DESIGN.md §1–§3, §10). */
+/* Reset + base type + structural primitives - DARK (DESIGN.md §1-§3, §10). */
 
 *,
 *::before,
@@ -48,7 +48,7 @@ button {
   cursor: pointer;
 }
 
-/* Display headings — Mona Sans, tight (§2). */
+/* Display headings - Mona Sans, tight (§2). */
 h1,
 h2,
 h3 {
@@ -59,7 +59,7 @@ h3 {
   color: var(--ink);
 }
 
-/* Numbers, tickers, labels — always tabular (§2). */
+/* Numbers, tickers, labels - always tabular (§2). */
 .mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -71,7 +71,7 @@ h3 {
   color: var(--ink);
 }
 
-/* Visible keyboard focus — ember ring (§5, §10 quality floor). */
+/* Visible keyboard focus - ember ring (§5, §10 quality floor). */
 :focus-visible {
   outline: 2px solid var(--ember);
   outline-offset: 3px;
@@ -81,7 +81,7 @@ h3 {
   outline: none;
 }
 
-/* Layout container — 1240px, 30px gutters (16px mobile) (§3). */
+/* Layout container - 1240px, 30px gutters (16px mobile) (§3). */
 .container {
   width: 100%;
   max-width: var(--maxw);
@@ -94,7 +94,7 @@ h3 {
   }
 }
 
-/* Skip link — hidden until focused. */
+/* Skip link - hidden until focused. */
 .skip-link {
   position: absolute;
   left: 16px;
@@ -127,11 +127,11 @@ h3 {
 }
 
 /* Scroll-reveal primitive (Section / bento cards). Progressive enhancement:
-   `[data-reveal]` is VISIBLE by default — the hidden pre-state is applied by
+   `[data-reveal]` is VISIBLE by default - the hidden pre-state is applied by
    reveal.ts in JS (only when motion is allowed), then animated in on scroll.
    So no-JS and reduced-motion render the final, visible state with no flash. */
 
-/* Card material (DESIGN.md §5) — the lit dark-glass surface, reused everywhere. */
+/* Card material (DESIGN.md §5) - the lit dark-glass surface, reused everywhere. */
 .card {
   position: relative;
   background: var(--bg-1);
@@ -157,7 +157,7 @@ h3 {
   );
   transition: background var(--d-hover) var(--e-hover);
 }
-/* §17 card hover — the signature: lifts + warms (ember edge + warm top glow +
+/* §17 card hover - the signature: lifts + warms (ember edge + warm top glow +
    deeper shadow + faint ember ring). Transform-only motion → no layout shift. */
 .card:hover {
   transform: translateY(-3px);
@@ -175,7 +175,7 @@ h3 {
   );
 }
 
-/* §7b — page-level continuous light field + unified grain. Replaces the old
+/* §7b - page-level continuous light field + unified grain. Replaces the old
    per-section ::before washes so the body reads as ONE lit space, not a stack of
    separately-lit blocks. Both layers are decorative and never trap pointer/focus.
    The field spans the full document height; content sits above it. */
@@ -267,7 +267,7 @@ h3 {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  /* §17 — hover/active state changes (colour, border, glow) still apply, but
+  /* §17 - hover/active state changes (colour, border, glow) still apply, but
      NO movement: drop the lift, the press, and the external-arrow nudge. */
   .card:hover,
   .btn:hover,
@@ -279,7 +279,7 @@ h3 {
   }
 }
 
-/* Reduced transparency — drop backdrop blur AND the decorative page field + grain
+/* Reduced transparency - drop backdrop blur AND the decorative page field + grain
    so nothing depends on translucency to be legible. (Per-component glass
    overrides its own background; this is the global backstop.) */
 @media (prefers-reduced-transparency: reduce) {
@@ -293,7 +293,7 @@ h3 {
   }
 }
 
-/* Forced colors (Windows high-contrast) — keep a visible keyboard focus ring in
+/* Forced colors (Windows high-contrast) - keep a visible keyboard focus ring in
    the system highlight colour, and drop purely-decorative layers (the card washes
    and the page field/grain) so nothing paints over text. Borders/text already map
    to system colours automatically. */

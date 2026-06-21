@@ -1,6 +1,6 @@
 ---
 /**
- * §2 "The problem" (CONTENT.md §2; DESIGN.md §12) — a calm editorial breather
+ * §2 "The problem" (CONTENT.md §2; DESIGN.md §12) - a calm editorial breather
  * between the hero and the orbital. Mostly type: tonal heading, a lead + two
  * supporting paragraphs in a ~620px column, and a mono pull-stat whose "0"
  * carries the single ember accent. One quiet §7 wash.
@@ -11,37 +11,27 @@ import Eyebrow from './Eyebrow.astro';
 <section id="problem" class="problem" aria-labelledby="problem-title">
   <div class="container">
     <header class="problem__head" data-reveal>
-      <Eyebrow text="01 — The problem" />
+      <Eyebrow text="01 · The problem" />
       <h2 class="problem__title" id="problem-title">
-        Canton has a token standard.
-        <span class="problem__muted"
-          >It doesn't have a best-execution layer — yet.</span
-        >
+        Every venue
+        <span class="problem__muted">prices it differently.</span>
       </h2>
     </header>
 
     <div class="problem__body" data-reveal>
       <p>
-        Canton's token standard (CIP-0056 / 0112) gave the network a common
-        settlement rail: any compliant asset can settle atomically via
-        allocations. Liquidity is arriving — AMMs, order books, RFQ desks.
-      </p>
-      <p>
-        But there's no neutral way to compare prices across venues, and no
-        standard quote interface. CIP-0056 / 0112 standardize tokens, transfers,
-        and <em>settlement</em> — not <em>quotes</em> or <em>routing</em>. A
-        taker who hits one venue leaves price on the table.
-      </p>
-      <p>
-        On every other chain the answer to fragmentation is the same: an
-        aggregation / best-execution layer on top of the settlement rail. Canton
-        doesn't have one yet.
+        Canton's liquidity is spreading across AMMs, order books, and RFQ desks.
+        Each one quotes the same pair at a different price, and there is no
+        neutral layer comparing them. So every trade risks the wrong venue, and
+        every team rebuilds the same routing logic. Synfin is that layer.
       </p>
     </div>
 
     <p class="problem__stat mono" data-reveal>
-      1 token standard <span class="problem__sep">·</span>
-      <span class="problem__zero">0</span> best-execution layers
+      <span class="problem__pull">
+        One standard for tokens. No standard for getting the best price.
+      </span>
+      <span class="problem__pull-sub">That is the layer Synfin builds.</span>
     </p>
   </div>
 </section>
@@ -98,12 +88,13 @@ import Eyebrow from './Eyebrow.astro';
     letter-spacing: 0.02em;
     color: var(--ink-3);
   }
-  .problem__sep {
-    margin: 0 6px;
-    color: var(--line-2);
+  .problem__pull {
+    display: block;
+    color: var(--ink);
   }
-  .problem__zero {
-    color: var(--ember);
-    font-weight: 500;
+  .problem__pull-sub {
+    display: block;
+    margin-top: 6px;
+    color: var(--ink-3);
   }
 </style>

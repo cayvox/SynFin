@@ -22,7 +22,7 @@ import { REPO, SPEC } from '../site.ts';
   <Nav />
 
   <main id="main">
-    <!-- ===================== HERO — routing constellation (DESIGN.md §6/§8) ===================== -->
+    <!-- ===================== HERO - routing constellation (DESIGN.md §6/§8) ===================== -->
     <section class="hero" data-hero aria-labelledby="hero-title">
       <div class="container">
         <div class="hero__panel">
@@ -38,9 +38,9 @@ import { REPO, SPEC } from '../site.ts';
             </h1>
 
             <p class="hero__sub" data-anim>
-              Synfin aggregates quotes across every Canton venue, routes to the
-              best price, and settles the split in one atomic transaction — with
-              per-leg privacy.
+              The open, neutral layer that routes every trade across all of
+              Canton's liquidity for the best price, then settles it in one
+              atomic, private transaction.
             </p>
 
             <div class="hero__cta" data-anim>
@@ -58,7 +58,7 @@ import { REPO, SPEC } from '../site.ts';
               >
             </div>
 
-            <!-- Static best-route chip — shown only below 1024px, where the
+            <!-- Static best-route chip - shown only below 1024px, where the
                  full constellation is hidden (Fix 5). Sits clearly below the
                  CTAs; never overlaps them. -->
             <p class="hero__chip mono" data-anim>
@@ -74,42 +74,42 @@ import { REPO, SPEC } from '../site.ts';
             </span>
             <span class="hero__proof mono">
               <span class="hero__proof-dot" aria-hidden="true"></span>
-              built on CIP-0056 / 0112 · 8/8 on-ledger settlement tests
+              built on CIP-0056 / 0112 · atomic, on-ledger settlement
             </span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- §2 — The problem -->
+    <!-- §2 - The problem -->
     <Problem />
 
     <Horizon />
-    <!-- §3 — How it works (the router orbital) -->
+    <!-- §3 - How it works (the router orbital) -->
     <HowItWorks />
 
     <Horizon />
-    <!-- §4 — Proof / Insights bento -->
+    <!-- §4 - Proof / Insights bento -->
     <ProofBento />
 
     <Horizon />
-    <!-- §5 — Per-leg privacy -->
+    <!-- §5 - Per-leg privacy -->
     <Privacy />
 
     <Horizon />
-    <!-- §6 — How venues plug in (settlement modes) -->
+    <!-- §6 - How venues plug in (settlement modes) -->
     <VenueModes />
 
     <Horizon />
-    <!-- §7 — Open by design -->
+    <!-- §7 - Open by design -->
     <Open />
 
     <Horizon />
-    <!-- §8 — For the ecosystem -->
+    <!-- §8 - For the ecosystem -->
     <Ecosystem />
 
     <Horizon />
-    <!-- Build — real @synfin SDK example -->
+    <!-- Build - real @synfin SDK example -->
     <Build />
 
     <Horizon />
@@ -138,7 +138,7 @@ import { REPO, SPEC } from '../site.ts';
     place-items: center;
   }
   /* Desktop: lock the panel to the constellation viewBox aspect (1440:856) so
-     the fixed-viewBox SVG maps 1:1 — no non-uniform stretch, line ends meet node
+     the fixed-viewBox SVG maps 1:1 - no non-uniform stretch, line ends meet node
      centres (Fix 6). */
   @media (min-width: 1024px) {
     .hero__panel {
