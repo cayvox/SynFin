@@ -67,6 +67,9 @@
   --d-fast: 0.18s;
   --d: 0.4s;
   --d-slow: 1.1s;
+  /* §17 Move D — hover/micro-interaction timing (180–220ms ease-out) */
+  --d-hover: 0.2s;
+  --e-hover: cubic-bezier(0.2, 0.6, 0.2, 1);
 
   /* Material (DESIGN.md §5/§7) */
   --card-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);

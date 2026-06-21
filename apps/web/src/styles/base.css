@@ -139,11 +139,12 @@ h3 {
   border-radius: var(--r-card);
   box-shadow: var(--card-inset), var(--card-shadow);
   transition:
-    border-color var(--d) var(--e-out),
-    transform var(--d) var(--e-out);
+    transform var(--d-hover) var(--e-hover),
+    border-color var(--d-hover) var(--e-hover),
+    box-shadow var(--d-hover) var(--e-hover);
 }
 .card::before {
-  /* faint internal lit glow */
+  /* faint internal lit glow → warms on hover (§17) */
   content: '';
   position: absolute;
   inset: 0;
@@ -154,10 +155,24 @@ h3 {
     rgba(241, 239, 234, 0.05),
     transparent 60%
   );
+  transition: background var(--d-hover) var(--e-hover);
 }
+/* §17 card hover — the signature: lifts + warms (ember edge + warm top glow +
+   deeper shadow + faint ember ring). Transform-only motion → no layout shift. */
 .card:hover {
-  border-color: var(--line-2);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  border-color: rgba(204, 106, 67, 0.3);
+  box-shadow:
+    0 1px 0 rgba(241, 239, 234, 0.08) inset,
+    0 34px 74px -28px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(204, 106, 67, 0.1);
+}
+.card:hover::before {
+  background: radial-gradient(
+    64% 56% at 50% 0%,
+    rgba(230, 138, 94, 0.1),
+    transparent 72%
+  );
 }
 
 /* §7b — page-level continuous light field + unified grain. Replaces the old
@@ -251,6 +266,16 @@ h3 {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* §17 — hover/active state changes (colour, border, glow) still apply, but
+     NO movement: drop the lift, the press, and the external-arrow nudge. */
+  .card:hover,
+  .btn:hover,
+  .btn:active,
+  .btn--primary:hover,
+  .btn--ghost:hover,
+  .footer__link:hover .footer__ar {
+    transform: none !important;
   }
 }
 
