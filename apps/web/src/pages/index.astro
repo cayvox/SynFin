@@ -23,6 +23,10 @@ import { REPO, SPEC } from '../site.ts';
   <main id="main">
     <!-- ===================== HERO — routing constellation (DESIGN.md §6/§8) ===================== -->
     <section class="hero" data-hero aria-labelledby="hero-title">
+      <span
+        class="spine-node spine-node--beat"
+        aria-hidden="true"
+        style="top: 183px"></span>
       <div class="container">
         <div class="hero__panel">
           <Constellation />
@@ -117,6 +121,7 @@ import { REPO, SPEC } from '../site.ts';
 
 <style>
   .hero {
+    position: relative; /* anchor for the decorative spine beat node */
     padding-top: 8px;
     padding-bottom: var(--section-y);
   }

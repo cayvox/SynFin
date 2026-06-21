@@ -241,6 +241,78 @@ h3 {
   background-size: 160px 160px;
 }
 
+/* §16 Move B — route spine. A faint NEUTRAL vertical rail in the left margin
+   (no continuous ember → not a progress bar); ember lives only on the beat nodes
+   placed inside the beat sections. Decorative, desktop-only, inert. */
+.spine {
+  position: absolute;
+  left: 40px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(241, 239, 234, 0.11);
+  /* fade in at the very top (hero) and out at the very bottom (footer) */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 2.5%,
+    #000 96.5%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 2.5%,
+    #000 96.5%,
+    transparent 100%
+  );
+  display: none; /* desktop-only (shown ≥1024px below) */
+}
+/* Nodes sit ON the rail (left:40px from a full-width section = page-left). */
+.spine-node {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .spine {
+    display: block;
+  }
+  .spine-node {
+    display: block;
+    position: absolute;
+    left: 40px;
+    z-index: 2;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  /* Beat node — the only ember in the spine; its glow warms the rail locally. */
+  .spine-node--beat {
+    width: 11px;
+    height: 11px;
+    background: var(--ember);
+    box-shadow: 0 0 14px 3px var(--ember-soft);
+  }
+  .spine-node--beat::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid var(--ember-soft);
+    opacity: 0.45;
+  }
+  /* Non-beat marker — tiny neutral dot, no ember. */
+  .spine-node--mark {
+    width: 8px;
+    height: 8px;
+    background: var(--bg-2);
+    border: 1px solid rgba(241, 239, 234, 0.3);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -263,7 +335,9 @@ h3 {
     -webkit-backdrop-filter: none !important;
   }
   .page__field,
-  .page__grain {
+  .page__grain,
+  .spine,
+  .spine-node {
     display: none;
   }
 }
@@ -280,7 +354,9 @@ h3 {
   .card::before,
   .card::after,
   .page__field,
-  .page__grain {
+  .page__grain,
+  .spine,
+  .spine-node {
     display: none;
   }
 }

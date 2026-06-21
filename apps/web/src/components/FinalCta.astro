@@ -11,6 +11,10 @@ import { REPO, SPEC } from '../site.ts';
 ---
 
 <section class="cta" aria-labelledby="cta-title">
+  <span
+    class="spine-node spine-node--beat"
+    aria-hidden="true"
+    style="top: calc(clamp(40px, 7vw, 96px) + 87px)"></span>
   <div class="cta__wrap">
     <div class="cta__card" data-reveal>
       <div class="cta__text">
@@ -43,6 +47,7 @@ import { REPO, SPEC } from '../site.ts';
 
 <style>
   .cta {
+    position: relative; /* anchor for the decorative spine beat node */
     padding-top: clamp(40px, 7vw, 96px);
   }
   .cta__wrap {
