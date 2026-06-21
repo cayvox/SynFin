@@ -1,25 +1,25 @@
 ---
 /**
- * Nav (DESIGN.md §5) — logo left; a centered dark-glass pill of links
+ * Nav (DESIGN.md §5) - logo left; a centered dark-glass pill of links
  * (Overview · How it works · Proof · Open & neutral · | · Spec ↗); right:
  * GitHub + primary "Read the spec". Mobile collapses the pill into a no-JS
- * <details> Menu. In-page links resolve to sections 2–9 as they land.
+ * <details> Menu. In-page links resolve to sections 2-9 as they land.
  */
 import SealMark from './SealMark.astro';
 import Button from './Button.astro';
 import { REPO, SPEC } from '../site.ts';
 
 const links = [
-  { label: 'Overview', href: '#main' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Proof', href: '#proof' },
-  { label: 'Open & neutral', href: '#open' },
+  { label: 'Open', href: '#open' },
+  { label: 'Build', href: '#build' },
 ];
 ---
 
 <header class="nav">
   <div class="container nav__inner">
-    <a class="brand" href="/" aria-label="Synfin — home">
+    <a class="brand" href="/" aria-label="Synfin home">
       <SealMark size={28} decorative />
       <span class="brand__word">Synfin</span>
     </a>
@@ -125,7 +125,7 @@ const links = [
     border-radius: var(--r-pill);
     backdrop-filter: blur(14px);
   }
-  /* Without the blur the translucent pill must read on its own — make it solid. */
+  /* Without the blur the translucent pill must read on its own - make it solid. */
   @media (prefers-reduced-transparency: reduce) {
     .pill {
       background: #14151a;
