@@ -44,6 +44,10 @@ It also exports the SQSS types (`SwapIntent`, `Quote`, `RoutePlan`, `AssetId`), 
 
 Synfin is ESM only and targets Node 20 or newer.
 
+## Security note
+
+`npm audit` may report a moderate ajv advisory (GHSA-2g4f-4pwh-qvx6, a ReDoS via the `$data` option). It does not apply here: `@synfin/spec` constructs ajv without the `$data` option and compiles only its own committed JSON Schemas, none of which use `$data`, so there is no vulnerable path. See [SECURITY.md](https://github.com/cayvox/SynFin/blob/main/SECURITY.md).
+
 ## License
 
 Apache-2.0
