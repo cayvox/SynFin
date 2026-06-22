@@ -53,31 +53,31 @@ for name in $SET; do cp "$ROOT/packages/$name/package.json" "$BACKUP/$name.json"
 
 # Publish via the SAME script the production workflow uses, so the artifact proven
 # here is exactly the artifact that ships. No --provenance: Sigstore needs CI OIDC.
-# Publish to `latest` and also point `next` at the same version, exactly as the
-# production workflow does, so the proof matches what ships.
+# Single dist-tag `latest`, exactly as the workflow does: one OIDC publish sets
+# one tag (a second registry write would fail E401), and publishing to `latest`
+# populates the packument README that npmjs renders.
 echo "• publishing the set to verdaccio via scripts/release/publish-package.mjs (topological order) …"
 for name in $SET; do
   NPM_CONFIG_USERCONFIG="$NPMRC" \
     node "$ROOT/scripts/release/publish-package.mjs" "$ROOT/packages/$name" \
-      --registry "$REG" --tag latest --also-tag next --access public
+      --registry "$REG" --tag latest --access public
   echo "  published @synfin/$name"
 done
 
 # The registry packument readme is what npmjs.com renders, and it is set by the
-# publish (not by a dist-tag move). Assert that each package ends with BOTH next
-# and latest pointing at the released version AND a non-empty packument .readme
-# matching the package README, so an empty-README or wrong-tag publish can never
-# ship again.
-echo "• asserting published packument readme + dual dist-tags …"
+# publish (not by a dist-tag move). Assert that each package ends with `latest`
+# pointing at the released version AND a non-empty packument .readme matching the
+# package README, so an empty-README or wrong-tag publish can never ship again.
+echo "• asserting published packument readme + latest dist-tag …"
 for name in $SET; do
   ver="$(node -p "require('$ROOT/packages/$name/package.json').version")"
   want="$(wc -c < "$ROOT/packages/$name/README.md" | tr -d ' ')"
-  out="$(curl -s "$REG/@synfin%2f$name" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);const t=j['dist-tags']||{};process.stdout.write((j.readme||'').length+' '+(t.latest||'-')+' '+(t.next||'-'))}catch(e){process.stdout.write('0 - -')}})")"
-  read -r got latest next <<<"$out"
-  if [ "${got:-0}" -gt 0 ] && [ "$got" = "$want" ] && [ "$latest" = "$ver" ] && [ "$next" = "$ver" ]; then
-    echo "  @synfin/$name readme=$got chars, latest=$latest, next=$next PASS"
+  out="$(curl -s "$REG/@synfin%2f$name" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);const t=j['dist-tags']||{};process.stdout.write((j.readme||'').length+' '+(t.latest||'-'))}catch(e){process.stdout.write('0 -')}})")"
+  read -r got latest <<<"$out"
+  if [ "${got:-0}" -gt 0 ] && [ "$got" = "$want" ] && [ "$latest" = "$ver" ]; then
+    echo "  @synfin/$name readme=$got chars, latest=$latest PASS"
   else
-    echo "  @synfin/$name readme(registry=$got want=$want) latest=$latest next=$next ver=$ver FAIL"
+    echo "  @synfin/$name readme(registry=$got want=$want) latest=$latest ver=$ver FAIL"
     exit 1
   fi
 done

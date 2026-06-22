@@ -1,15 +1,15 @@
 # @synfin/adapters
 
-[![npm](https://img.shields.io/npm/v/@synfin/adapters/next)](https://www.npmjs.com/package/@synfin/adapters) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/adapters) [![license](https://img.shields.io/npm/l/@synfin/adapters)](https://github.com/cayvox/SynFin/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/@synfin/adapters)](https://www.npmjs.com/package/@synfin/adapters) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/adapters) [![license](https://img.shields.io/npm/l/@synfin/adapters)](https://github.com/cayvox/SynFin/blob/main/LICENSE)
 
-> **Pre-alpha.** The API is unstable and may change without notice. Not for production use. Published under the `next` dist-tag.
+> **Pre-alpha.** The API is unstable and may change without notice. Not for production use.
 
 Venue adapters for Synfin. Each adapter wraps one Canton venue and normalizes its native quote into the standard SQSS `Quote` type, so the router can compare every venue on equal terms. Ships `CantonSwapAdapter` and `OneSwapAdapter` for live venues, plus `MockVenueAdapter` for tests and local development.
 
 ## Install
 
 ```sh
-npm install @synfin/adapters@next
+npm install @synfin/adapters
 ```
 
 ## Usage
