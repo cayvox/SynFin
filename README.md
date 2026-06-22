@@ -8,7 +8,7 @@
 
 [Specification](docs/spec/SPECIFICATION.md) · [Architecture](ARCHITECTURE.md) · [Governance](GOVERNANCE.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
-[![npm @next](https://img.shields.io/npm/v/@synfin/spec/next)](https://www.npmjs.com/package/@synfin/spec) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/spec) [![license](https://img.shields.io/npm/l/@synfin/spec)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@synfin/spec)](https://www.npmjs.com/package/@synfin/spec) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/spec) [![license](https://img.shields.io/npm/l/@synfin/spec)](LICENSE)
 
 `Status: pre-alpha, interfaces are unstable until v1.0.0`
 
@@ -29,7 +29,7 @@ Synfin is **not a venue** and holds no liquidity of its own. It sits *above* exi
 
 ## Packages
 
-Five Apache-2.0 packages are published to npm under the `next` dist-tag, with provenance:
+Five Apache-2.0 packages are published to npm with provenance:
 
 | Package | What it is | Use it when |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ Five Apache-2.0 packages are published to npm under the `next` dist-tag, with pr
 | [`@synfin/conformance`](packages/conformance) | The conformance suite for adapters and routers | You are claiming Synfin conformance for an implementation |
 | [`@synfin/cli`](packages/cli) | The reference CLI: cross-venue quote aggregation and a settlement demo | You want to try Synfin from the terminal |
 
-Install any with the `next` tag, for example `npm install @synfin/spec@next`.
+Install any, for example `npm install @synfin/spec`.
 
 ## The open / closed boundary
 
@@ -96,13 +96,13 @@ synfin/
 Try the CLI without installing anything:
 
 ```sh
-npx @synfin/cli@next --help
+npx @synfin/cli --help
 ```
 
 Use the standard and the reference router programmatically:
 
 ```sh
-npm install @synfin/spec@next @synfin/router-ref@next @synfin/adapters@next
+npm install @synfin/spec @synfin/router-ref @synfin/adapters
 ```
 
 ```js
@@ -126,7 +126,7 @@ pnpm test
 
 ## Status and stability
 
-Pre-alpha. The specification and all package interfaces follow [Semantic Versioning](https://semver.org). Nothing is considered stable until `v1.0.0`; breaking changes to the spec require an RFC (see [GOVERNANCE.md](GOVERNANCE.md)). Packages are published under the `next` dist-tag.
+Pre-alpha. The specification and all package interfaces follow [Semantic Versioning](https://semver.org). Nothing is considered stable until `v1.0.0`; breaking changes to the spec require an RFC (see [GOVERNANCE.md](GOVERNANCE.md)). Packages are published to npm under the `latest` tag, with provenance.
 
 ## Contributing, security, license
 

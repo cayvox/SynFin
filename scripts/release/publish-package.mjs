@@ -88,17 +88,15 @@ function parseArgs(argv) {
     else if (a === '--dry-run') opts.dryRun = true;
     else if (a === '--registry') opts.registry = argv[++i];
     else if (a === '--tag') opts.tag = argv[++i];
-    else if (a === '--also-tag') opts.alsoTag = argv[++i];
     else if (a === '--access') opts.access = argv[++i];
     else if (a.startsWith('--registry=')) opts.registry = a.split('=')[1];
     else if (a.startsWith('--tag=')) opts.tag = a.split('=')[1];
-    else if (a.startsWith('--also-tag=')) opts.alsoTag = a.split('=')[1];
     else if (a.startsWith('--access=')) opts.access = a.split('=')[1];
     else rest.push(a);
   }
   if (rest.length !== 1)
     die(
-      'usage: publish-package.mjs <packageDir> [--registry url] [--tag t] [--also-tag t2] [--access a] [--provenance] [--dry-run]',
+      'usage: publish-package.mjs <packageDir> [--registry url] [--tag t] [--access a] [--provenance] [--dry-run]',
     );
   opts.dir = resolve(repoRoot, rest[0]);
   return opts;
@@ -173,30 +171,11 @@ function main() {
   if (res.status !== 0)
     die(`npm publish failed for ${manifest.name} (exit ${res.status})`);
 
-  // 4. Optionally point a SECOND dist-tag at the just-published version. This is a
-  // tag move, not a second publish: the version is published exactly once (with
-  // provenance), so npm does not reject a duplicate and no extra provenance is
-  // produced. It reuses the same registry session, so it stays pure OIDC (no
-  // token). Used to land a release on both `latest` (which populates the rendered
-  // npm README from the publish) and `next` (the install channel).
-  if (opts.alsoTag && !opts.dryRun) {
-    const tagArgs = [
-      'dist-tag',
-      'add',
-      `${manifest.name}@${manifest.version}`,
-      opts.alsoTag,
-    ];
-    if (opts.registry) tagArgs.push('--registry', opts.registry);
-    console.log(`publish-package: npm ${tagArgs.join(' ')}`);
-    const tagRes = spawnSync('npm', tagArgs, {
-      cwd: opts.dir,
-      stdio: 'inherit',
-    });
-    if (tagRes.status !== 0)
-      die(
-        `npm dist-tag add failed for ${manifest.name} (exit ${tagRes.status})`,
-      );
-  }
+  // The release publishes a single dist-tag in one OIDC call. A follow-on
+  // `npm dist-tag add` would fail E401: OIDC trusted publishing scopes its
+  // short-lived credential to this one `npm publish`, so a second registry
+  // write in the same job is unauthenticated. We therefore set exactly one tag
+  // (`latest`), which also populates the packument README that npmjs renders.
 }
 
 main();

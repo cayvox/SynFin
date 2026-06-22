@@ -1,7 +1,7 @@
 # Releasing the @synfin packages
 
 How the public `@synfin` packages are verified and published. The first npm
-release is a pre-alpha under the `next` dist-tag. Nothing here publishes
+release is a pre-alpha published to the `latest` dist-tag. Nothing here publishes
 automatically: publishing is a human step run after a release-readiness PR is
 merged.
 
@@ -23,8 +23,9 @@ The packages are ESM only (`type: module`, `exports` expose `types` and
 
 ## Versioning
 
-The pre-alpha is `0.1.0-alpha.1` for every package in the set, published under the
-`next` dist-tag. `latest` is intentionally not set for a pre-alpha. Internal
+The pre-alpha is `0.1.0-alpha.1` for every package in the set, published to the
+`latest` dist-tag. During pre-alpha there is no separate `next` channel: the
+newest pre-alpha is `latest`. Internal
 dependencies stay on the `workspace:*` protocol in the repo; pnpm rewrites them to
 the exact version at pack and publish time.
 
@@ -75,11 +76,11 @@ provenance; provenance begins with the first version the workflow publishes.
 3. Publish the five packages once, in dependency order:
 
    ```sh
-   pnpm --filter @synfin/spec        publish --tag next --access public
-   pnpm --filter @synfin/adapters    publish --tag next --access public
-   pnpm --filter @synfin/router-ref  publish --tag next --access public
-   pnpm --filter @synfin/conformance publish --tag next --access public
-   pnpm --filter @synfin/cli         publish --tag next --access public
+   pnpm --filter @synfin/spec        publish --tag latest --access public
+   pnpm --filter @synfin/adapters    publish --tag latest --access public
+   pnpm --filter @synfin/router-ref  publish --tag latest --access public
+   pnpm --filter @synfin/conformance publish --tag latest --access public
+   pnpm --filter @synfin/cli         publish --tag latest --access public
    ```
 
    We use `pnpm publish` here, not `npm publish`, on purpose: the internal deps

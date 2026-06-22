@@ -1,15 +1,15 @@
 # @synfin/router-ref
 
-[![npm](https://img.shields.io/npm/v/@synfin/router-ref/next)](https://www.npmjs.com/package/@synfin/router-ref) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/router-ref) [![license](https://img.shields.io/npm/l/@synfin/router-ref)](https://github.com/cayvox/SynFin/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/@synfin/router-ref)](https://www.npmjs.com/package/@synfin/router-ref) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/router-ref) [![license](https://img.shields.io/npm/l/@synfin/router-ref)](https://github.com/cayvox/SynFin/blob/main/LICENSE)
 
-> **Pre-alpha.** The API is unstable and may change without notice. Not for production use. Published under the `next` dist-tag.
+> **Pre-alpha.** The API is unstable and may change without notice. Not for production use.
 
 The open reference implementation of the SQSS Router port: a correct, deterministic, depth-aware baseline that selects and splits quotes into a `RoutePlan`. It is the reference, not the optimizer. Given the same intent, quotes, and time it always returns the same result.
 
 ## Install
 
 ```sh
-npm install @synfin/router-ref@next
+npm install @synfin/router-ref
 ```
 
 ## Usage

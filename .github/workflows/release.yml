@@ -115,23 +115,24 @@ jobs:
         # Each package runs its prepublishOnly (build + typecheck) first. Order is
         # the dependency order.
         #
-        # Dist-tags: we publish to `latest` and also point `next` at the same
-        # version, in a single provenance-bearing publish per package (the publish
-        # sets `latest`, then a tag move adds `next`; the version is published
-        # once). The publish must target `latest` because npmjs renders the README
-        # from the latest version's publish payload; a `next`-only publish leaves
-        # the package page with no README. INTERIM POLICY for pre-alpha: every
-        # prerelease lands on `latest` too, so a bare `npm install` gets the newest
-        # working build. TODO: when the first non-prerelease (0.1.0) ships, switch
-        # to "stable -> latest, prerelease -> next only" (a prerelease tag like
-        # v0.1.0-alpha.N keeps next+latest; a stable tag vX.Y.Z sets latest only,
-        # or next is dropped for stable).
+        # Dist-tag: each package is published with `--tag latest` only, in one
+        # publish per package. We publish to `latest` (not `next`) because npmjs
+        # renders the package-page README from the latest version's publish
+        # payload, so publishing to latest is what makes the README appear. We use
+        # a SINGLE dist-tag because OIDC trusted publishing scopes its short-lived
+        # credential to the one `npm publish` call: a second registry write in the
+        # same job (for example `npm dist-tag add ... next`) fails with E401, so a
+        # multi-tag release is not possible under pure OIDC without a token.
+        # INTERIM POLICY for pre-alpha: there is no `next` channel; the newest
+        # pre-alpha is `latest`, so a bare `npm install` gets it. TODO: when the
+        # first non-prerelease (0.1.0) ships, revisit to separate stable (latest)
+        # from prerelease, deciding then how a prerelease channel is served.
         run: |
           set -euo pipefail
           for p in spec adapters router-ref conformance cli; do
             echo "::group::npm publish @synfin/$p"
             node scripts/release/publish-package.mjs "packages/$p" \
-              --tag latest --also-tag next --access public --provenance
+              --tag latest --access public --provenance
             echo "::endgroup::"
           done
 
@@ -140,7 +141,7 @@ jobs:
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
           {
-            echo "### Published to npm (@next)"
+            echo "### Published to npm (@latest)"
             echo ""
             echo "| package | version on npm | expected |"
             echo "| --- | --- | --- |"
@@ -149,7 +150,7 @@ jobs:
           for p in spec adapters router-ref conformance cli; do
             got=""
             for _ in 1 2 3 4 5 6; do
-              got="$(npm view "@synfin/$p@next" version 2>/dev/null || true)"
+              got="$(npm view "@synfin/$p@latest" version 2>/dev/null || true)"
               [ "$got" = "$VERSION" ] && break
               sleep 5
             done
