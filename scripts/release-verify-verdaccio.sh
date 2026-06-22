@@ -61,6 +61,22 @@ for name in $SET; do
   echo "  published @synfin/$name"
 done
 
+# The registry packument readme is what npmjs.com renders. The publish path must
+# carry each README into the published metadata, not only into the tarball. Assert
+# the Verdaccio packument .readme is non-empty and matches the package README, so
+# an empty-README publish can never ship again.
+echo "• asserting published packument readme is populated …"
+for name in $SET; do
+  want="$(wc -c < "$ROOT/packages/$name/README.md" | tr -d ' ')"
+  got="$(curl -s "$REG/@synfin%2f$name" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{process.stdout.write(String((JSON.parse(s).readme||'').length))}catch(e){process.stdout.write('0')}})")"
+  if [ "${got:-0}" -gt 0 ] && [ "$got" = "$want" ]; then
+    echo "  @synfin/$name readme: $got chars (matches README.md) PASS"
+  else
+    echo "  @synfin/$name readme: registry=$got want=$want FAIL"
+    exit 1
+  fi
+done
+
 echo "• clean-room install + ESM smoke + tsc …"
 cd "$CONSUME"
 # `pnpm run` injects npm_config_* (including a registry pointing at npmjs) into

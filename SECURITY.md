@@ -33,6 +33,10 @@ Out of scope: third‑party venues, the (separate) proprietary optimizer and hos
 - An **independent third‑party audit is required before any mainnet deployment**.
 - Supply‑chain controls (pinned dependencies, signed tags, SBOM) are described in [ENGINEERING.md](ENGINEERING.md).
 
+## Known advisories
+
+- **GHSA-2g4f-4pwh-qvx6 (ajv ReDoS via the `$data` option).** `@synfin/spec` depends on `ajv` for runtime validation, so `npm audit` may surface this moderate advisory. It does not apply to how Synfin uses ajv. The advisory only affects schemas compiled with the `$data` option enabled. `@synfin/spec` constructs ajv without `$data` (`new Ajv2020({ allErrors: true, strict: false })`) and compiles only its own committed JSON Schemas, none of which reference `$data`, so there is no vulnerable path. We will move to a fixed ajv release when one is available.
+
 ## Safe harbor
 
 We will not pursue legal action against researchers who act in good faith, avoid privacy violations and service disruption, and give us reasonable time to remediate before public disclosure.
