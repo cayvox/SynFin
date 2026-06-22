@@ -1,24 +1,36 @@
 # @synfin/cli
 
+[![npm](https://img.shields.io/npm/v/@synfin/cli/next)](https://www.npmjs.com/package/@synfin/cli) [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen)](https://www.npmjs.com/package/@synfin/cli) [![license](https://img.shields.io/npm/l/@synfin/cli)](https://github.com/cayvox/SynFin/blob/main/LICENSE)
+
 > **Pre-alpha.** The API is unstable and may change without notice. Not for production use. Published under the `next` dist-tag.
 
-The Synfin reference CLI. Demo 1 gathers cross-venue quotes against real Canton venues (CantonSwap, OneSwap) and shows the best route. Read-only: it moves no funds.
+The Synfin reference CLI: a unified quote layer across Canton venues, with an atomic settlement demo. Read-only for quotes: it moves no funds.
 
-## Install
+## Run
+
+Run it without installing:
+
+```sh
+npx @synfin/cli@next --help
+```
+
+Or install it:
 
 ```sh
 npm install @synfin/cli@next
 ```
 
-Then run:
+## Commands
 
-```sh
-synfin --help
-```
+- `synfin quote <FROM> <TO> <AMOUNT> [--slippage-bps N]`: gather cross-venue quotes (CantonSwap, OneSwap) and print the best route. Read-only. Needs reachable venues: CantonSwap needs no key, OneSwap needs `ONESWAP_API_KEY` (and `ONESWAP_BASE_URL`). Tokens: CC, USDCx, CBTC.
+- `synfin settle-demo`: atomic, per-leg-private split settlement against the project's own CIP-0056 test venue (Amulet). Needs the Daml SDK.
 
-## Spec
+## Links
 
-See the [Synfin specification](https://github.com/cayvox/SynFin/blob/main/docs/spec/SPECIFICATION.md). Synfin is ESM only and targets Node 20 or newer.
+- [Specification](https://github.com/cayvox/SynFin/blob/main/docs/spec/SPECIFICATION.md)
+- [Repository](https://github.com/cayvox/SynFin)
+
+Synfin is ESM only and targets Node 20 or newer.
 
 ## License
 
