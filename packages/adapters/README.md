@@ -33,6 +33,7 @@ const quote = await venue.quote({
   nonce: 'n1',
 });
 // quote is a normalized SQSS Quote (or a typed QuoteRejection)
+console.log(quote);
 ```
 
 The live adapters (`CantonSwapAdapter`, `OneSwapAdapter`) take an injectable HTTP fetcher and the same `quote(request)` shape.

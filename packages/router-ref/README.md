@@ -42,6 +42,9 @@ const result = route(intent, [q('q1', 'CantonSwap', '250000', '39800'), q('q2', 
 if (result.ok) {
   // splits across venues to maximize net receive
   console.log(result.plan.legs, result.plan.aggregateReceive);
+} else {
+  // a typed reason, for example 'min-receive-unreachable' or 'no-eligible-quotes'
+  console.log('no route:', result.reason);
 }
 ```
 

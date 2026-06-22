@@ -29,10 +29,10 @@ const intent = {
   deadline: '2099-01-01T00:00:00Z',
 };
 
-validateSwapIntent(intent).ok; // true
+console.log(validateSwapIntent(intent).ok); // true
 
 // exact decimal math, no floating point drift
-Decimal.parse('250000').add(Decimal.parse('1500')).toString(); // '251500'
+console.log(Decimal.parse('250000').add(Decimal.parse('1500')).toString()); // '251500'
 ```
 
 It also exports the SQSS types (`SwapIntent`, `Quote`, `RoutePlan`, `AssetId`), the per-field validators, and the cross-field constraint predicates (including `isAtomicRoute`).
