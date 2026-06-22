@@ -39,7 +39,7 @@ Five Apache-2.0 packages are published to npm with provenance:
 | [`@synfin/conformance`](packages/conformance) | The conformance suite for adapters and routers | You are claiming Synfin conformance for an implementation |
 | [`@synfin/cli`](packages/cli) | The reference CLI: cross-venue quote aggregation and a settlement demo | You want to try Synfin from the terminal |
 
-Install any, for example `npm install @synfin/spec`.
+Install any, for example `npm install @synfin/spec`. `npm audit` may flag a moderate ajv advisory; it does not apply to how `@synfin/spec` uses ajv (no `$data` option), see [SECURITY.md](SECURITY.md).
 
 ## The open / closed boundary
 
