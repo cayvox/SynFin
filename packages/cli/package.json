@@ -1,6 +1,6 @@
 {
   "name": "@synfin/cli",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Synfin reference CLI — Demo 1: cross-venue quote aggregation against real Canton venues (CantonSwap, OneSwap). Read-only, no funds.",
   "license": "Apache-2.0",
   "type": "module",
