@@ -114,12 +114,24 @@ jobs:
         # and suspenders) even though trusted publishing also attaches provenance.
         # Each package runs its prepublishOnly (build + typecheck) first. Order is
         # the dependency order.
+        #
+        # Dist-tags: we publish to `latest` and also point `next` at the same
+        # version, in a single provenance-bearing publish per package (the publish
+        # sets `latest`, then a tag move adds `next`; the version is published
+        # once). The publish must target `latest` because npmjs renders the README
+        # from the latest version's publish payload; a `next`-only publish leaves
+        # the package page with no README. INTERIM POLICY for pre-alpha: every
+        # prerelease lands on `latest` too, so a bare `npm install` gets the newest
+        # working build. TODO: when the first non-prerelease (0.1.0) ships, switch
+        # to "stable -> latest, prerelease -> next only" (a prerelease tag like
+        # v0.1.0-alpha.N keeps next+latest; a stable tag vX.Y.Z sets latest only,
+        # or next is dropped for stable).
         run: |
           set -euo pipefail
           for p in spec adapters router-ref conformance cli; do
             echo "::group::npm publish @synfin/$p"
             node scripts/release/publish-package.mjs "packages/$p" \
-              --tag next --access public --provenance
+              --tag latest --also-tag next --access public --provenance
             echo "::endgroup::"
           done
 
