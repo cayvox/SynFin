@@ -80,5 +80,18 @@ node smoke.mjs
 npx tsc -p tsconfig.bundler.json && echo "  tsc bundler: PASS"
 npx tsc -p tsconfig.node16.json && echo "  tsc node16: PASS"
 
+# The CLI offline quote must work from a registry install: it reads its own
+# bundled fixtures, not @synfin/adapters/fixtures (which is not shipped).
+echo "• cli offline quote (bundled fixtures) …"
+npm install --registry "$REG" @synfin/cli >/dev/null 2>&1
+CLI_OUT="$(./node_modules/.bin/synfin quote CC USDCx 125 --fixtures 2>&1 || true)"
+echo "$CLI_OUT" | sed 's/^/    /'
+if echo "$CLI_OUT" | grep -q "Best route" && ! echo "$CLI_OUT" | grep -qiE "fallback failed|is not defined by"; then
+  echo "  cli offline quote: PASS"
+else
+  echo "  cli offline quote: FAIL"
+  exit 1
+fi
+
 echo ""
-echo "release:verify:verdaccio PASSED: a downstream consumer can install and use @synfin from a registry."
+echo "release:verify:verdaccio PASSED: a downstream consumer can install and use @synfin from a registry, and the CLI offline quote works."

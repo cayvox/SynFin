@@ -13,6 +13,7 @@
   "files": [
     "dist/**/*.js",
     "dist/**/*.d.ts",
+    "fixtures",
     "README.md",
     "LICENSE"
   ],
