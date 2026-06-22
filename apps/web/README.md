@@ -1,6 +1,6 @@
 # @synfin/web
 
-The Synfin website — the open, neutral **best-execution aggregation layer** for
+The Synfin website: the open, neutral **best-execution aggregation layer** for
 Canton (built on CIP-0056/0112; not a venue, not a competing standard). A
 bespoke, fast, static **Astro 5** site that lives in the monorepo as `apps/web`.
 
@@ -9,8 +9,8 @@ monochrome, and a single **ember** accent; the hero is a routing **constellation
 of Canton venues whose best-route lines converge to `+47.8 bps`.
 
 This package is **Phase 1**: the locked dark identity (tokens, self-hosted fonts,
-base) + **Nav · Hero (the constellation) · Footer**. Content sections 2–9 (the
-proof bento — which is where the `RouterCard` lives — how-it-works, privacy,
+base) + **Nav · Hero (the constellation) · Footer**. Content sections 2 to 9 (the
+proof bento, which is where the `RouterCard` lives, how-it-works, privacy,
 venues, open-by-design, ecosystem) are marked with `TODO` comments and land in
 later phases.
 
@@ -41,5 +41,5 @@ It is a **leaf app**: it does not import from the protocol/Daml/tools packages.
 
 Cloudflare Pages, built from the repo root:
 build command `pnpm install --frozen-lockfile && pnpm --filter @synfin/web build`,
-output `apps/web/dist`. Domain `synfin.xyz` is pending — the canonical is
+output `apps/web/dist`. Domain `synfin.xyz` is pending: the canonical is
 configurable via the `SITE_URL` env var.
