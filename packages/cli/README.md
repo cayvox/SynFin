@@ -8,21 +8,33 @@ The Synfin reference CLI: a unified quote layer across Canton venues, with an at
 
 ## Run
 
-Run it without installing:
+Try it without installing:
 
 ```sh
 npx @synfin/cli@next --help
+npx @synfin/cli@next quote CC USDCx 125
+```
+
+`quote` tries live, read-only venue quotes first (CantonSwap needs no key; OneSwap needs `ONESWAP_API_KEY` and `ONESWAP_BASE_URL`). If live venues are unavailable, or when you pass `--fixtures`, it uses recorded sample data bundled with the CLI, so it runs offline from a clean install. It moves no funds.
+
+```sh
+# force the offline recorded-sample path
+npx @synfin/cli@next quote CC USDCx 125 --fixtures
+
+# widen the slippage guard
+npx @synfin/cli@next quote CC USDCx 125 --slippage-bps 50
 ```
 
 Or install it:
 
 ```sh
 npm install @synfin/cli@next
+synfin --help
 ```
 
 ## Commands
 
-- `synfin quote <FROM> <TO> <AMOUNT> [--slippage-bps N]`: gather cross-venue quotes (CantonSwap, OneSwap) and print the best route. Read-only. Needs reachable venues: CantonSwap needs no key, OneSwap needs `ONESWAP_API_KEY` (and `ONESWAP_BASE_URL`). Tokens: CC, USDCx, CBTC.
+- `synfin quote <FROM> <TO> <AMOUNT> [--slippage-bps N] [--fixtures]`: gather cross-venue quotes (CantonSwap, OneSwap) and print the best route. Read-only. Tokens: CC, USDCx, CBTC.
 - `synfin settle-demo`: atomic, per-leg-private split settlement against the project's own CIP-0056 test venue (Amulet). Needs the Daml SDK.
 
 ## Links

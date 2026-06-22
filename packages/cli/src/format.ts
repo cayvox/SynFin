@@ -3,7 +3,7 @@ import type { AggregateResult } from './aggregate.js';
 /** Whether the report came from live venue calls or recorded fixtures. */
 export type RunMode = 'live' | 'fixtures';
 
-/** Provenance date of the committed fixtures (see packages/adapters/fixtures). */
+/** Provenance date of the committed fixtures (see packages/cli/fixtures). */
 const FIXTURE_DATE = '2026-06-18';
 
 /**

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -83,11 +82,9 @@ function parseArgs(argv: readonly string[]): Args | null {
   return { from, to, amount, slippageBps, forceFixtures };
 }
 
-/** Resolve a committed golden fixture exposed by @synfin/adapters. */
+/** Resolve a demo fixture bundled inside this package (packages/cli/fixtures). */
 function fixturePath(rel: string): string {
-  return createRequire(import.meta.url).resolve(
-    `@synfin/adapters/fixtures/${rel}`,
-  );
+  return fileURLToPath(new URL(`../fixtures/${rel}`, import.meta.url));
 }
 
 function fixtureFetcher(rel: string): Fetcher {

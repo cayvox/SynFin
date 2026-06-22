@@ -47,9 +47,13 @@ const allow = [
   /^dist\/.*\.js$/,
   /^dist\/.*\.d\.ts$/,
   /^schemas\/.*\.json$/, // @synfin/spec ships the JSON Schemas
+  /^fixtures\/.*\.json$/, // @synfin/cli bundles its demo quote fixtures (JSON only)
 ];
+// Things that must never ship. The allow list above is the positive gate; this
+// catches obvious leaks. Note: a `fixtures/` dir is permitted only for JSON data
+// (see the allow list), so source or test files under it still fail the gate.
 const forbiddenHint =
-  /(^|\/)(src\/|.*\.test\.|.*\.spec\.|tests?\/|fixtures?\/|tsconfig|\.env|vitest|.*\.map)$/i;
+  /(^|\/)(src\/|.*\.test\.|.*\.spec\.|tests?\/|tsconfig|\.env|vitest|.*\.map)$/i;
 
 let failures = 0;
 const summary = [];
