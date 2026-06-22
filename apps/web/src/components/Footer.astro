@@ -7,7 +7,6 @@
  * STRICT single accent: ember is the only colour anywhere here - the brand meta
  * dot and the "Open source" chip; everything else is warm-grey monochrome.
  */
-import SealMark from './SealMark.astro';
 import { REPO, SPEC, DOCS, NPM, CAYVOX, EMAIL } from '../site.ts';
 
 const protocol = [
@@ -32,7 +31,14 @@ const cols = [
   <div class="footer__wrap" data-reveal>
     <div class="footer__brand">
       <span class="footer__row">
-        <SealMark size={28} decorative />
+        <img
+          class="footer__mark"
+          src="/mark-flat.svg"
+          alt=""
+          width="28"
+          height="28"
+          aria-hidden="true"
+        />
         <span class="footer__word">Synfin</span>
       </span>
       <p class="footer__by">
@@ -115,6 +121,10 @@ const cols = [
     display: inline-flex;
     align-items: center;
     gap: 11px;
+  }
+  .footer__mark {
+    display: block;
+    flex: none;
   }
   .footer__word {
     font-family: var(--font-display);
