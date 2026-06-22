@@ -1,6 +1,6 @@
 {
   "name": "@synfin/adapters",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "description": "Synfin venue adapters implementing the VenueAdapter port. Includes a deterministic MockVenueAdapter for development and tests (not a real venue).",
   "license": "Apache-2.0",
   "type": "module",
