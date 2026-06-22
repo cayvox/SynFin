@@ -30,10 +30,10 @@
   --line-3: rgba(241, 239, 234, 0.06);
 
   /* §1 Accent - ember (the ONLY accent) */
-  --ember: #cc6a43;
-  --ember-hi: #e68a5e; /* hover / line terminus */
-  --ember-soft: rgba(204, 106, 67, 0.55);
-  --ember-glow: rgba(204, 106, 67, 0.16);
+  --ember: #ff6a3d;
+  --ember-hi: #ff8a5c; /* hover / line terminus */
+  --ember-soft: rgba(255, 106, 61, 0.55);
+  --ember-glow: rgba(255, 106, 61, 0.16);
 
   /* §1 on-light (for the white primary button) */
   --on-light: #0b0b0d;
