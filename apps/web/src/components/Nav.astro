@@ -5,7 +5,6 @@
  * GitHub + primary "Read the spec". Mobile collapses the pill into a no-JS
  * <details> Menu. In-page links resolve to sections 2-9 as they land.
  */
-import SealMark from './SealMark.astro';
 import Button from './Button.astro';
 import { REPO, SPEC } from '../site.ts';
 
@@ -20,7 +19,14 @@ const links = [
 <header class="nav">
   <div class="container nav__inner">
     <a class="brand" href="/" aria-label="Synfin home">
-      <SealMark size={28} decorative />
+      <img
+        class="brand__mark"
+        src="/mark-flat.svg"
+        alt=""
+        width="28"
+        height="28"
+        aria-hidden="true"
+      />
       <span class="brand__word">Synfin</span>
     </a>
 
@@ -102,6 +108,10 @@ const links = [
     display: inline-flex;
     align-items: center;
     gap: 10px;
+  }
+  .brand__mark {
+    display: block;
+    flex: none;
   }
   .brand__word {
     font-family: var(--font-display);
