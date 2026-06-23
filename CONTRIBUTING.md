@@ -49,7 +49,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) §Repository layout. In short: `docs/spec
 
 - **Trunk‑based.** Short‑lived feature branches off `main`. Branch names: `feat/...`, `fix/...`, `docs/...`, `chore/...`, `spec/...`.
 - **Conventional Commits** are required: `feat(adapter): add Cantex quote adapter`, `fix(daml): reject expired allocation`. This drives the changelog and SemVer.
-- **No direct pushes to `main`.** All changes land via pull request. This applies to automated agents too.
+- **No direct pushes to `main`.** All changes land via pull request. This applies to automated agents too. `main` is protected on GitHub (PR required, status checks must pass, force‑pushes and deletions blocked, enforced for admins).
+- **Local guardrail:** after cloning, enable the versioned hooks so an accidental push to `main` is refused before it leaves your machine:
+
+  ```sh
+  git config core.hooksPath .githooks
+  ```
+
+  This activates `.githooks/pre-push`, which aborts any push that targets `main`. (If you keep a personal `commit-msg` or other local hook in `.git/hooks`, move it into `.githooks` so it still runs once `core.hooksPath` is set.)
 - **DCO sign‑off:** add `Signed-off-by: Name <email>` to every commit (`git commit -s`).
 
 ## Pull requests
