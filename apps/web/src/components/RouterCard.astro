@@ -1,54 +1,68 @@
 ---
 /**
- * RouterCard (DESIGN.md §5; CONTENT.md §4) - the best-execution card, dark-glass
- * re-skin, living in the Proof bento (NOT the hero). The canonical illustrative
- * demo: 250,000 CC → split 46/33/21 across CantonSwap/OneSwap/RFQ desk, +47.8 bps
- * edge, atomic per-leg-private settlement. Allocation bars fill with warm-white
- * (--ink), NOT ember; ember appears only on the +47.8 edge and the seal-check.
- * No fake "live" pulse. Numbers are illustrative - never measured/live.
+ * RouterCard (DESIGN.md §5; CONTENT.md §4) - the best-execution card in the Proof
+ * bento (NOT the hero). Reads the canonical large-order snapshot from
+ * src/data/market.ts: sell 250,000 CC, depth-aware split across the five venues,
+ * settled atomically. The single ember payoff is the edge the best quote
+ * (OneSwap) holds over the next venue; the routed total and blended price are
+ * derived. Allocation bars fill warm-white (--ink), not ember. Numbers are
+ * illustrative, never measured.
  *
- * Animation hooks for proof.ts: each `.rc-bar__fill` carries its final width as
- * `--pct` (full by default → no-JS/reduced shows it full); the edge number's
- * final value is in the DOM with `data-count-to`. Tabular, width reserved.
+ * proof.ts hooks: each `.rc-bar__fill` carries `--pct` (full by default); the
+ * edge number's value is in the DOM with `data-count-to`.
  */
 import SealMark from './SealMark.astro';
+import {
+  BASE,
+  QUOTE,
+  LARGE_SELL_CC,
+  legs,
+  largeTotalOut,
+  largeBlendedPrice,
+  edgeVsNextBps,
+  best,
+  fmtAmount,
+  fmtBps,
+  fmtPrice,
+} from '../data/market.ts';
 
-const venues = [
-  { name: 'CantonSwap', pct: 46, receive: '18,372' },
-  { name: 'OneSwap', pct: 33, receive: '13,181' },
-  { name: 'RFQ desk', pct: 21, receive: '8,387' },
-];
+const edge = fmtBps(edgeVsNextBps);
 ---
 
 <article class="rc" aria-label="Best-execution router (illustrative demo)">
   <header class="rc__head">
     <span class="rc__title">Best execution</span>
-    <span class="rc__pair mono">CC → USDCx</span>
+    <span class="rc__pair mono">{BASE} → {QUOTE}</span>
   </header>
 
   <div class="rc__input">
     <span class="rc__label">You route</span>
-    <div class="rc__amount mono">250,000 <span class="rc__ccy">CC</span></div>
-    <span class="rc__slip mono">slippage 0.30%</span>
+    <div class="rc__amount mono">
+      {fmtAmount(LARGE_SELL_CC)}
+      <span class="rc__ccy">{BASE}</span>
+    </div>
+    <span class="rc__slip mono">blended {fmtPrice(largeBlendedPrice)}</span>
   </div>
 
   <div class="rc__split">
     <div class="rc__split-head">
-      <span class="rc__label">Best route, split across 3 venues</span>
+      <span class="rc__label"
+        >Best route, split across {legs.length} venues</span
+      >
       <span class="rc__tag mono">RFQ + AMM</span>
     </div>
     <ul class="rc__venues">
       {
-        venues.map((v) => (
+        legs.map((l) => (
           <li class="rc-venue">
             <span class="rc-venue__mark" aria-hidden="true" />
-            <span class="rc-venue__name">{v.name}</span>
-            <span class="rc-venue__pct mono">{v.pct}%</span>
+            <span class="rc-venue__name">{l.name}</span>
+            <span class="rc-venue__pct mono">{Math.round(l.sharePct)}%</span>
             <span class="rc-bar">
-              <span class="rc-bar__fill" style={`--pct:${v.pct}%`} />
+              <span class="rc-bar__fill" style={`--pct:${l.sharePct}%`} />
             </span>
             <span class="rc-venue__recv mono">
-              {v.receive} <span class="rc-venue__ccy">USDCx</span>
+              {fmtAmount(l.outUSDCx)} <span class="rc-venue__ccy">{QUOTE}</span>
             </span>
           </li>
         ))
@@ -58,13 +72,15 @@ const venues = [
 
   <div class="rc__edge">
     <div class="rc__edge-num">
-      <span class="rc__edge-val" data-count-to="47.8">+47.8</span>
+      <span class="rc__edge-val" data-count-to={edge}>+{edge}</span>
       <span class="rc__edge-unit">bps</span>
     </div>
     <div class="rc__edge-meta">
-      <span class="rc__label">better than the best single venue</span>
+      <span class="rc__label"
+        >{best.name}, the best quote, over the next venue</span
+      >
       <span class="rc__edge-abs mono"
-        >≈ +191 USDCx more, you receive 39,940</span
+        >you receive {fmtAmount(largeTotalOut)} {QUOTE}</span
       >
     </div>
   </div>

@@ -6,8 +6,10 @@
  * standard and is eligible for Synfin's atomic, per-leg-private settlement. Mode
  * B (managed-deposit) is neutral: quote-and-deposit, deferred, non-atomic. One
  * adapter interface, one `settlementMode` field. The honest note states the real
- * status - most accessible venues today are Mode B; the atomic path turns on as
- * venues adopt CIP-0112's V2 batch settlement.
+ * status: atomic settlement is live on Canton today (proven, CIP-0056), but most
+ * accessible venues are still managed-deposit, so the atomic path widens as
+ * venues adopt the allocation flow; CIP-0112 (Token Standard V2) brings further
+ * improvements as it rolls out. A maturation axis shows that trajectory.
  */
 import Eyebrow from './Eyebrow.astro';
 
@@ -142,14 +144,38 @@ const modeB = [
       </article>
     </div>
 
+    <!-- Maturation axis: today's reality on the left, the direction on the right. -->
+    <ol
+      class="vm-axis"
+      data-reveal
+      aria-label="Settlement maturation: from managed-deposit today toward atomic and Token Standard V2"
+    >
+      <li class="vm-axis__pt">
+        <span class="vm-axis__dot" aria-hidden="true"></span>
+        <span class="vm-axis__k mono">today</span>
+        <span class="vm-axis__v">Most venues managed-deposit</span>
+      </li>
+      <li class="vm-axis__pt">
+        <span class="vm-axis__dot" aria-hidden="true"></span>
+        <span class="vm-axis__k mono">adopting</span>
+        <span class="vm-axis__v">Atomic allocation, live and widening</span>
+      </li>
+      <li class="vm-axis__pt vm-axis__pt--target">
+        <span class="vm-axis__dot" aria-hidden="true"></span>
+        <span class="vm-axis__k mono">rolling out</span>
+        <span class="vm-axis__v">CIP-0112, Token Standard V2</span>
+      </li>
+    </ol>
+
     <p class="vm__note" data-reveal>
       <span class="vm__note-dot" aria-hidden="true"></span>
       <span>
-        Atomic settlement is valid only when <em>every</em> leg is Mode A, and the
-        router enforces it. Most accessible Canton venues today are managed-deposit,
-        and CIP-0112’s native batch settlement is rolling out. Quote aggregation
-        works across both now, and the atomic path turns on as venues adopt the allocation
-        flow.
+        Atomic settlement is live on Canton today and is valid only when
+        <em>every</em> leg is Mode A, which the router enforces. Most accessible
+        venues are still managed-deposit, so the atomic path widens as venues adopt
+        the allocation flow. CIP-0112 (Token Standard V2) brings further privacy,
+        performance, and settlement improvements, rolling out across the network.
+        Quote aggregation works across both modes now.
       </span>
     </p>
   </div>
@@ -326,6 +352,84 @@ const modeB = [
   }
   .vm-chip__val--on {
     color: var(--ember);
+  }
+
+  /* Maturation axis: three stages connected left (today) to right (target). */
+  .vm-axis {
+    list-style: none;
+    margin: 36px auto 0;
+    max-width: 820px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    position: relative;
+  }
+  .vm-axis::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line-2), var(--ember-soft));
+  }
+  .vm-axis__pt {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 18px;
+    text-align: center;
+  }
+  .vm-axis__dot {
+    position: absolute;
+    top: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--bg-1);
+    border: 1px solid var(--ink-3);
+  }
+  .vm-axis__pt--target .vm-axis__dot {
+    background: var(--ember);
+    border-color: var(--ember);
+    box-shadow: 0 0 9px 0 var(--ember-soft);
+  }
+  .vm-axis__k {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+  }
+  .vm-axis__pt--target .vm-axis__k {
+    color: var(--ember-tx);
+  }
+  .vm-axis__v {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ink-2);
+  }
+  @media (max-width: 560px) {
+    .vm-axis {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      text-align: left;
+    }
+    .vm-axis::before {
+      display: none;
+    }
+    .vm-axis__pt {
+      padding: 0 0 0 20px;
+      text-align: left;
+    }
+    .vm-axis__dot {
+      left: 2px;
+      top: 4px;
+    }
   }
 
   .vm__note {

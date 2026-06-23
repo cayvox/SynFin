@@ -12,6 +12,12 @@ import RouterCard from './RouterCard.astro';
 import TickRule from './TickRule.astro';
 import PrivacyDiagram from './PrivacyDiagram.astro';
 import VenueSplit from './VenueSplit.astro';
+import { edgeVsNextBps, spreadBps, best, fmtBps } from '../data/market.ts';
+
+// The edge headline = the best quote's lead over the next venue, on a scale that
+// runs to the full spread, both derived from market.ts.
+const edge = fmtBps(edgeVsNextBps);
+const edgeScaleMax = Math.ceil(spreadBps / 10) * 10;
 ---
 
 <section id="proof" class="proof" aria-labelledby="proof-title">
@@ -30,11 +36,17 @@ import VenueSplit from './VenueSplit.astro';
 
       <div class="cell cell--edge card" data-reveal>
         <div class="stat">
-          <span class="stat__num mono" data-count-to="47.8">+47.8</span>
+          <span class="stat__num mono" data-count-to={edge}>+{edge}</span>
           <span class="stat__unit mono">bps</span>
         </div>
-        <p class="cell__label">better than the best single venue</p>
-        <TickRule marker={47.8} max={120} class="cell__tick" />
+        <p class="cell__label">
+          {best.name}, the best quote, over the next venue
+        </p>
+        <TickRule
+          marker={edgeVsNextBps}
+          max={edgeScaleMax}
+          class="cell__tick"
+        />
       </div>
 
       <div class="cell cell--privacy card" data-reveal>

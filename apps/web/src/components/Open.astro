@@ -13,8 +13,10 @@
  */
 import Eyebrow from './Eyebrow.astro';
 import SealMark from './SealMark.astro';
+import { venues as marketVenues } from '../data/market.ts';
 
-const venues = ['CantonSwap', 'OneSwap', 'CompassSwap', 'Cantex', 'RFQ desk'];
+// Canonical venue names, from the single source so the chips never drift.
+const venues = marketVenues.map((v) => v.name);
 const chips = [
   { t: 'Open · Apache-2.0', on: true },
   { t: 'Neutral: no venue of our own', on: false },
@@ -81,6 +83,22 @@ const fanX = [22, 38, 50, 62, 78];
                 d={`M${x} 0 C${x} 18 150 8 150 30`}
                 stroke="var(--line-2)"
                 stroke-width="1"
+                stroke-linecap="round"
+              />
+            ))
+          }
+          {
+            /* A faint ember pulse flows down each line: venues aggregating into
+              Synfin. Motion only. */
+          }
+          {
+            fanX.map((x, i) => (
+              <path
+                class="open-fan__flow"
+                style={`animation-delay:${i * 0.32}s`}
+                d={`M${x} 0 C${x} 18 150 8 150 30`}
+                stroke="var(--ember)"
+                stroke-width="1.2"
                 stroke-linecap="round"
               />
             ))
@@ -252,6 +270,32 @@ const fanX = [22, 38, 50, 62, 78];
   .open-fan {
     width: 100%;
     height: 30px;
+  }
+  /* Each flow path is a short ember dash that travels from the venue down into
+     the Synfin layer, then repeats: a quiet "aggregation" motion. */
+  .open-fan__flow {
+    opacity: 0;
+    stroke-dasharray: 5 60;
+    vector-effect: non-scaling-stroke;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .open-fan__flow {
+      animation: open-flow 2.8s ease-in-out infinite;
+    }
+  }
+  @keyframes open-flow {
+    0% {
+      stroke-dashoffset: 65;
+      opacity: 0;
+    }
+    35%,
+    65% {
+      opacity: 0.55;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0;
+    }
   }
 
   .open-layer {

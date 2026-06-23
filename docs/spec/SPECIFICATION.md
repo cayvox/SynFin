@@ -255,3 +255,7 @@ Routing optimization algorithm, pricing/oracles, custody, hosted services, and a
 ### Appendix A — Relationship to CIP‑0056
 
 SQSS uses, and does not replace, CIP‑0056's six APIs — chiefly **holdings** (inventory), **allocation**, **allocation request**, and **allocation instruction** (atomic DvP). It also relies on CIP‑0056's **token metadata API** as the source of truth for an instrument's precision: an `AssetId.decimals` (§3) is the off‑ledger echo of that metadata and MUST be consistent with it. SQSS adds the **quote/intent** layer above these and the **multi‑leg atomic composition** pattern. Any conflict between this document and CIP‑0056 is resolved in favor of CIP‑0056, and is a bug in this spec to be fixed via RFC.
+
+### Appendix B: Relationship to CIP‑0112 (Token Standard V2)
+
+CIP‑0112 is the Canton Network Token Standard **V2** (Standards Track): the successor iteration to CIP‑0056, adding privacy, performance, and conventional accounting and settlement improvements. It is rolling out across the network (Splice). Synfin builds on the token standard and tracks CIP‑0112 as it lands: the settlement composition in §6 continues to compose the standard's allocation and DvP APIs, and adopts CIP‑0112's improvements as venues and registries support them. As with CIP‑0056, any conflict between this document and the token standard is resolved in favor of the standard. Source: the `canton-foundation/cips` repository. This note is informational; normative changes to wire formats or settlement behavior still require an RFC.

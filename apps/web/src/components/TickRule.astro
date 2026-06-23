@@ -1,15 +1,22 @@
 ---
 /**
- * TickRule (DESIGN.md §5): an engraved basis-point scale 0→120 with major/minor
- * ticks and an oxblood marker + triangle at the route's edge value (+47.8 bps).
- * Pure SVG; encodes "basis-point precision" structurally. Numbers are mono.
+ * TickRule (DESIGN.md §5): an engraved basis-point scale with major/minor ticks
+ * and an ember marker + triangle at the route's edge value. Defaults derive from
+ * src/data/market.ts (edge over the next venue, scaled to the spread) so it never
+ * disagrees with the rest of the page. Pure SVG; numbers are mono.
  */
+import { edgeVsNextBps, spreadBps, fmtBps } from '../data/market.ts';
 interface Props {
   marker?: number; // bps
   max?: number; // bps full-scale
   class?: string;
 }
-const { marker = 47.8, max = 120, class: className } = Astro.props;
+const {
+  marker = edgeVsNextBps,
+  max = Math.ceil(spreadBps / 10) * 10,
+  class: className,
+} = Astro.props;
+const markerLabel = fmtBps(marker);
 
 const W = 400;
 const H = 30;
@@ -26,7 +33,7 @@ const markerPct = (marker / max) * 100;
 
 <figure
   class:list={['tick', className]}
-  aria-label={`Edge ${marker} of ${max} basis points`}
+  aria-label={`Edge ${markerLabel} of ${max} basis points`}
 >
   <svg
     viewBox={`0 0 ${W} ${H}`}
@@ -72,7 +79,7 @@ const markerPct = (marker / max) * 100;
   <figcaption class="tick__caps mono">
     <span>0 bps</span>
     <span class="tick__here" style={`left:${markerPct}%`}
-      >best route · +{marker} bps</span
+      >best route · +{markerLabel} bps</span
     >
     <span>{max} bps</span>
   </figcaption>
