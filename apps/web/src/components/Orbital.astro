@@ -1,52 +1,81 @@
 ---
 /**
- * Orbital (DESIGN.md §12 §3; reference/synfin-orbital.png + .html) - the router
- * "scan → lock best route → settle" instrument for §3. Concentric instrument
- * rings + a center router core (the SealMark, ember center + glow) + a top meter
- * arc ("best route · +47.8 bps · locked") + 5 venue nodes on the r=170 orbit
- * (CantonSwap/OneSwap/RFQ desk = ember route; Cantex/CompassSwap = scanned) +
- * ember route lines core→route venues carrying the 46/33/21 shares + faint
- * dotted lines to the scanned venues.
+ * Orbital (DESIGN.md §3) - the router radar, driven as ONE coherent state
+ * machine across the four How-it-works steps and reading the canonical market
+ * (src/data/market.ts), so its venues, winner, edge and gaps always match the
+ * hero and Problem sections.
  *
- * Geometry is the exact 560×560 viewBox from the reference. Overlays (core,
- * meter, nodes, shares) are positioned in PERCENT of that box so the whole
- * orbital scales UNIFORMLY (square aspect) with no stretch. The arc gradient is
- * `userSpaceOnUse` so it renders on the wide span.
+ * The active step is `data-step` on `.orb` (1..4), set by orbital.ts (auto
+ * stepper + hover on the step list). CSS keys every layer off it:
+ *   1 Quote   - all five venues + live prices, a rotating sweep.
+ *   2 Compare - winner (OneSwap) lit ember; others dimmed and labeled with their
+ *               gap-behind-best in bps; meter shows the edge over the next best.
+ *   3 Split   - allocation arms to the top venues, labeled in %, summing to 100.
+ *   4 Settle  - the arms converge into one ember node: atomic settlement.
+ * SSR default is step 2 (Compare), so no-JS and reduced-motion render an
+ * informative, static state with every label legible.
+ *
+ * 560x560 viewBox; overlays positioned in PERCENT so the whole thing scales
+ * uniformly. Venue label zones are reserved left / right / bottom so labels,
+ * prices and step annotations never collide.
  */
 import SealMark from './SealMark.astro';
+import {
+  ranked,
+  edgeVsNextBps,
+  gapBehindBestBps,
+  isBest,
+  fmtBps,
+  fmtPrice,
+} from '../data/market.ts';
 
-// Node centres as % of the 560 box (route = the chosen split).
-const nodes = [
-  { name: 'CantonSwap', q: '124.81', route: true, x: 27.5, y: 29.643 },
-  { name: 'OneSwap', q: '124.63', route: true, x: 21.429, y: 60.357 },
-  { name: 'RFQ desk', q: '125.04', route: true, x: 78.571, y: 60.357 },
-  { name: 'Cantex', q: '124.72', route: false, x: 72.5, y: 29.643 },
-  { name: 'CompassSwap', q: '124.55', route: false, x: 50, y: 80.357 },
+const C = 280;
+const R = 170;
+// Five reserved slots (angle from top, clockwise) with an outward label side.
+// Ranked venues fill them best-first: winner upper-left, worst at the bottom.
+const slots = [
+  { ang: -68, side: 'left' as const },
+  { ang: -112, side: 'left' as const },
+  { ang: 68, side: 'right' as const },
+  { ang: 112, side: 'right' as const },
+  { ang: 180, side: 'bottom' as const },
 ];
-const shares = [
-  { v: '46', x: 36.786, y: 38.036 },
-  { v: '33', x: 33.036, y: 57.143 },
-  { v: '21', x: 66.429, y: 57.143 },
-];
+
+const nodes = ranked.map((v, i) => {
+  const s = slots[i];
+  if (!s) throw new Error('orbital: missing slot');
+  const rad = (s.ang * Math.PI) / 180;
+  const vx = C + R * Math.sin(rad);
+  const vy = C - R * Math.cos(rad);
+  return {
+    name: v.name,
+    price: v.price,
+    gap: gapBehindBestBps(v),
+    best: isBest(v),
+    side: s.side,
+    vx: +vx.toFixed(2),
+    vy: +vy.toFixed(2),
+    xPct: +((vx / 560) * 100).toFixed(3),
+    yPct: +((vy / 560) * 100).toFixed(3),
+  };
+});
+
+// Illustrative depth-aware split across the top three venues (sums to 100). At
+// this small size the best venue fills most; splitting matters at larger size.
+const SPLIT_PCT = [82, 13, 5];
+const allocByName = new Map(
+  nodes.slice(0, 3).map((n, i) => [n.name, SPLIT_PCT[i] ?? 0]),
+);
+
 const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
+const edge = fmtBps(edgeVsNextBps);
 ---
 
-<div class="orb">
+<div class="orb" data-step="2" data-orb>
   <div class="orb__glow" aria-hidden="true"></div>
 
   <svg class="orb__rings" viewBox="0 0 560 560" fill="none" aria-hidden="true">
     <defs>
-      <linearGradient
-        id="orbArc"
-        gradientUnits="userSpaceOnUse"
-        x1="80"
-        y1="220"
-        x2="484"
-        y2="114"
-      >
-        <stop offset="0" stop-color="var(--ember)" stop-opacity="0.25"></stop>
-        <stop offset="1" stop-color="#E68A5E" stop-opacity="0.9"></stop>
-      </linearGradient>
       <filter id="orbGlow" x="-30%" y="-30%" width="160%" height="160%">
         <feGaussianBlur stdDeviation="1.0" result="b"></feGaussianBlur>
         <feMerge>
@@ -57,34 +86,10 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
     </defs>
 
     <!-- concentric instrument rings -->
-    <circle
-      class="orb-ring"
-      cx="280"
-      cy="280"
-      r="250"
-      stroke="rgba(241,239,234,0.07)"
-      stroke-width="1"></circle>
-    <circle
-      class="orb-ring"
-      cx="280"
-      cy="280"
-      r="170"
-      stroke="rgba(241,239,234,0.10)"
-      stroke-width="1"></circle>
-    <circle
-      class="orb-ring"
-      cx="280"
-      cy="280"
-      r="108"
-      stroke="rgba(241,239,234,0.06)"
-      stroke-width="1"></circle>
-
-    <!-- bezel ticks (12) on the outer ring -->
-    <g
-      class="orb-ring orb-bezel"
-      stroke="rgba(241,239,234,0.16)"
-      stroke-width="1"
-    >
+    <circle cx="280" cy="280" r="250" stroke="rgba(241,239,234,0.07)"></circle>
+    <circle cx="280" cy="280" r="170" stroke="rgba(241,239,234,0.10)"></circle>
+    <circle cx="280" cy="280" r="108" stroke="rgba(241,239,234,0.06)"></circle>
+    <g stroke="rgba(241,239,234,0.16)">
       {
         ticks.map((deg) => (
           <line
@@ -98,48 +103,39 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
       }
     </g>
 
-    <!-- faint dotted lines: core → the 2 scanned (not chosen) venues -->
-    <g
-      class="orb-scan"
-      stroke="rgba(241,239,234,0.10)"
-      stroke-width="1"
-      stroke-dasharray="1.5 6"
-      stroke-linecap="round"
-    >
-      <path d="M280,280 C330,235 372,200 406,166"></path>
-      <path d="M280,280 L280,450"></path>
-    </g>
+    <!-- rotating sweep (step 1 only) -->
+    <line class="orb-sweep" x1="280" y1="280" x2="280" y2="40"></line>
 
-    <!-- ember route lines: core → the 3 chosen venues (gentle bows) -->
-    <g
-      class="orb-routes"
-      filter="url(#orbGlow)"
-      stroke="var(--ember)"
-      stroke-opacity="0.5"
-      stroke-width="1.1"
-      stroke-linecap="round"
-    >
-      <path class="orb-route" d="M280,280 C235,235 190,200 154,166"></path>
-      <path class="orb-route" d="M280,280 C220,300 165,322 120,338"></path>
-      <path class="orb-route" d="M280,280 C345,300 400,322 440,338"></path>
+    <!-- spokes: one per venue, center -> node. Styled per step (scan / route /
+         split / settle). The winner spoke is data-rank=0. -->
+    <g class="orb-spokes" filter="url(#orbGlow)">
+      {
+        nodes.map((n, i) => (
+          <path
+            class:list={[
+              'spoke',
+              n.best && 'spoke--best',
+              i < 3 && 'spoke--top',
+            ]}
+            data-rank={i}
+            d={`M280 280 L${n.vx} ${n.vy}`}
+          />
+        ))
+      }
     </g>
-
-    <!-- top meter arc (best route locked) at r≈235 -->
-    <path
-      class="orb-arc"
-      d="M76.5,162.5 A235,235 0 0 1 483.5,162.5"
-      stroke="url(#orbArc)"
-      stroke-width="2"
-      stroke-linecap="round"
-      filter="url(#orbGlow)"></path>
-    <circle class="orb-arc-dot" cx="446" cy="114" r="3.2" fill="#E68A5E"
-    ></circle>
   </svg>
 
+  <!-- top meter pill: one line per step, toggled by CSS -->
   <div class="orb__meter mono">
     <span class="orb__meter-dot" aria-hidden="true"></span>
-    best route · +<span class="orb__meter-val" data-count-to="47.8">47.8</span> bps
-    · locked
+    <span class="orb__meter-line" data-when="1"
+      >scanning {nodes.length} venues</span
+    >
+    <span class="orb__meter-line" data-when="2">best route · +{edge} bps</span>
+    <span class="orb__meter-line" data-when="3">optimal split · 3 venues</span>
+    <span class="orb__meter-line" data-when="4"
+      >settled · one Daml tx · per-leg private</span
+    >
   </div>
 
   <div class="orb__core">
@@ -148,27 +144,32 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
   </div>
 
   {
-    shares.map((s) => (
-      <span class="orb__share mono" style={`left:${s.x}%;top:${s.y}%`}>
-        {s.v}
-      </span>
-    ))
-  }
-
-  {
-    nodes.map((n) => (
+    nodes.map((n, i) => (
       <div
-        class:list={['vn', n.route && 'vn--route']}
-        style={`left:${n.x}%;top:${n.y}%`}
-        data-orb-node
+        class:list={[
+          'vn',
+          `vn--${n.side}`,
+          n.best && 'vn--best',
+          i < 3 && 'vn--top',
+        ]}
+        style={`left:${n.xPct}%;top:${n.yPct}%`}
+        data-rank={i}
       >
         <span class="vn__dot">
           <span class="vn__inner" />
         </span>
         <span class="vn__label">
           <span class="vn__name">{n.name}</span>
-          <span class="vn__q mono">
-            CC/USDCx · <b>{n.q}</b>
+          <span class="vn__detail mono">
+            <span class="vn__price" data-d="price">
+              CC/USDCx {fmtPrice(n.price)}
+            </span>
+            <span class="vn__gap" data-d="gap">
+              {n.best ? 'best' : `+${fmtBps(n.gap, 0)} bps behind`}
+            </span>
+            <span class="vn__alloc" data-d="alloc">
+              {allocByName.has(n.name) ? `${allocByName.get(n.name)}%` : ''}
+            </span>
           </span>
         </span>
       </div>
@@ -183,7 +184,6 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
     aspect-ratio: 1 / 1;
     margin-inline: auto;
   }
-
   .orb__glow {
     position: absolute;
     left: 50%;
@@ -206,8 +206,69 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
     width: 100%;
     height: 100%;
   }
+  .orb__rings circle,
+  .orb__rings line {
+    stroke-width: 1;
+  }
 
-  /* Center router core - the SealMark instrument + ember center + ring. */
+  /* Sweep: a single rotating spoke, step 1 only, motion only. */
+  .orb-sweep {
+    stroke: var(--ember-soft);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    transform-origin: 280px 280px;
+    opacity: 0;
+  }
+  .orb[data-step='1'] .orb-sweep {
+    opacity: 1;
+    animation: orb-sweep 2.6s linear infinite;
+  }
+  @keyframes orb-sweep {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Spokes: faint by default (scan). The transition makes step changes smooth. */
+  .spoke {
+    stroke: rgba(241, 239, 234, 0.12);
+    stroke-width: 1;
+    stroke-linecap: round;
+    transition:
+      stroke 0.45s ease,
+      stroke-width 0.45s ease,
+      opacity 0.45s ease;
+  }
+  /* Step 2: only the winner spoke lights ember. */
+  .orb[data-step='2'] .spoke--best {
+    stroke: var(--ember);
+    stroke-width: 1.8;
+  }
+  /* Step 3 + 4: the top-three split arms light ember. */
+  .orb[data-step='3'] .spoke--top,
+  .orb[data-step='4'] .spoke--top {
+    stroke: var(--ember);
+    stroke-width: 1.8;
+  }
+  .orb[data-step='3'] .spoke:not(.spoke--top),
+  .orb[data-step='4'] .spoke:not(.spoke--top) {
+    opacity: 0.25;
+  }
+  /* Step 4: a pulse flows down the arms into the centre. */
+  .orb[data-step='4'] .spoke--top {
+    stroke-dasharray: 26 320;
+    animation: orb-converge 1.5s ease-in-out infinite;
+  }
+  @keyframes orb-converge {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: 346;
+    }
+  }
+
+  /* Center router core. In step 4 it lights as the settlement node. */
   .orb__core {
     position: absolute;
     left: 50%;
@@ -229,13 +290,36 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
     border-radius: 50%;
     border: 2px solid var(--ember-soft);
     opacity: 0.5;
+    transition:
+      opacity 0.4s ease,
+      box-shadow 0.4s ease;
+  }
+  .orb[data-step='4'] .orb__core-ring {
+    opacity: 1;
+    box-shadow:
+      0 0 0 4px var(--ember-glow),
+      0 0 22px 2px var(--ember-soft);
+    animation: orb-core-pulse 1.8s var(--e-inout) infinite;
+  }
+  @keyframes orb-core-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 3px var(--ember-glow),
+        0 0 14px 0 var(--ember-soft);
+    }
+    50% {
+      box-shadow:
+        0 0 0 6px var(--ember-glow),
+        0 0 26px 3px var(--ember-soft);
+    }
   }
 
-  /* Top meter pill */
+  /* Meter pill */
   .orb__meter {
     position: absolute;
     left: 50%;
-    top: 2.5%;
+    top: 1%;
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
@@ -256,37 +340,26 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
     border-radius: 50%;
     background: var(--ember);
     box-shadow: 0 0 8px 0 var(--ember-soft);
+    flex: none;
   }
-  .orb__meter-val {
+  .orb__meter-line {
+    display: none;
     font-variant-numeric: tabular-nums;
   }
-
-  .orb__share {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    font-size: 11px;
-    color: var(--ember);
-    z-index: 3;
+  .orb[data-step='1'] .orb__meter-line[data-when='1'],
+  .orb[data-step='2'] .orb__meter-line[data-when='2'],
+  .orb[data-step='3'] .orb__meter-line[data-when='3'],
+  .orb[data-step='4'] .orb__meter-line[data-when='4'] {
+    display: inline;
   }
 
-  /* Venue nodes - the dot is the anchor: it sits ON the orbit coordinate (the
-     r=170 ring) so the route/scan lines (which terminate at that coordinate)
-     meet the dot centre. The name+quote label floats below, out of flow, so it
-     never shifts the anchor. */
+  /* Venue nodes. The dot is the anchor on the orbit; the label floats outward on
+     its reserved side so labels never collide with each other or the spokes. */
   .vn {
     position: absolute;
     transform: translate(-50%, -50%);
     z-index: 3;
-  }
-  .vn__label {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 7px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    transition: opacity 0.4s ease;
   }
   .vn__dot {
     width: 28px;
@@ -306,25 +379,82 @@ const ticks = Array.from({ length: 12 }, (_, i) => i * 30);
     height: 9px;
     border-radius: 50%;
     border: 1.25px solid var(--ink-2);
+    transition:
+      border-color 0.4s ease,
+      box-shadow 0.4s ease;
   }
-  .vn--route .vn__inner {
-    border-color: var(--ember);
-    box-shadow: 0 0 7px 0 var(--ember-soft);
+  .vn__label {
+    position: absolute;
+    top: 50%;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(-50%);
+    white-space: nowrap;
+  }
+  /* Reserved label zones: left venues label to the left, right to the right,
+     bottom below. Fixed widths keep zones from overlapping the centre. */
+  .vn--left .vn__label {
+    right: calc(100% + 12px);
+    align-items: flex-end;
+    text-align: right;
+  }
+  .vn--right .vn__label {
+    left: calc(100% + 12px);
+    align-items: flex-start;
+    text-align: left;
+  }
+  .vn--bottom .vn__label {
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+    text-align: center;
   }
   .vn__name {
     font-size: 12.5px;
     font-weight: 500;
     color: var(--ink);
-    white-space: nowrap;
+    transition: color 0.4s ease;
   }
-  .vn__q {
+  .vn__detail {
     margin-top: 2px;
     font-size: 11px;
-    color: var(--ink-2);
-    white-space: nowrap;
+    color: var(--ink-3);
+    min-height: 1em;
   }
-  .vn--route .vn__q b {
-    color: var(--ember);
-    font-weight: 500;
+  .vn__detail [data-d] {
+    display: none;
+  }
+  /* Which detail shows per step. */
+  .orb[data-step='1'] .vn__price,
+  .orb[data-step='2'] .vn__gap,
+  .orb[data-step='3'] .vn--top .vn__alloc {
+    display: inline;
+  }
+  /* Winner emphasis in Compare/Split/Settle. */
+  .orb:not([data-step='1']) .vn--best .vn__inner {
+    border-color: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
+  }
+  .orb[data-step='2'] .vn--best .vn__name,
+  .orb[data-step='2'] .vn--best .vn__gap,
+  .orb[data-step='3'] .vn--top .vn__alloc {
+    color: var(--ember-tx);
+  }
+  /* Dim the also-rans so the winner / split reads first. */
+  .orb[data-step='2'] .vn:not(.vn--best),
+  .orb[data-step='3'] .vn:not(.vn--top),
+  .orb[data-step='4'] .vn:not(.vn--best) {
+    opacity: 0.5;
+  }
+
+  /* Reduced motion: no sweep, no converge flow, no core pulse (handled by the
+     global reduce rules too); the static Compare state stays fully legible. */
+  @media (prefers-reduced-motion: reduce) {
+    .orb-sweep,
+    .orb[data-step='4'] .spoke--top,
+    .orb[data-step='4'] .orb__core-ring {
+      animation: none;
+    }
   }
 </style>

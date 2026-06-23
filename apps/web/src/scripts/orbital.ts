@@ -1,108 +1,82 @@
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
 /**
- * §3 orbital entrance (DESIGN.md §12): on scroll-in the rings fade, the meter
- * arc draws while "+47.8" counts up once and locks, the ember route lines draw
- * from the core outward, and the venue nodes fade/scale in staggered; the bezel
- * may rotate very slowly. Progressive enhancement: everything is VISIBLE by
- * default (arc + lines fully drawn, nodes shown, "+47.8" in the DOM). Only when
- * motion is allowed do we set the pre-state and animate; the orbital is below
- * the fold so there is no first-paint flash. No JS / reduced motion → final.
+ * How-it-works step driver. Advances the radar (`[data-orb]`) through its four
+ * states (Quote / Compare / Split / Settle) and keeps the step list in sync.
+ *
+ * Default: a smooth auto-stepper that only runs while the section is on screen.
+ * Hovering (or focusing) a step takes over and shows that step, releasing back
+ * to auto on leave. prefers-reduced-motion: no stepper, no animation; the radar
+ * holds its informative static Compare state (step 2, the SSR default). Plain
+ * DOM, no libraries.
  */
 function init(): void {
-  const orb = document.querySelector<HTMLElement>('#how-it-works .orb');
-  if (!orb) return;
+  const section = document.querySelector<HTMLElement>('#how-it-works');
+  const orb = section?.querySelector<HTMLElement>('[data-orb]');
+  if (!section || !orb) return;
 
-  const prefersReduced = window.matchMedia(
-    '(prefers-reduced-motion: reduce)',
-  ).matches;
-  if (prefersReduced) return; // final, fully-drawn state by default
-
-  gsap.registerPlugin(ScrollTrigger);
-
-  const rings = gsap.utils.toArray<SVGElement>('.orb-ring, .orb-scan', orb);
-  const draws = gsap.utils.toArray<SVGPathElement>('.orb-route, .orb-arc', orb);
-  const arcDot = orb.querySelector<SVGElement>('.orb-arc-dot');
-  const nodes = gsap.utils.toArray<HTMLElement>(
-    '[data-orb-node], .orb__share',
-    orb,
+  const triggers = Array.from(
+    section.querySelectorAll<HTMLElement>('[data-step-trigger]'),
   );
-  const meter = orb.querySelector<HTMLElement>('.orb__meter-val');
 
-  // Pre-state (below the fold → no flash).
-  gsap.set(rings, { opacity: 0 });
-  gsap.set(nodes, { opacity: 0, scale: 0.82, transformOrigin: 'center' });
-  if (arcDot) gsap.set(arcDot, { opacity: 0 });
-  draws.forEach((p) => {
-    const len = p.getTotalLength();
-    gsap.set(p, { strokeDasharray: len, strokeDashoffset: len });
-  });
-
-  const finish = (): void => {
-    gsap.set(nodes, { clearProps: 'opacity,transform' });
-    gsap.set(rings, { clearProps: 'opacity' });
-    if (arcDot) gsap.set(arcDot, { clearProps: 'opacity' });
-    draws.forEach((p) =>
-      gsap.set(p, { clearProps: 'strokeDasharray,strokeDashoffset' }),
-    );
-    if (meter) meter.textContent = '47.8';
+  const setStep = (n: number): void => {
+    orb.setAttribute('data-step', String(n));
+    for (const t of triggers) {
+      t.classList.toggle('how__step--on', Number(t.dataset.stepTrigger) === n);
+    }
   };
 
-  ScrollTrigger.create({
-    trigger: orb,
-    start: 'top 80%',
-    once: true,
-    onEnter: () => {
-      const tl = gsap.timeline({
-        defaults: { ease: 'power3.out' },
-        onComplete: finish,
-      });
-      tl.to(rings, { opacity: 1, duration: 0.6, stagger: 0.05 });
-      tl.to(
-        draws,
-        { strokeDashoffset: 0, duration: 0.9, stagger: 0.08 },
-        '-=0.25',
-      );
-      if (arcDot) tl.to(arcDot, { opacity: 1, duration: 0.3 }, '-=0.3');
-      tl.to(
-        nodes,
-        { opacity: 1, scale: 1, duration: 0.5, stagger: 0.06 },
-        '-=0.7',
-      );
-      if (meter) {
-        const counter = { v: 0 };
-        meter.textContent = '0.0';
-        tl.to(
-          counter,
-          {
-            v: 47.8,
-            duration: 0.9,
-            ease: 'power2.out',
-            onUpdate: () => {
-              meter.textContent = counter.v.toFixed(1);
-            },
-            onComplete: () => {
-              meter.textContent = '47.8';
-            },
-          },
-          '<',
-        );
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    setStep(2); // static, informative Compare state
+    return;
+  }
+
+  let current = 1;
+  let hovering = false;
+  let timer = 0;
+
+  const advance = (): void => {
+    if (hovering) return;
+    current = current >= 4 ? 1 : current + 1;
+    setStep(current);
+  };
+  const start = (): void => {
+    if (!timer) timer = window.setInterval(advance, 2800);
+  };
+  const stop = (): void => {
+    if (timer) {
+      window.clearInterval(timer);
+      timer = 0;
+    }
+  };
+
+  for (const t of triggers) {
+    const n = Number(t.dataset.stepTrigger);
+    const take = (): void => {
+      hovering = true;
+      current = n;
+      setStep(n);
+    };
+    const release = (): void => {
+      hovering = false;
+    };
+    t.addEventListener('pointerenter', take);
+    t.addEventListener('focusin', take);
+    t.addEventListener('pointerleave', release);
+    t.addEventListener('focusout', release);
+  }
+
+  setStep(1);
+  // Run the stepper only while the section is visible.
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) start();
+        else stop();
       }
     },
-  });
-
-  // Optional slow bezel rotation (motion only).
-  const bezel = orb.querySelector<SVGGElement>('.orb-bezel');
-  if (bezel) {
-    gsap.to(bezel, {
-      rotation: 360,
-      svgOrigin: '280 280',
-      duration: 200,
-      ease: 'none',
-      repeat: -1,
-    });
-  }
+    { threshold: 0.25 },
+  );
+  io.observe(section);
 }
 
 if (document.readyState === 'loading') {

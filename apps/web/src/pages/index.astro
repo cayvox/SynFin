@@ -15,25 +15,27 @@ import Build from '../components/Build.astro';
 import FinalCta from '../components/FinalCta.astro';
 import Horizon from '../components/Horizon.astro';
 import { REPO, SPEC } from '../site.ts';
+import {
+  SELL_CC,
+  BASE,
+  QUOTE,
+  ranked,
+  best,
+  receiveUSDCx,
+  edgeVsNextBps,
+  fmtPrice,
+  fmtBps,
+  fmtAmount,
+} from '../data/market.ts';
 
-// Hero proof panel: one internally-consistent scenario. Sell 320 CC; the four
-// venue quotes are USDCx per CC, ordered by price descending (winner first).
-// RECEIVE and EDGE are computed from the quotes, not hardcoded, so a live tick
-// can recompute them and stay consistent (OneSwap is highest, hence the winner).
-const SELL = 320;
-// Quotes (USDCx per CC), winner first. Named so the math avoids index access.
-const WINNER = 125.0;
-const SECOND = 124.4;
-const quotes = [
-  { venue: 'OneSwap', price: WINNER, win: true },
-  { venue: 'Temple', price: SECOND, win: false },
-  { venue: 'Cantex', price: 124.18, win: false },
-  { venue: 'HydraX', price: 124.05, win: false },
-];
-const receive = SELL * WINNER; // 40,000 USDCx
-const edgeBps = ((WINNER - SECOND) / SECOND) * 1e4; // 48.2
-const fmtInt = (n: number): string =>
-  n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+// Hero proof panel: reads the canonical market (src/data/market.ts) so it can
+// never disagree with the Problem and How-it-works sections. The strip shows the
+// top four venues (winner first); RECEIVE and EDGE are derived, and the live
+// tick below recomputes them from drifting quotes. The headline metric is the
+// edge over the next best venue.
+const PANEL_VENUES = ranked.slice(0, 4);
+const metricLabel = 'Edge vs next';
+const metricBps = edgeVsNextBps;
 ---
 
 <Base>
@@ -96,22 +98,24 @@ const fmtInt = (n: number): string =>
             <aside class="proof an d6" aria-label="Best route, illustrative">
               <div class="proof__head">
                 <div class="proof__id">
-                  <span class="proof__venue">OneSwap</span>
-                  <span class="proof__sub mono">CC &#8594; USDCx</span>
+                  <span class="proof__venue">{best.name}</span>
+                  <span class="proof__sub mono">{BASE} &#8594; {QUOTE}</span>
                 </div>
                 <span class="proof__pill mono">Best route</span>
               </div>
               <div class="proof__hr"></div>
               <div class="proof__quotes" aria-hidden="true">
                 {
-                  quotes.map((q) => (
-                    <div class:list={['proof__q', q.win && 'is-win']}>
-                      <div class="proof__qn">{q.venue}</div>
-                      <div
-                        class="proof__qp mono"
-                        data-base={q.price.toFixed(2)}
-                      >
-                        {q.price.toFixed(2)}
+                  PANEL_VENUES.map((v) => (
+                    <div
+                      class:list={[
+                        'proof__q',
+                        v.name === best.name && 'is-win',
+                      ]}
+                    >
+                      <div class="proof__qn">{v.name}</div>
+                      <div class="proof__qp mono" data-base={fmtPrice(v.price)}>
+                        {fmtPrice(v.price)}
                       </div>
                     </div>
                   ))
@@ -120,18 +124,18 @@ const fmtInt = (n: number): string =>
               <div class="proof__hr"></div>
               <div class="proof__row">
                 <span class="proof__k mono">Sell</span>
-                <span class="proof__v mono">320 CC</span>
+                <span class="proof__v mono">{fmtAmount(SELL_CC)} {BASE}</span>
               </div>
               <div class="proof__row">
                 <span class="proof__k mono">Receive</span>
                 <span class="proof__v mono" data-receive
-                  >{fmtInt(receive)} USDCx</span
+                  >{fmtAmount(receiveUSDCx)} {QUOTE}</span
                 >
               </div>
               <div class="proof__row">
-                <span class="proof__k mono">Edge vs next</span>
+                <span class="proof__k mono">{metricLabel}</span>
                 <span class="proof__v proof__v--em mono" data-edge
-                  >+{edgeBps.toFixed(1)} bps</span
+                  >+{fmtBps(metricBps)} bps</span
                 >
               </div>
             </aside>
@@ -493,6 +497,7 @@ const fmtInt = (n: number): string =>
 </style>
 
 <script>
+  import { SELL_CC, QUOTE, fmtAmount } from '../data/market.ts';
   // Scroll-expand: map scroll progress across the pinned stage to the card's
   // padding (22 -> 0) and corner radius (28 -> 0), finishing at 72% of the
   // range. rAF + passive listener; the only per-frame layout is the card box
@@ -546,15 +551,12 @@ const fmtInt = (n: number): string =>
     // Live tick: drift quotes by a tiny amount that preserves their descending
     // order (so OneSwap stays highest), then recompute RECEIVE and EDGE from the
     // live values. Quotes never drift while the results stay static.
-    const SELL = 320;
     const cells = Array.from(
       document.querySelectorAll<HTMLElement>('.proof__qp'),
     );
     const bases = cells.map((el) => parseFloat(el.dataset.base || '0'));
     const receiveEl = document.querySelector<HTMLElement>('[data-receive]');
     const edgeEl = document.querySelector<HTMLElement>('[data-edge]');
-    const fmtInt = (n: number): string =>
-      n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 
     window.setInterval(() => {
       const vals = bases.map((b) => b + (Math.random() - 0.5) * 0.04);
@@ -565,7 +567,8 @@ const fmtInt = (n: number): string =>
       const top = vals[0];
       const next = vals[1];
       if (top === undefined || next === undefined) return;
-      if (receiveEl) receiveEl.textContent = fmtInt(SELL * top) + ' USDCx';
+      if (receiveEl)
+        receiveEl.textContent = fmtAmount(SELL_CC * top) + ' ' + QUOTE;
       if (edgeEl) {
         const edge = ((top - next) / next) * 1e4;
         edgeEl.textContent = '+' + edge.toFixed(1) + ' bps';
