@@ -1,18 +1,17 @@
 ---
 /**
- * Constellation (DESIGN.md §6/§7/§8) - the hero's signature layer: layered light
- * + grain (§7), the routing connector SVG to the LINE SPEC (§6), the venue nodes
- * + convergence marker (§8).
+ * Constellation - the hero's signature layer: layered light + grain, a small,
+ * deliberate set of venue nodes, a clean fan of candidate routes (thin fog
+ * hairlines, organized by angle so they never tangle), and exactly ONE ember
+ * "best route" from the winning venue into the convergence readout.
  *
- * Rendering strategy (QA fixes 1 & 6): the lines are rendered server-side and
- * are COMPLETE, fully-drawn hairlines at rest (no permanent dash) - so they show
- * with JS off and under reduced-motion. The hero panel is given the viewBox's
- * aspect-ratio (1440:856) at desktop, so this fixed-viewBox SVG maps 1:1 with no
- * non-uniform stretch and the line ends meet the node centres exactly. hero.ts
- * only (a) draws the base lines once on load via stroke-dashoffset then clears
- * the dash, and (b) layers a separate low-opacity flow pulse on top - neither
- * touches the resting base line. The whole constellation is hidden below 1024px
- * (Fix 5); the hero then shows a single static chip instead.
+ * Rendering strategy: the lines are server-rendered COMPLETE hairlines at rest
+ * (no permanent dash) so they show with JS off and under reduced-motion. The
+ * panel takes the viewBox aspect (1440:856) at desktop so the fixed-viewBox SVG
+ * maps 1:1 and line ends meet the node centres. hero.ts draws the lines once on
+ * load then clears the dash, and layers a faint ember flow pulse on the ember
+ * route only. The whole constellation is hidden below 1024px; the hero then
+ * shows a compact static readout instead.
  */
 import Node from './Node.astro';
 
@@ -21,114 +20,59 @@ const H = 856;
 const pctX = (x: number): number => +((x / W) * 100).toFixed(3);
 const pctY = (y: number): number => +((y / H) * 100).toFixed(3);
 
-// §8 node positions (1440×856). CompassSwap moved clear of the marker (Fix 3).
+// Four venues, placed in the gutters, clear of the centred text column. One
+// winner (OneSwap, the best quote) carries the ember route; the rest are
+// candidates. Higher price = more USDCx per CC = better, so the winner is high.
 const nodes = [
   {
-    name: 'CantonSwap',
+    name: 'Cantex',
     pair: 'CC/USDCx',
-    price: '124.81',
-    x: 187,
-    y: 222,
-    route: true,
+    price: '124.72',
+    x: 236,
+    y: 246,
+    route: false,
     side: 'left' as const,
   },
   {
     name: 'OneSwap',
     pair: 'CC/USDCx',
-    price: '124.63',
-    x: 173,
-    y: 548,
+    price: '125.04',
+    x: 214,
+    y: 566,
     route: true,
     side: 'left' as const,
   },
   {
-    name: 'CompassSwap',
+    name: 'HydraX',
     pair: 'CC/USDCx',
     price: '124.55',
-    x: 360,
-    y: 690,
-    route: false,
-    side: 'left' as const,
-  },
-  {
-    name: 'Cantex',
-    pair: 'CC/USDCx',
-    price: '124.72',
-    x: 1253,
-    y: 222,
+    x: 1204,
+    y: 246,
     route: false,
     side: 'right' as const,
   },
   {
-    name: 'RFQ desk',
+    name: 'Temple',
     pair: 'CC/USDCx',
-    price: '125.04',
-    x: 1267,
-    y: 548,
-    route: true,
+    price: '124.81',
+    x: 1226,
+    y: 566,
+    route: false,
     side: 'right' as const,
   },
 ];
-const conv = { x: 720, y: 736 };
+const conv = { x: 720, y: 636 };
 
-// Ember best-route lines - the approved clean control points (Fix 2). No control
-// point dips below y≈736 or bows past the marker; all three feed into the pill.
-const emberLines = [
-  {
-    id: 'e1',
-    d: 'M187 222 C 156 468, 352 688, 712 732',
-    x1: 187,
-    y1: 222,
-    x2: 712,
-    y2: 732,
-  },
-  {
-    id: 'e2',
-    d: 'M173 548 C 332 662, 492 722, 712 734',
-    x1: 173,
-    y1: 548,
-    x2: 712,
-    y2: 734,
-  },
-  {
-    id: 'e3',
-    d: 'M1267 548 C 1088 662, 928 722, 728 734',
-    x1: 1267,
-    y1: 548,
-    x2: 728,
-    y2: 734,
-  },
-];
+// The single ember best route: OneSwap -> convergence.
+const emberLine = 'M214 566 C 392 632, 548 652, 702 636';
 
-// Neutral network arcs - routed down the gutters / along the bottom, clear of
-// the centred text column (Fix 4).
+// Candidate routes: thin fog hairlines, organized by angle. Left and right
+// groups each stay on their side and nest (outer/inner) so nothing crosses.
 const netLines = [
-  {
-    id: 'n1',
-    d: 'M187 222 C 96 330, 96 440, 173 548',
-    x1: 187,
-    y1: 222,
-    x2: 173,
-    y2: 548,
-  },
-  {
-    id: 'n2',
-    d: 'M1253 222 C 1344 330, 1344 440, 1267 548',
-    x1: 1253,
-    y1: 222,
-    x2: 1267,
-    y2: 548,
-  },
-  {
-    id: 'n3',
-    d: 'M360 690 C 470 724, 590 740, 700 736',
-    x1: 360,
-    y1: 690,
-    x2: 700,
-    y2: 736,
-  },
+  { id: 'n1', d: 'M236 246 C 250 452, 432 600, 690 630' }, // Cantex (left, outer)
+  { id: 'n2', d: 'M1204 246 C 1190 452, 1008 600, 752 630' }, // HydraX (right, outer)
+  { id: 'n3', d: 'M1226 566 C 1050 632, 900 652, 742 636' }, // Temple (right, inner)
 ];
-const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
 ---
 
 <div class="constellation" aria-hidden="true">
@@ -143,67 +87,35 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
     fill="none"
   >
     <defs>
-      <filter id="emberGlow" x="-12%" y="-12%" width="124%" height="124%">
-        <feGaussianBlur stdDeviation="1.1" result="b"></feGaussianBlur>
+      <filter id="emberGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="1.4" result="b"></feGaussianBlur>
         <feMerge>
           <feMergeNode in="b"></feMergeNode>
           <feMergeNode in="SourceGraphic"></feMergeNode>
         </feMerge>
       </filter>
-      {
-        netLines.map((l) => (
-          <linearGradient
-            id={`grad-${l.id}`}
-            gradientUnits="userSpaceOnUse"
-            x1={l.x1}
-            y1={l.y1}
-            x2={l.x2}
-            y2={l.y2}
-          >
-            <stop offset="0" stop-color="#F1EFEA" stop-opacity="0" />
-            <stop offset="0.5" stop-color="#F1EFEA" stop-opacity="0.12" />
-            <stop offset="1" stop-color="#F1EFEA" stop-opacity="0" />
-          </linearGradient>
-        ))
-      }
-      {
-        emberLines.map((l) => (
-          <linearGradient
-            id={`grad-${l.id}`}
-            gradientUnits="userSpaceOnUse"
-            x1={l.x1}
-            y1={l.y1}
-            x2={l.x2}
-            y2={l.y2}
-          >
-            <stop offset="0" stop-color="var(--ember)" stop-opacity="0" />
-            <stop offset="0.4" stop-color="var(--ember)" stop-opacity="0.3" />
-            <stop offset="1" stop-color="#E68A5E" stop-opacity="0.58" />
-          </linearGradient>
-        ))
-      }
+      <linearGradient
+        id="grad-ember"
+        gradientUnits="userSpaceOnUse"
+        x1="214"
+        y1="566"
+        x2="702"
+        y2="636"
+      >
+        <stop offset="0" stop-color="var(--ember)" stop-opacity="0.25"></stop>
+        <stop offset="0.55" stop-color="var(--ember)" stop-opacity="0.7"></stop>
+        <stop offset="1" stop-color="var(--ember-hi)" stop-opacity="0.95"
+        ></stop>
+      </linearGradient>
     </defs>
 
     <g class="lines__net">
-      {
-        dottedLines.map((d) => (
-          <path
-            class="cx-line cx-line--dot"
-            d={d}
-            stroke="rgba(241,239,234,0.07)"
-            stroke-width="1"
-            stroke-dasharray="1.5 7"
-            stroke-linecap="round"
-            vector-effect="non-scaling-stroke"
-          />
-        ))
-      }
       {
         netLines.map((l) => (
           <path
             class="cx-line cx-line--net"
             d={l.d}
-            stroke={`url(#grad-${l.id})`}
+            stroke="rgba(241,239,234,0.13)"
             stroke-width="1"
             stroke-linecap="round"
             vector-effect="non-scaling-stroke"
@@ -213,18 +125,13 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
     </g>
 
     <g class="lines__ember" filter="url(#emberGlow)">
-      {
-        emberLines.map((l) => (
-          <path
-            class="cx-line cx-line--ember"
-            d={l.d}
-            stroke={`url(#grad-${l.id})`}
-            stroke-width="1.1"
-            stroke-linecap="round"
-            vector-effect="non-scaling-stroke"
-          />
-        ))
-      }
+      <path
+        class="cx-line cx-line--ember"
+        d={emberLine}
+        stroke="url(#grad-ember)"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        vector-effect="non-scaling-stroke"></path>
     </g>
     <g class="lines__flow"></g>
   </svg>
@@ -248,8 +155,22 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
     style={`left:${pctX(conv.x)}%;top:${pctY(conv.y)}%`}
     data-anim
   >
-    <span class="conv__dot"></span>
-    <span class="mono">best route · +47.8 bps</span>
+    <span class="conv__node" aria-hidden="true"></span>
+    <div class="readout">
+      <div class="readout__top">
+        <span class="readout__venue">OneSwap</span>
+        <span class="readout__tag mono">best route</span>
+      </div>
+      <div class="readout__rule"></div>
+      <div class="readout__row">
+        <span class="readout__k mono">receive</span>
+        <span class="readout__v mono">39,940 USDCx</span>
+      </div>
+      <div class="readout__row">
+        <span class="readout__k mono">edge vs next</span>
+        <span class="readout__edge mono"><b>+47.8</b> bps</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -288,9 +209,9 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
   }
   .atmos--ember {
     background: radial-gradient(
-      34% 30% at 50% 92%,
+      32% 30% at 50% 86%,
       var(--ember-glow),
-      rgba(204, 106, 67, 0.05) 45%,
+      rgba(255, 106, 61, 0.05) 45%,
       transparent 70%
     );
   }
@@ -310,43 +231,106 @@ const dottedLines = ['M173 548 C 214 632, 280 678, 360 690'];
     width: 100%;
     height: 100%;
   }
-  /* Hidden pre-paint while animating so the fully-drawn lines never flash
-     before hero.ts runs the draw (revealed by the timeline; full when no JS). */
   :global(.is-animatable) .lines {
     opacity: 0;
   }
 
-  /* Convergence marker (§6) - above the lines (Fix 2), opaque enough that the
-     three line ends tuck cleanly behind it. */
+  /* The convergence readout - the hero's focal point. */
   .conv {
     position: absolute;
     z-index: 4;
-    transform: translate(-50%, -50%);
-    display: inline-flex;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 7px;
-    padding: 6px 13px;
-    font-size: 12.5px;
-    letter-spacing: 0.02em;
-    color: var(--ember-hi);
-    background: color-mix(in srgb, var(--bg) 86%, var(--ember) 14%);
-    border: 1px solid var(--ember-soft);
-    border-radius: var(--r-pill);
-    box-shadow:
-      0 0 24px -2px var(--ember-glow),
-      0 8px 24px -12px rgba(0, 0, 0, 0.8);
-    white-space: nowrap;
   }
-  .conv__dot {
-    width: 6px;
-    height: 6px;
+  .conv__node {
+    position: relative;
+    z-index: 2;
+    width: 13px;
+    height: 13px;
     border-radius: 50%;
     background: var(--ember);
-    box-shadow: 0 0 8px 0 var(--ember-soft);
+    box-shadow:
+      0 0 0 5px var(--ember-glow),
+      0 0 24px 2px var(--ember-soft);
+  }
+  .readout {
+    margin-top: 16px;
+    min-width: 236px;
+    padding: 14px 16px 15px;
+    text-align: left;
+    background: linear-gradient(
+      180deg,
+      rgba(25, 26, 30, 0.92),
+      rgba(11, 11, 13, 0.94)
+    );
+    border: 1px solid rgba(255, 106, 61, 0.3);
+    border-radius: var(--r-sm);
+    box-shadow:
+      0 0 30px -8px var(--ember-glow),
+      0 22px 52px -26px rgba(0, 0, 0, 0.9),
+      inset 0 1px 0 rgba(241, 239, 234, 0.05);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .readout__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .readout__venue {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .readout__tag {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ember-hi);
+    border: 1px solid rgba(255, 106, 61, 0.35);
+    border-radius: 5px;
+    padding: 3px 7px;
+  }
+  .readout__rule {
+    height: 1px;
+    margin: 12px 0;
+    background: var(--line);
+  }
+  .readout__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .readout__row + .readout__row {
+    margin-top: 8px;
+  }
+  .readout__k {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+  }
+  .readout__v {
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+  .readout__edge {
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .readout__edge b {
+    font-weight: 500;
+    color: var(--ember);
   }
 
-  /* Fix 5: the constellation is desktop-only. Below 1024px it is hidden entirely
-     (no dots, lines, labels or marker) - the hero shows a static chip instead. */
+  /* The constellation is desktop-only; below 1024px it is hidden entirely and
+     the hero shows a compact static readout. */
   @media (max-width: 1023px) {
     .constellation {
       display: none;
