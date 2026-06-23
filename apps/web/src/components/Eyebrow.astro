@@ -1,7 +1,9 @@
 ---
 /**
- * Eyebrow (DESIGN.md §8) - a small dark-glass pill with an ember dot. One of the
- * ≤4 ember touches per viewport. Forwards `data-*` (e.g. `data-anim`).
+ * Eyebrow - a section marker drawn as an instrument label rather than a
+ * dot-in-pill chip: a short ember rule followed by a mono, uppercase, tracked
+ * label. The ember rule is the section's single ember touch. Forwards `data-*`
+ * (e.g. `data-anim`).
  */
 interface Props {
   text: string;
@@ -12,31 +14,31 @@ const { text, class: className, ...rest } = Astro.props;
 ---
 
 <p class:list={['eyebrow', className]} {...rest}>
-  <span class="eyebrow__dot" aria-hidden="true"></span>
-  <span>{text}</span>
+  <span class="eyebrow__rule" aria-hidden="true"></span>
+  <span class="eyebrow__label">{text}</span>
 </p>
 
 <style>
   .eyebrow {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: 7px 14px 7px 12px;
-    background: rgba(241, 239, 234, 0.03);
-    border: 1px solid var(--line);
-    border-radius: var(--r-pill);
-    font-family: var(--font-ui);
-    font-weight: 500;
-    font-size: 13px;
-    letter-spacing: 0.01em;
-    color: var(--ink-2);
+    gap: 12px;
   }
-  .eyebrow__dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--ember);
-    box-shadow: 0 0 8px 0 var(--ember-soft);
+  .eyebrow__rule {
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--ember), var(--ember-soft));
+    box-shadow: 0 0 10px -1px var(--ember-soft);
     flex: none;
+  }
+  .eyebrow__label {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 11.5px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--ink-3);
   }
 </style>

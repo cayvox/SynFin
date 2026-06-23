@@ -1,38 +1,107 @@
 ---
 /**
- * §2 "The problem" (CONTENT.md §2; DESIGN.md §12) - a calm editorial breather
- * between the hero and the orbital. Mostly type: tonal heading, a lead + two
- * supporting paragraphs in a ~620px column, and a mono pull-stat whose "0"
- * carries the single ember accent. One quiet §7 wash.
+ * §2 "The problem" (CONTENT.md §2; DESIGN.md §12) - the editorial breather
+ * between the hero and the orbital. The claim ("every venue prices it
+ * differently, and no neutral layer compares them") is shown, not just stated:
+ * a quiet instrument panel quotes the SAME pair across five venues, and the
+ * price divergence (the spread) carries the single ember accent. Copy is
+ * unchanged; the section is restructured into a two-column editorial + readout.
  */
 import Eyebrow from './Eyebrow.astro';
+
+// The same pair, five venues, five prices (the constellation's own quotes).
+const PAIR = 'CC / USDCx';
+const quotes = [
+  { venue: 'CompassSwap', price: 124.55 },
+  { venue: 'OneSwap', price: 124.63 },
+  { venue: 'Cantex', price: 124.72 },
+  { venue: 'CantonSwap', price: 124.81 },
+  { venue: 'RFQ desk', price: 125.04 },
+];
+const prices = quotes.map((q) => q.price);
+const lo = Math.min(...prices);
+const hi = Math.max(...prices);
+const spread = hi - lo;
+// Position of each quote within the [lo, hi] range, as a percentage.
+const pos = (p: number): number => +(((p - lo) / spread) * 100).toFixed(2);
+// Spread in basis points against the mid price (the cost of picking wrong).
+const mid = (lo + hi) / 2;
+const spreadBps = Math.round((spread / mid) * 1e4);
+const fmt = (p: number): string => p.toFixed(2);
 ---
 
 <section id="problem" class="problem" aria-labelledby="problem-title">
   <div class="container">
     <header class="problem__head" data-reveal>
-      <Eyebrow text="01 · The problem" />
+      <Eyebrow text="The problem" />
       <h2 class="problem__title" id="problem-title">
         Every venue
         <span class="problem__muted">prices it differently.</span>
       </h2>
     </header>
 
-    <div class="problem__body" data-reveal>
-      <p>
-        Canton's liquidity is spreading across AMMs, order books, and RFQ desks.
-        Each one quotes the same pair at a different price, and there is no
-        neutral layer comparing them. So every trade risks the wrong venue, and
-        every team rebuilds the same routing logic. Synfin is that layer.
-      </p>
-    </div>
+    <div class="problem__grid">
+      <div class="problem__col" data-reveal>
+        <p class="problem__body">
+          Canton's liquidity is spreading across AMMs, order books, and RFQ
+          desks. Each one quotes the same pair at a different price, and there
+          is no neutral layer comparing them. So every trade risks the wrong
+          venue, and every team rebuilds the same routing logic. Synfin is that
+          layer.
+        </p>
 
-    <p class="problem__stat mono" data-reveal>
-      <span class="problem__pull">
-        One standard for tokens. No standard for getting the best price.
-      </span>
-      <span class="problem__pull-sub">That is the layer Synfin builds.</span>
-    </p>
+        <p class="problem__stat mono">
+          <span class="problem__pull">
+            One standard for tokens. No standard for getting the best price.
+          </span>
+          <span class="problem__pull-sub">That is the layer Synfin builds.</span
+          >
+        </p>
+      </div>
+
+      <aside
+        class="quotes"
+        data-reveal
+        aria-label="The same pair quoted across five venues"
+      >
+        <div class="quotes__glow" aria-hidden="true"></div>
+        <div class="quotes__top">
+          <span class="quotes__pair mono">
+            <span class="quotes__live" aria-hidden="true"></span>
+            {PAIR}
+          </span>
+          <span class="quotes__note mono">5 venues, one pair</span>
+        </div>
+
+        <div class="quotes__rule"></div>
+
+        <ul class="quotes__list">
+          {
+            quotes.map((q) => (
+              <li class="qrow">
+                <span class="qrow__venue">{q.venue}</span>
+                <span class="qrow__track" aria-hidden="true">
+                  <span class="qrow__dot" style={`left:${pos(q.price)}%`} />
+                </span>
+                <span class="qrow__price mono">{fmt(q.price)}</span>
+              </li>
+            ))
+          }
+        </ul>
+
+        <div class="quotes__rule"></div>
+
+        <div class="quotes__foot">
+          <span class="quotes__spread mono">
+            <span class="quotes__spread-val">{spreadBps} bps</span> spread
+          </span>
+          <span class="quotes__range mono">
+            {fmt(lo)} to {fmt(hi)}
+          </span>
+        </div>
+        <p class="quotes__caption mono">No neutral layer compares them.</p>
+      </aside>
+    </div>
   </div>
 </section>
 
@@ -51,7 +120,8 @@ import Eyebrow from './Eyebrow.astro';
   .problem__head {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    align-items: flex-start; /* keep the eyebrow shrink-wrapped, not stretched */
+    gap: 20px;
     max-width: 720px;
   }
   .problem__title {
@@ -67,23 +137,33 @@ import Eyebrow from './Eyebrow.astro';
     color: var(--ink-display-muted);
   }
 
-  .problem__body {
-    margin-top: 34px;
-    max-width: 620px;
+  /* Two-column editorial: the argument left, the readout right. */
+  .problem__grid {
+    margin-top: clamp(34px, 4vw, 52px);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(34px, 4vw, 56px);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .problem__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
+      gap: clamp(48px, 5vw, 80px);
+    }
+  }
+
+  .problem__col {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 30px;
+    max-width: 560px;
+  }
+  .problem__body {
     font-size: 16.5px;
     line-height: 1.65;
     color: var(--ink-2);
   }
-  .problem__body em {
-    font-style: normal;
-    color: var(--ink);
-  }
-
   .problem__stat {
-    margin-top: 40px;
     font-size: 14px;
     letter-spacing: 0.02em;
     color: var(--ink-3);
@@ -95,6 +175,160 @@ import Eyebrow from './Eyebrow.astro';
   .problem__pull-sub {
     display: block;
     margin-top: 6px;
+    color: var(--ink-3);
+  }
+
+  /* The quote-divergence instrument. */
+  .quotes {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(180deg, var(--bg-1), var(--bg));
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow: var(--card-inset), var(--card-shadow);
+    padding: clamp(22px, 2.4vw, 28px);
+  }
+  /* A single quiet ember wash anchored low, the one accent of atmosphere. */
+  .quotes__glow {
+    position: absolute;
+    z-index: -1;
+    inset: auto -20% -30% -20%;
+    height: 70%;
+    background: radial-gradient(
+      50% 70% at 78% 100%,
+      var(--ember-glow),
+      transparent 72%
+    );
+    pointer-events: none;
+  }
+  .quotes__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .quotes__pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+  }
+  .quotes__live {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px 0 var(--ember-soft);
+    animation: quotes-pulse 2.4s var(--e-inout) infinite;
+  }
+  @keyframes quotes-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .quotes__live {
+      animation: none;
+    }
+  }
+  .quotes__note {
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
+  .quotes__rule {
+    height: 1px;
+    margin: 16px 0;
+    background: var(--line);
+  }
+
+  .quotes__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    list-style: none;
+  }
+  .qrow {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr) 60px;
+    align-items: center;
+    gap: 14px;
+  }
+  .qrow__venue {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .qrow__track {
+    position: relative;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--line-3),
+      var(--line-2),
+      var(--line-3)
+    );
+  }
+  .qrow__dot {
+    position: absolute;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-2);
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 4px var(--bg-1);
+  }
+  /* The widest quote (the far edge of the spread) is where the cost lives: the
+     single ember accent marks it, so the eye reads the divergence as a price. */
+  .qrow:last-child .qrow__dot {
+    background: var(--ember);
+    box-shadow:
+      0 0 0 3px var(--bg-1),
+      0 0 10px 0 var(--ember-glow);
+  }
+  .qrow__price {
+    font-size: 13px;
+    text-align: right;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+  .qrow:last-child .qrow__price {
+    color: var(--ember-hi);
+  }
+
+  .quotes__foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .quotes__spread {
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .quotes__spread-val {
+    color: var(--ember);
+    font-variant-numeric: tabular-nums;
+  }
+  .quotes__range {
+    font-size: 12px;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .quotes__caption {
+    margin-top: 14px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
     color: var(--ink-3);
   }
 </style>

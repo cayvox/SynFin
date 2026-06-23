@@ -161,16 +161,16 @@ h3 {
    deeper shadow + faint ember ring). Transform-only motion → no layout shift. */
 .card:hover {
   transform: translateY(-3px);
-  border-color: rgba(204, 106, 67, 0.3);
+  border-color: rgba(255, 106, 61, 0.3);
   box-shadow:
     0 1px 0 rgba(241, 239, 234, 0.08) inset,
     0 34px 74px -28px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(204, 106, 67, 0.1);
+    0 0 0 1px rgba(255, 106, 61, 0.1);
 }
 .card:hover::before {
   background: radial-gradient(
     64% 56% at 50% 0%,
-    rgba(230, 138, 94, 0.1),
+    rgba(255, 138, 92, 0.1),
     transparent 72%
   );
 }
@@ -207,12 +207,12 @@ h3 {
     ),
     radial-gradient(
       60% 17% at 30% 33%,
-      rgba(204, 106, 67, 0.085),
+      rgba(255, 106, 61, 0.085),
       transparent 66%
     ),
     radial-gradient(
       64% 18% at 74% 44%,
-      rgba(204, 106, 67, 0.12),
+      rgba(255, 106, 61, 0.12),
       transparent 64%
     ),
     radial-gradient(
@@ -222,7 +222,7 @@ h3 {
     ),
     radial-gradient(
       58% 16% at 72% 64%,
-      rgba(204, 106, 67, 0.08),
+      rgba(255, 106, 61, 0.08),
       transparent 66%
     ),
     radial-gradient(
@@ -232,7 +232,7 @@ h3 {
     ),
     radial-gradient(
       58% 17% at 74% 85%,
-      rgba(204, 106, 67, 0.062),
+      rgba(255, 106, 61, 0.062),
       transparent 66%
     ),
     radial-gradient(

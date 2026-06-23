@@ -29,7 +29,7 @@ import { REPO, SPEC } from '../site.ts';
           <Constellation />
 
           <div class="hero__content">
-            <Eyebrow text="Open best-execution layer · Canton" data-anim />
+            <Eyebrow text="Open best-execution layer for Canton" data-anim />
 
             <h1 class="hero__headline" id="hero-title" data-anim>
               <span class="hero__line">Best execution,</span>
@@ -58,24 +58,15 @@ import { REPO, SPEC } from '../site.ts';
               >
             </div>
 
-            <!-- Static best-route chip - shown only below 1024px, where the
-                 full constellation is hidden (Fix 5). Sits clearly below the
-                 CTAs; never overlaps them. -->
-            <p class="hero__chip mono" data-anim>
-              <span class="hero__chip-dot" aria-hidden="true"></span>
-              best route · +47.8 bps
-            </p>
-          </div>
-
-          <div class="hero__band">
-            <span class="hero__scroll mono">
-              <span class="hero__scroll-ring" aria-hidden="true">↓</span>
-              01 / 03 · SCROLL
-            </span>
-            <span class="hero__proof mono">
-              <span class="hero__proof-dot" aria-hidden="true"></span>
-              built on CIP-0056 / 0112 · atomic, on-ledger settlement
-            </span>
+            <!-- Compact best-route readout - shown only below 1024px, where the
+                 full constellation is hidden. Sits clearly below the CTAs. -->
+            <div class="hero__chip" data-anim>
+              <span class="hero__chip-node" aria-hidden="true"></span>
+              <span class="hero__chip-venue">OneSwap</span>
+              <span class="hero__chip-edge mono"
+                ><b>+47.8</b> bps best route</span
+              >
+            </div>
           </div>
         </div>
       </div>
@@ -193,78 +184,49 @@ import { REPO, SPEC } from '../site.ts';
     margin-top: 6px;
   }
 
-  /* Static chip (mobile/tablet only) */
+  /* Compact best-route readout (mobile/tablet only) */
   .hero__chip {
     display: none;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    padding: 6px 13px;
-    font-size: 12.5px;
-    letter-spacing: 0.02em;
-    color: var(--ember-hi);
-    background: color-mix(in srgb, var(--bg) 86%, var(--ember) 14%);
-    border: 1px solid var(--ember-soft);
-    border-radius: var(--r-pill);
+    gap: 10px;
+    margin-top: 10px;
+    padding: 9px 14px;
+    background: linear-gradient(
+      180deg,
+      rgba(25, 26, 30, 0.9),
+      rgba(11, 11, 13, 0.92)
+    );
+    border: 1px solid rgba(255, 106, 61, 0.3);
+    border-radius: var(--r-sm);
+    box-shadow: 0 0 24px -10px var(--ember-glow);
   }
-  .hero__chip-dot {
-    width: 6px;
-    height: 6px;
+  .hero__chip-node {
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: var(--ember);
-    box-shadow: 0 0 8px 0 var(--ember-soft);
+    box-shadow:
+      0 0 0 3px var(--ember-glow),
+      0 0 10px 0 var(--ember-soft);
+    flex: none;
+  }
+  .hero__chip-venue {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .hero__chip-edge {
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .hero__chip-edge b {
+    font-weight: 500;
+    color: var(--ember);
   }
   @media (max-width: 1023px) {
     .hero__chip {
       display: inline-flex;
-    }
-  }
-
-  /* Bottom band */
-  .hero__band {
-    position: absolute;
-    z-index: 3;
-    inset: auto 0 0 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 18px clamp(16px, 3vw, 30px);
-    font-size: 11.5px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-  }
-  .hero__scroll,
-  .hero__proof {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-  }
-  .hero__scroll-ring {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border: 1px solid var(--line-2);
-    border-radius: 50%;
-    font-size: 11px;
-  }
-  .hero__proof-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--ember);
-    box-shadow: 0 0 8px 0 var(--ember-soft);
-  }
-
-  @media (max-width: 720px) {
-    .hero__band {
-      font-size: 10px;
-      letter-spacing: 0.06em;
-    }
-    .hero__proof {
-      display: none;
     }
   }
 </style>
