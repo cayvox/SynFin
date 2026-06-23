@@ -4,7 +4,6 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Eyebrow from '../components/Eyebrow.astro';
 import Button from '../components/Button.astro';
-import Constellation from '../components/Constellation.astro';
 import Problem from '../components/Problem.astro';
 import HowItWorks from '../components/HowItWorks.astro';
 import ProofBento from '../components/ProofBento.astro';
@@ -16,40 +15,76 @@ import Build from '../components/Build.astro';
 import FinalCta from '../components/FinalCta.astro';
 import Horizon from '../components/Horizon.astro';
 import { REPO, SPEC } from '../site.ts';
+
+// Hero proof panel: one internally-consistent scenario. Sell 320 CC; the four
+// venue quotes are USDCx per CC, ordered by price descending (winner first).
+// RECEIVE and EDGE are computed from the quotes, not hardcoded, so a live tick
+// can recompute them and stay consistent (OneSwap is highest, hence the winner).
+const SELL = 320;
+// Quotes (USDCx per CC), winner first. Named so the math avoids index access.
+const WINNER = 125.0;
+const SECOND = 124.4;
+const quotes = [
+  { venue: 'OneSwap', price: WINNER, win: true },
+  { venue: 'Temple', price: SECOND, win: false },
+  { venue: 'Cantex', price: 124.18, win: false },
+  { venue: 'HydraX', price: 124.05, win: false },
+];
+const receive = SELL * WINNER; // 40,000 USDCx
+const edgeBps = ((WINNER - SECOND) / SECOND) * 1e4; // 48.2
+const fmtInt = (n: number): string =>
+  n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 ---
 
 <Base>
   <Nav />
 
   <main id="main">
-    <!-- ===================== HERO - routing constellation (DESIGN.md §6/§8) ===================== -->
-    <section class="hero" data-hero aria-labelledby="hero-title">
-      <div class="container">
-        <div class="hero__panel">
-          <Constellation />
+    <!-- ===== HERO stage: the inset card expands to full-bleed on scroll ===== -->
+    <div class="stage" data-stage>
+      <div class="stage__viewport">
+        <div class="stage__card">
+          <section class="hero" aria-labelledby="hero-title">
+            <Eyebrow
+              class="an d1"
+              text="Open best-execution layer for Canton"
+            />
 
-          <div class="hero__content">
-            <Eyebrow text="Open best-execution layer for Canton" data-anim />
-
-            <h1 class="hero__headline" id="hero-title" data-anim>
-              <span class="hero__line">Best execution,</span>
-              <span class="hero__line hero__line--muted">native to Canton.</span
-              >
+            <h1 class="hero__headline" id="hero-title">
+              <span class="hero__l1 an d2">Best execution,</span>
+              <span class="hero__l2 an d3">native to Canton.</span>
             </h1>
 
-            <p class="hero__sub" data-anim>
-              The open, neutral layer that routes every trade across all of
-              Canton's liquidity for the best price, then settles it in one
-              atomic, private transaction.
+            <p class="hero__sub an d4">
+              The open, neutral layer that routes every trade across Canton's
+              liquidity for the best price, then settles it in one atomic,
+              private transaction.
             </p>
 
-            <div class="hero__cta" data-anim>
+            <div class="hero__cta an d5">
               <Button
                 variant="primary"
                 href={SPEC}
                 target="_blank"
-                rel="noopener noreferrer">Read the spec ↗</Button
+                rel="noopener noreferrer"
               >
+                Read the spec
+                <svg
+                  class="ext-arrow"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 13 13"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 10 L10 3 M4.6 3 H10 V8.4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"></path>
+                </svg>
+              </Button>
               <Button
                 variant="ghost"
                 href={REPO}
@@ -58,53 +93,70 @@ import { REPO, SPEC } from '../site.ts';
               >
             </div>
 
-            <!-- Compact best-route readout - shown only below 1024px, where the
-                 full constellation is hidden. Sits clearly below the CTAs. -->
-            <div class="hero__chip" data-anim>
-              <span class="hero__chip-node" aria-hidden="true"></span>
-              <span class="hero__chip-venue">OneSwap</span>
-              <span class="hero__chip-edge mono"
-                ><b>+47.8</b> bps best route</span
-              >
-            </div>
-          </div>
+            <aside class="proof an d6" aria-label="Best route, illustrative">
+              <div class="proof__head">
+                <div class="proof__id">
+                  <span class="proof__venue">OneSwap</span>
+                  <span class="proof__sub mono">CC &#8594; USDCx</span>
+                </div>
+                <span class="proof__pill mono">Best route</span>
+              </div>
+              <div class="proof__hr"></div>
+              <div class="proof__quotes" aria-hidden="true">
+                {
+                  quotes.map((q) => (
+                    <div class:list={['proof__q', q.win && 'is-win']}>
+                      <div class="proof__qn">{q.venue}</div>
+                      <div
+                        class="proof__qp mono"
+                        data-base={q.price.toFixed(2)}
+                      >
+                        {q.price.toFixed(2)}
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+              <div class="proof__hr"></div>
+              <div class="proof__row">
+                <span class="proof__k mono">Sell</span>
+                <span class="proof__v mono">320 CC</span>
+              </div>
+              <div class="proof__row">
+                <span class="proof__k mono">Receive</span>
+                <span class="proof__v mono" data-receive
+                  >{fmtInt(receive)} USDCx</span
+                >
+              </div>
+              <div class="proof__row">
+                <span class="proof__k mono">Edge vs next</span>
+                <span class="proof__v proof__v--em mono" data-edge
+                  >+{edgeBps.toFixed(1)} bps</span
+                >
+              </div>
+            </aside>
+          </section>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- §2 - The problem -->
+    <!-- The full-bleed card flows directly into the existing sections. -->
     <Problem />
-
     <Horizon />
-    <!-- §3 - How it works (the router orbital) -->
     <HowItWorks />
-
     <Horizon />
-    <!-- §4 - Proof / Insights bento -->
     <ProofBento />
-
     <Horizon />
-    <!-- §5 - Per-leg privacy -->
     <Privacy />
-
     <Horizon />
-    <!-- §6 - How venues plug in (settlement modes) -->
     <VenueModes />
-
     <Horizon />
-    <!-- §7 - Open by design -->
     <Open />
-
     <Horizon />
-    <!-- §8 - For the ecosystem -->
     <Ecosystem />
-
     <Horizon />
-    <!-- Build - real @synfin SDK example -->
     <Build />
-
     <Horizon />
-    <!-- Final CTA strip (above the footer) -->
     <FinalCta />
   </main>
 
@@ -112,127 +164,417 @@ import { REPO, SPEC } from '../site.ts';
 </Base>
 
 <style>
-  .hero {
-    padding-top: 8px;
-    padding-bottom: var(--section-y);
-  }
-
-  .hero__panel {
+  /* ===== Stage + sticky viewport + expanding card ===== */
+  /* The persistent nav is a page-level sticky header. Pull the stage up under it
+     by the nav height so the card fills the full viewport and the nav floats
+     over it (the card expands under the nav, no seam at the top edge), while the
+     nav stays visible across every section below. */
+  .stage {
+    --nav-h: 70px;
     position: relative;
+    height: 200vh;
+    margin-top: calc(-1 * var(--nav-h));
+  }
+  .stage__viewport {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    padding: var(--hero-pad, 22px);
+  }
+  .stage__card {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    min-height: clamp(520px, 92vw, 640px);
-    background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: var(--panel-radius);
+    border-radius: var(--hero-rad, 28px);
+    background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
     box-shadow: var(--card-inset), var(--card-shadow);
-    display: grid;
-    place-items: center;
+    will-change: border-radius;
   }
-  /* Desktop: lock the panel to the constellation viewBox aspect (1440:856) so
-     the fixed-viewBox SVG maps 1:1 - no non-uniform stretch, line ends meet node
-     centres (Fix 6). */
-  @media (min-width: 1024px) {
-    .hero__panel {
-      min-height: 0;
-      aspect-ratio: 1440 / 856;
-    }
-  }
-
-  .hero__content {
-    position: relative;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 22px;
-    max-width: 660px;
-    padding: 40px var(--gutter);
-  }
-
-  .hero__headline {
-    display: flex;
-    flex-direction: column;
-    font-size: clamp(34px, 6.2vw, 80px);
-    line-height: 0.97;
-    letter-spacing: -0.035em;
-  }
-  .hero__line {
-    white-space: nowrap;
-  }
-  .hero__line--muted {
-    color: var(--ink-display-muted);
-  }
-  @media (max-width: 460px) {
-    .hero__line {
-      white-space: normal;
-    }
-  }
-
-  .hero__sub {
-    max-width: 560px;
-    font-size: clamp(16px, 2.2vw, 19px);
-    line-height: 1.5;
-    color: var(--ink-2);
-  }
-
-  .hero__cta {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 6px;
-  }
-
-  /* Compact best-route readout (mobile/tablet only) */
-  .hero__chip {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    padding: 9px 14px;
-    background: linear-gradient(
-      180deg,
-      rgba(25, 26, 30, 0.9),
-      rgba(11, 11, 13, 0.92)
+  /* One ambient only: a soft ember glow near top-center + a faint white sheen.
+     Both decorative, never lowering headline/subhead contrast (they sit below). */
+  .stage__card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      600px 500px at 50% 7%,
+      rgba(255, 106, 61, 0.14),
+      rgba(255, 106, 61, 0.04) 48%,
+      transparent 72%
     );
-    border: 1px solid rgba(255, 106, 61, 0.3);
-    border-radius: var(--r-sm);
-    box-shadow: 0 0 24px -10px var(--ember-glow);
   }
-  .hero__chip-node {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--ember);
-    box-shadow:
-      0 0 0 3px var(--ember-glow),
-      0 0 10px 0 var(--ember-soft);
-    flex: none;
+  .stage__card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      500px 340px at 50% 3%,
+      rgba(255, 255, 255, 0.05),
+      transparent 70%
+    );
   }
-  .hero__chip-venue {
+
+  /* ===== Hero spine: fits one viewport, vertically centered ===== */
+  .hero {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: clamp(8px, 2vh, 24px) var(--gutter);
+    /* The card fills the viewport behind the floating nav (no top seam); the
+       content centers BELOW the nav so it never collides with it. */
+    padding-top: calc(var(--nav-h) + clamp(8px, 2vh, 24px));
+  }
+  .hero__headline {
+    margin-top: clamp(12px, 2.2vh, 26px);
     font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 14px;
+    font-weight: 800;
+    font-size: clamp(2.4rem, min(7vw, 9.2vh), 5.25rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    max-width: 15ch;
+  }
+  .hero__l1 {
+    display: block;
     color: var(--ink);
   }
-  .hero__chip-edge {
-    font-size: 12px;
+  .hero__l2 {
+    display: block;
+    color: var(--ink-display-2);
+  }
+  .hero__sub {
+    margin-top: clamp(12px, 2vh, 24px);
+    font-family: var(--font-ui);
+    font-weight: 400;
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 680px;
+  }
+  .hero__cta {
+    margin-top: clamp(16px, 2.6vh, 32px);
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  /* Size the shared Button to the hero spec (50px / radius 25 / 16px) in place. */
+  .hero__cta :global(.btn) {
+    height: 50px;
+    padding: 0 26px;
+    font-size: 16px;
+    border-radius: 25px;
+  }
+  .ext-arrow {
+    display: block;
+  }
+
+  /* ===== Proof panel ===== */
+  .proof {
+    margin-top: clamp(18px, 3vh, 38px);
+    width: 100%;
+    max-width: 600px;
+    text-align: left;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: clamp(16px, 2.4vh, 20px) 24px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  }
+  .proof__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .proof__id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .proof__venue {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .proof__sub {
+    font-size: 11px;
+    letter-spacing: 0.04em;
     color: var(--ink-3);
   }
-  .hero__chip-edge b {
+  .proof__pill {
+    flex: none;
+    font-size: 11px;
     font-weight: 500;
-    color: var(--ember);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ember-tx);
+    border: 1px solid rgba(255, 106, 61, 0.4);
+    border-radius: 7px;
+    padding: 5px 10px;
   }
-  @media (max-width: 1023px) {
-    .hero__chip {
-      display: inline-flex;
+  .proof__hr {
+    height: 1px;
+    background: var(--line);
+    margin: clamp(11px, 1.6vh, 14px) 0;
+  }
+  .proof__quotes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0 6px;
+  }
+  .proof__q {
+    padding: 6px 8px 6px 11px;
+    border-left: 3px solid transparent;
+    border-radius: 0 6px 6px 0;
+  }
+  .proof__qn {
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .proof__qp {
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Winner cell: faint ember-tint background + 3px ember left border + ember text. */
+  .proof__q.is-win {
+    background: rgba(255, 106, 61, 0.06);
+    border-left-color: var(--ember);
+  }
+  .proof__q.is-win .proof__qn,
+  .proof__q.is-win .proof__qp {
+    color: var(--ember-tx);
+  }
+  .proof__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .proof__row + .proof__row {
+    margin-top: clamp(7px, 1vh, 9px);
+  }
+  .proof__k {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .proof__v {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .proof__v--em {
+    color: var(--ember-tx);
+  }
+
+  /* ===== Motion (all gated by prefers-reduced-motion) ===== */
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes hero-pill-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 106, 61, 0);
+    }
+    50% {
+      box-shadow: 0 0 0 4px rgba(255, 106, 61, 0.1);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .an {
+      opacity: 0;
+      animation: hero-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    }
+    .d1 {
+      animation-delay: 0.05s;
+    }
+    .d2 {
+      animation-delay: 0.12s;
+    }
+    .d3 {
+      animation-delay: 0.19s;
+    }
+    .d4 {
+      animation-delay: 0.28s;
+    }
+    .d5 {
+      animation-delay: 0.37s;
+    }
+    .d6 {
+      animation-delay: 0.46s;
+    }
+    .proof__pill {
+      animation: hero-pill-pulse 3.6s ease-in-out 1.2s infinite;
+    }
+  }
+
+  /* Reduced motion: no expansion, no pinned empty scroll, final inset state. */
+  @media (prefers-reduced-motion: reduce) {
+    .stage {
+      height: auto;
+    }
+    .stage__viewport {
+      position: relative;
+      height: auto;
+      min-height: 100dvh;
+      padding: 22px;
+    }
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 560px) {
+    /* On phones the content is taller than one viewport and the inset-to-bleed
+       expand is barely perceptible, so render the hero static (like the
+       reduced-motion path): the card grows with its content and nothing clips.
+       The expand rAF is gated to wider screens in the script. */
+    .stage {
+      height: auto;
+    }
+    .stage__viewport {
+      position: relative;
+      height: auto;
+      min-height: 100dvh;
+      padding: 22px;
+    }
+    /* Top-align below the nav (centering would push the eyebrow under it). */
+    .hero {
+      justify-content: flex-start;
+      padding-top: calc(var(--nav-h) + 12px);
+    }
+    .hero__headline {
+      margin-top: 14px;
+    }
+    .hero__sub {
+      margin-top: 12px;
+    }
+    .hero__cta {
+      margin-top: 18px;
+    }
+    .proof {
+      max-width: 100%;
+      margin-top: 20px;
+      padding: 16px 18px;
+    }
+    .proof__hr {
+      margin: 11px 0;
+    }
+    .proof__quotes {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 0;
     }
   }
 </style>
 
 <script>
-  import '../scripts/hero.ts';
+  // Scroll-expand: map scroll progress across the pinned stage to the card's
+  // padding (22 -> 0) and corner radius (28 -> 0), finishing at 72% of the
+  // range. rAF + passive listener; the only per-frame layout is the card box
+  // inside the pinned viewport (content is centered, so it does not reflow).
+  // The proof quotes tick by tiny amounts and RECEIVE + EDGE are recomputed from
+  // them each tick, so the panel stays internally consistent (the small drift
+  // preserves the descending order, so OneSwap stays the winner). Decorative,
+  // aria-hidden, and skipped entirely under prefers-reduced-motion.
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The expand is a wider-screen flourish; on phones the hero is static (CSS).
+  const wide = window.matchMedia('(min-width: 561px)').matches;
+  const stage = document.querySelector<HTMLElement>('[data-stage]');
+
+  if (stage && !reduce) {
+    if (wide) {
+      const PAD = 22;
+      const RAD = 28;
+      const EXP = 0.72;
+      let ticking = false;
+
+      const update = (): void => {
+        ticking = false;
+        const top = stage.getBoundingClientRect().top;
+        const total = stage.offsetHeight - window.innerHeight;
+        const p = total > 0 ? Math.min(Math.max(-top, 0), total) / total : 0;
+        const e = Math.min(p / EXP, 1);
+        stage.style.setProperty(
+          '--hero-pad',
+          (PAD * (1 - e)).toFixed(2) + 'px',
+        );
+        stage.style.setProperty(
+          '--hero-rad',
+          (RAD * (1 - e)).toFixed(2) + 'px',
+        );
+      };
+
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+          }
+        },
+        { passive: true },
+      );
+      window.addEventListener('resize', update);
+      update();
+    }
+
+    // Live tick: drift quotes by a tiny amount that preserves their descending
+    // order (so OneSwap stays highest), then recompute RECEIVE and EDGE from the
+    // live values. Quotes never drift while the results stay static.
+    const SELL = 320;
+    const cells = Array.from(
+      document.querySelectorAll<HTMLElement>('.proof__qp'),
+    );
+    const bases = cells.map((el) => parseFloat(el.dataset.base || '0'));
+    const receiveEl = document.querySelector<HTMLElement>('[data-receive]');
+    const edgeEl = document.querySelector<HTMLElement>('[data-edge]');
+    const fmtInt = (n: number): string =>
+      n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+    window.setInterval(() => {
+      const vals = bases.map((b) => b + (Math.random() - 0.5) * 0.04);
+      vals.forEach((v, i) => {
+        const el = cells[i];
+        if (el) el.textContent = v.toFixed(2);
+      });
+      const top = vals[0];
+      const next = vals[1];
+      if (top === undefined || next === undefined) return;
+      if (receiveEl) receiveEl.textContent = fmtInt(SELL * top) + ' USDCx';
+      if (edgeEl) {
+        const edge = ((top - next) / next) * 1e4;
+        edgeEl.textContent = '+' + edge.toFixed(1) + ' bps';
+      }
+    }, 2600);
+  }
+</script>
+
+<script>
   import '../scripts/orbital.ts';
   import '../scripts/proof.ts';
   import '../scripts/reveal.ts';
