@@ -86,7 +86,8 @@ import {
                       this venue
                     </span>
                     <span class="pv-lane__state pv-lane__state--off mono">
-                      sealed
+                      <span class="pv-lane__hatch" aria-hidden="true" />
+                      sealed from <span class="pv-active">{best.name}</span>
                     </span>
                   </div>
 
@@ -115,20 +116,9 @@ import {
                     </div>
                   </dl>
 
-                  <div class="pv-redact" aria-hidden="true">
-                    <span class="pv-redact__bar" style="width:64%" />
-                    <span class="pv-redact__bar" style="width:88%" />
-                    <span class="pv-redact__bar" style="width:46%" />
-                  </div>
-
                   <div class="pv-lane__foot mono">
-                    <span class="pv-lane__foot--on">
-                      <span class="pv-dot" aria-hidden="true" /> sees only its
-                      own leg
-                    </span>
-                    <span class="pv-lane__foot--off">
-                      sealed from <span class="pv-active">{best.name}</span>
-                    </span>
+                    <span class="pv-dot" aria-hidden="true" /> sees only its own
+                    leg
                   </div>
                 </div>
               </li>
@@ -278,7 +268,7 @@ import {
   }
   .pv-lane {
     position: relative;
-    padding: 12px 14px 12px 30px;
+    padding: 9px 13px 9px 28px;
     background: var(--bg-2);
     border: 1px solid var(--line);
     border-radius: var(--r-sm);
@@ -294,8 +284,8 @@ import {
   /* Left spine node, ember when active. */
   .pv-lane__node {
     position: absolute;
-    left: 13px;
-    top: 18px;
+    left: 12px;
+    top: 13px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -331,14 +321,32 @@ import {
   .pv-lane__state {
     font-size: 10.5px;
     letter-spacing: 0.03em;
-    text-transform: uppercase;
   }
   .pv-lane__state--on {
     color: var(--ember-tx);
+    text-transform: uppercase;
     display: none;
   }
+  /* Sealed (default): one compact inline row, no tall hatched block. */
   .pv-lane__state--off {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     color: var(--ink-3);
+  }
+  .pv-lane__hatch {
+    width: 18px;
+    height: 9px;
+    border-radius: 2px;
+    border: 1px solid var(--line);
+    background: repeating-linear-gradient(
+      -45deg,
+      rgba(241, 239, 234, 0.12),
+      rgba(241, 239, 234, 0.12) 2px,
+      transparent 2px,
+      transparent 5px
+    );
+    flex: none;
   }
   .pv-lane.is-active .pv-lane__state--on {
     display: inline;
@@ -347,29 +355,15 @@ import {
     display: none;
   }
 
-  /* Body: data when active, redaction when sealed. Reserve height so the swap
-     does not jump the layout. */
-  .pv-data,
-  .pv-redact {
-    margin: 10px 0 0;
-    min-height: 96px;
-  }
+  /* Expanded data: only for the viewing venue. Sealed rows show nothing here. */
   .pv-data {
+    margin: 9px 0 0;
     display: none;
     flex-direction: column;
-    gap: 6px;
-  }
-  .pv-redact {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    justify-content: center;
+    gap: 5px;
   }
   .pv-lane.is-active .pv-data {
     display: flex;
-  }
-  .pv-lane.is-active .pv-redact {
-    display: none;
   }
   .pv-data__row {
     display: flex;
@@ -391,38 +385,18 @@ import {
   .pv-data__row dd.pv-data__em {
     color: var(--ember-tx);
   }
-  .pv-redact__bar {
-    height: 9px;
-    border-radius: 2px;
-    background: repeating-linear-gradient(
-      -45deg,
-      rgba(241, 239, 234, 0.1),
-      rgba(241, 239, 234, 0.1) 2px,
-      transparent 2px,
-      transparent 6px
-    );
-    border: 1px solid var(--line);
-  }
-
+  /* Foot ("sees only its own leg"): only for the viewing venue. */
   .pv-lane__foot {
-    margin-top: 10px;
-    font-size: 10.5px;
-    letter-spacing: 0.01em;
-  }
-  .pv-lane__foot--on {
+    margin-top: 9px;
     display: none;
     align-items: center;
     gap: 6px;
+    font-size: 10.5px;
+    letter-spacing: 0.01em;
     color: var(--ember-hi);
   }
-  .pv-lane__foot--off {
-    color: var(--ink-3);
-  }
-  .pv-lane.is-active .pv-lane__foot--on {
+  .pv-lane.is-active .pv-lane__foot {
     display: inline-flex;
-  }
-  .pv-lane.is-active .pv-lane__foot--off {
-    display: none;
   }
   .pv-active {
     color: var(--ink-2);

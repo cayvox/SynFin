@@ -23,8 +23,10 @@ const chips = [
   { t: 'Self-hostable', on: false },
   { t: 'Adopts and contributes to CIP-0056 / 0112', on: false },
 ];
-// Fan connector x-positions (% of the 300-wide band) - one per venue chip.
-const fanX = [22, 38, 50, 62, 78];
+// Fan connector top points across a 300-wide band, evenly spaced and symmetric
+// (one per venue). Each curves smoothly to a single convergence node at the
+// top-center of the Synfin card, so the lines fan without crossing.
+const fanTopX = [30, 90, 150, 210, 270];
 ---
 
 <section id="open" class="open" aria-labelledby="open-title">
@@ -61,48 +63,29 @@ const fanX = [22, 38, 50, 62, 78];
       </header>
 
       <div class="open__diagram card" data-reveal>
-        <p class="open-cap mono">
-          1inch · EVM&nbsp;&nbsp;&nbsp; Jupiter · Solana&nbsp;&nbsp;&nbsp;
-          <span class="open-cap__on">Synfin · Canton</span>
-        </p>
-
         <ul class="open-venues">
           {venues.map((v) => <li class="open-venue mono">{v}</li>)}
         </ul>
 
         <svg
           class="open-fan"
-          viewBox="0 0 300 30"
+          viewBox="0 0 300 46"
           preserveAspectRatio="none"
           fill="none"
           aria-hidden="true"
         >
+          {/* Uniform hairlines: each venue curves to one convergence node. */}
           {
-            fanX.map((x) => (
+            fanTopX.map((x) => (
               <path
-                d={`M${x} 0 C${x} 18 150 8 150 30`}
-                stroke="var(--line-2)"
-                stroke-width="1"
-                stroke-linecap="round"
+                class="open-fan__line"
+                d={`M${x} 0 C ${x} 22 150 22 150 44`}
               />
             ))
           }
-          {
-            /* A faint ember pulse flows down each line: venues aggregating into
-              Synfin. Motion only. */
-          }
-          {
-            fanX.map((x, i) => (
-              <path
-                class="open-fan__flow"
-                style={`animation-delay:${i * 0.32}s`}
-                d={`M${x} 0 C${x} 18 150 8 150 30`}
-                stroke="var(--ember)"
-                stroke-width="1.2"
-                stroke-linecap="round"
-              />
-            ))
-          }
+          {/* The single ember accent: the final segment + node into Synfin. */}
+          <path class="open-fan__join" d="M150 32 L150 44"></path>
+          <circle class="open-fan__node" cx="150" cy="44" r="3"></circle>
         </svg>
 
         <div class="open-layer open-layer--synfin">
@@ -237,20 +220,9 @@ const fanX = [22, 38, 50, 62, 78];
     flex-direction: column;
     gap: 0;
   }
-  .open-cap {
-    font-size: 11.5px;
-    letter-spacing: 0.02em;
-    color: var(--ink-3);
-    text-align: center;
-    overflow-wrap: anywhere;
-  }
-  .open-cap__on {
-    color: var(--ember);
-  }
-
   .open-venues {
     list-style: none;
-    margin: 16px 0 0;
+    margin: 0;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
@@ -267,34 +239,42 @@ const fanX = [22, 38, 50, 62, 78];
     white-space: nowrap;
   }
 
+  /* Clean convergence fan: identical hairlines fan in, one ember node lands on
+     the Synfin card's top edge. The only ember is that node and its short stem. */
   .open-fan {
     width: 100%;
-    height: 30px;
+    height: 46px;
+    margin: 14px 0 0;
+    overflow: visible;
   }
-  /* Each flow path is a short ember dash that travels from the venue down into
-     the Synfin layer, then repeats: a quiet "aggregation" motion. */
-  .open-fan__flow {
-    opacity: 0;
-    stroke-dasharray: 5 60;
+  .open-fan__line {
+    stroke: rgba(255, 255, 255, 0.16);
+    stroke-width: 1;
     vector-effect: non-scaling-stroke;
   }
+  .open-fan__join {
+    stroke: var(--ember);
+    stroke-width: 1.4;
+    vector-effect: non-scaling-stroke;
+  }
+  .open-fan__node {
+    fill: var(--ember);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  /* Subtle, optional: the convergence node breathes. Motion only. */
   @media (prefers-reduced-motion: no-preference) {
-    .open-fan__flow {
-      animation: open-flow 2.8s ease-in-out infinite;
+    .open-fan__node {
+      animation: open-node 2.6s ease-in-out infinite;
     }
   }
-  @keyframes open-flow {
-    0% {
-      stroke-dashoffset: 65;
-      opacity: 0;
-    }
-    35%,
-    65% {
-      opacity: 0.55;
-    }
+  @keyframes open-node {
+    0%,
     100% {
-      stroke-dashoffset: 0;
-      opacity: 0;
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
     }
   }
 
