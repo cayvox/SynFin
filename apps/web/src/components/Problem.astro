@@ -8,26 +8,25 @@
  * unchanged; the section is restructured into a two-column editorial + readout.
  */
 import Eyebrow from './Eyebrow.astro';
+import {
+  PAIR,
+  ranked,
+  best,
+  worst,
+  spreadBps,
+  pricePosition,
+  isBest,
+  fmtPrice,
+  fmtBps,
+} from '../data/market.ts';
 
-// The same pair, five venues, five prices (the constellation's own quotes).
-const PAIR = 'CC / USDCx';
-const quotes = [
-  { venue: 'CompassSwap', price: 124.55 },
-  { venue: 'OneSwap', price: 124.63 },
-  { venue: 'Cantex', price: 124.72 },
-  { venue: 'CantonSwap', price: 124.81 },
-  { venue: 'RFQ desk', price: 125.04 },
-];
-const prices = quotes.map((q) => q.price);
-const lo = Math.min(...prices);
-const hi = Math.max(...prices);
-const spread = hi - lo;
-// Position of each quote within the [lo, hi] range, as a percentage.
-const pos = (p: number): number => +(((p - lo) / spread) * 100).toFixed(2);
-// Spread in basis points against the mid price (the cost of picking wrong).
-const mid = (lo + hi) / 2;
-const spreadBps = Math.round((spread / mid) * 1e4);
-const fmt = (p: number): string => p.toFixed(2);
+// The price ladder reads the canonical market (src/data/market.ts), so it shows
+// exactly the same venues, winner, and spread as the hero and How-it-works. Rows
+// are ranked best-first; each marker sits proportionally on a shared worst..best
+// scale, so the spread is visually truthful. The best (OneSwap) is the one ember
+// accent.
+const rows = ranked;
+const venueCount = ranked.length;
 ---
 
 <section id="problem" class="problem" aria-labelledby="problem-title">
@@ -62,7 +61,7 @@ const fmt = (p: number): string => p.toFixed(2);
       <aside
         class="quotes"
         data-reveal
-        aria-label="The same pair quoted across five venues"
+        aria-label={`The same pair quoted across ${venueCount} venues`}
       >
         <div class="quotes__glow" aria-hidden="true"></div>
         <div class="quotes__top">
@@ -70,33 +69,48 @@ const fmt = (p: number): string => p.toFixed(2);
             <span class="quotes__live" aria-hidden="true"></span>
             {PAIR}
           </span>
-          <span class="quotes__note mono">5 venues, one pair</span>
+          <span class="quotes__note mono">{venueCount} venues, one pair</span>
         </div>
 
         <div class="quotes__rule"></div>
 
         <ul class="quotes__list">
           {
-            quotes.map((q) => (
-              <li class="qrow">
-                <span class="qrow__venue">{q.venue}</span>
+            rows.map((v) => (
+              <li class:list={['qrow', isBest(v) && 'is-best']}>
+                <span class="qrow__venue">{v.name}</span>
                 <span class="qrow__track" aria-hidden="true">
-                  <span class="qrow__dot" style={`left:${pos(q.price)}%`} />
+                  <span
+                    class="qrow__dot"
+                    style={`left:${(pricePosition(v.price) * 100).toFixed(2)}%`}
+                  />
                 </span>
-                <span class="qrow__price mono">{fmt(q.price)}</span>
+                <span class="qrow__price mono">{fmtPrice(v.price)}</span>
               </li>
             ))
           }
         </ul>
 
-        <div class="quotes__rule"></div>
+        {
+          /* Shared worst..best scale: a slim ember bracket spans the full
+            spread, aligned under the markers, with the low and high labeled. */
+        }
+        <div class="quotes__scale" aria-hidden="true">
+          <span class="quotes__scale-end mono">{fmtPrice(worst.price)}</span>
+          <span class="quotes__bracket"></span>
+          <span class="quotes__scale-end quotes__scale-end--hi mono">
+            {fmtPrice(best.price)}
+          </span>
+        </div>
 
         <div class="quotes__foot">
           <span class="quotes__spread mono">
-            <span class="quotes__spread-val">{spreadBps} bps</span> spread
+            <span class="quotes__spread-val"
+              >spread {fmtBps(spreadBps)} bps</span
+            >
           </span>
           <span class="quotes__range mono">
-            {fmt(lo)} to {fmt(hi)}
+            {fmtPrice(worst.price)} to {fmtPrice(best.price)}
           </span>
         </div>
         <p class="quotes__caption mono">No neutral layer compares them.</p>
@@ -283,13 +297,13 @@ const fmt = (p: number): string => p.toFixed(2);
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--ink-2);
+    background: var(--ink-3);
     transform: translate(-50%, -50%);
     box-shadow: 0 0 0 4px var(--bg-1);
   }
-  /* The widest quote (the far edge of the spread) is where the cost lives: the
-     single ember accent marks it, so the eye reads the divergence as a price. */
-  .qrow:last-child .qrow__dot {
+  /* The winner (best quote) is the single ember accent: a filled ember marker
+     at the best end of the shared scale, with ember name and price. */
+  .qrow.is-best .qrow__dot {
     background: var(--ember);
     box-shadow:
       0 0 0 3px var(--bg-1),
@@ -302,8 +316,40 @@ const fmt = (p: number): string => p.toFixed(2);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
   }
-  .qrow:last-child .qrow__price {
-    color: var(--ember-hi);
+  .qrow.is-best .qrow__venue,
+  .qrow.is-best .qrow__price {
+    color: var(--ember-tx);
+  }
+
+  /* Shared worst..best scale with a slim ember spread bracket. */
+  .quotes__scale {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 14px;
+  }
+  .quotes__scale-end {
+    flex: none;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .quotes__scale-end--hi {
+    color: var(--ember-tx);
+  }
+  .quotes__bracket {
+    position: relative;
+    flex: 1;
+    height: 6px;
+    border-left: 1px solid var(--ember-soft);
+    border-right: 1px solid var(--ember-soft);
+  }
+  .quotes__bracket::before {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ember-soft), var(--ember));
   }
 
   .quotes__foot {
