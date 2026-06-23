@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# pre-push: refuse to push to main. main is protected and every change must land
+# through a pull request, never a direct or force push. Enable locally with:
+#
+#     git config core.hooksPath .githooks
+#
+# Git passes the remote name and URL as arguments, and one line per ref on
+# stdin: "<local ref> <local sha> <remote ref> <remote sha>".
+
+protected_ref="refs/heads/main"
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+	if [ "$remote_ref" = "$protected_ref" ]; then
+		echo "" >&2
+		echo "pre-push: refusing to push to main." >&2
+		echo "main is protected: open a pull request and merge there instead." >&2
+		echo "" >&2
+		exit 1
+	fi
+done
+
+exit 0
