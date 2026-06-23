@@ -16,25 +16,34 @@ import FinalCta from '../components/FinalCta.astro';
 import Horizon from '../components/Horizon.astro';
 import { REPO, SPEC } from '../site.ts';
 
-// Hero proof panel: the same pair quoted across four venues. OneSwap is the
-// highest quote, so it is the winner / best route. The tick swing (+-0.03) keeps
-// OneSwap highest by construction, so the demo stays consistent.
+// Hero proof panel: one internally-consistent scenario. Sell 320 CC; the four
+// venue quotes are USDCx per CC, ordered by price descending (winner first).
+// RECEIVE and EDGE are computed from the quotes, not hardcoded, so a live tick
+// can recompute them and stay consistent (OneSwap is highest, hence the winner).
+const SELL = 320;
+// Quotes (USDCx per CC), winner first. Named so the math avoids index access.
+const WINNER = 125.0;
+const SECOND = 124.4;
 const quotes = [
-  { venue: 'Cantex', price: '124.72', win: false },
-  { venue: 'OneSwap', price: '125.04', win: true },
-  { venue: 'HydraX', price: '124.55', win: false },
-  { venue: 'Temple', price: '124.81', win: false },
+  { venue: 'OneSwap', price: WINNER, win: true },
+  { venue: 'Temple', price: SECOND, win: false },
+  { venue: 'Cantex', price: 124.18, win: false },
+  { venue: 'HydraX', price: 124.05, win: false },
 ];
+const receive = SELL * WINNER; // 40,000 USDCx
+const edgeBps = ((WINNER - SECOND) / SECOND) * 1e4; // 48.2
+const fmtInt = (n: number): string =>
+  n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 ---
 
 <Base>
+  <Nav />
+
   <main id="main">
     <!-- ===== HERO stage: the inset card expands to full-bleed on scroll ===== -->
     <div class="stage" data-stage>
       <div class="stage__viewport">
         <div class="stage__card">
-          <Nav />
-
           <section class="hero" aria-labelledby="hero-title">
             <Eyebrow
               class="an d1"
@@ -86,7 +95,10 @@ const quotes = [
 
             <aside class="proof an d6" aria-label="Best route, illustrative">
               <div class="proof__head">
-                <span class="proof__venue">OneSwap</span>
+                <div class="proof__id">
+                  <span class="proof__venue">OneSwap</span>
+                  <span class="proof__sub mono">CC &#8594; USDCx</span>
+                </div>
                 <span class="proof__pill mono">Best route</span>
               </div>
               <div class="proof__hr"></div>
@@ -95,8 +107,11 @@ const quotes = [
                   quotes.map((q) => (
                     <div class:list={['proof__q', q.win && 'is-win']}>
                       <div class="proof__qn">{q.venue}</div>
-                      <div class="proof__qp mono" data-base={q.price}>
-                        {q.price}
+                      <div
+                        class="proof__qp mono"
+                        data-base={q.price.toFixed(2)}
+                      >
+                        {q.price.toFixed(2)}
                       </div>
                     </div>
                   ))
@@ -104,12 +119,20 @@ const quotes = [
               </div>
               <div class="proof__hr"></div>
               <div class="proof__row">
+                <span class="proof__k mono">Sell</span>
+                <span class="proof__v mono">320 CC</span>
+              </div>
+              <div class="proof__row">
                 <span class="proof__k mono">Receive</span>
-                <span class="proof__v mono">39,940 USDCx</span>
+                <span class="proof__v mono" data-receive
+                  >{fmtInt(receive)} USDCx</span
+                >
               </div>
               <div class="proof__row">
                 <span class="proof__k mono">Edge vs next</span>
-                <span class="proof__v proof__v--em mono">+47.8 bps</span>
+                <span class="proof__v proof__v--em mono" data-edge
+                  >+{edgeBps.toFixed(1)} bps</span
+                >
               </div>
             </aside>
           </section>
@@ -117,33 +140,7 @@ const quotes = [
       </div>
     </div>
 
-    <!-- ===== Reveal: the full-bleed card flows into this section ===== -->
-    <section class="reveal" aria-label="How it works">
-      <Eyebrow text="How it works" />
-      <div class="reveal__steps">
-        <article class="reveal__step">
-          <div class="reveal__t">Quotes</div>
-          <p class="reveal__d">
-            RFQ across every Canton venue, normalized into one comparable quote.
-          </p>
-        </article>
-        <article class="reveal__step">
-          <div class="reveal__t">Route</div>
-          <p class="reveal__d">
-            Depth-aware optimal split for the best execution price.
-          </p>
-        </article>
-        <article class="reveal__step">
-          <div class="reveal__t">Atomic settle</div>
-          <p class="reveal__d">
-            All legs co-execute in one all-or-nothing, per-leg private Daml
-            transaction.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <!-- Existing sections (unchanged; deeper reconciliation out of scope) -->
+    <!-- The full-bleed card flows directly into the existing sections. -->
     <Problem />
     <Horizon />
     <HowItWorks />
@@ -168,9 +165,15 @@ const quotes = [
 
 <style>
   /* ===== Stage + sticky viewport + expanding card ===== */
+  /* The persistent nav is a page-level sticky header. Pull the stage up under it
+     by the nav height so the card fills the full viewport and the nav floats
+     over it (the card expands under the nav, no seam at the top edge), while the
+     nav stays visible across every section below. */
   .stage {
+    --nav-h: 70px;
     position: relative;
     height: 200vh;
+    margin-top: calc(-1 * var(--nav-h));
   }
   .stage__viewport {
     position: sticky;
@@ -218,13 +221,6 @@ const quotes = [
     );
   }
 
-  /* The Nav rides inside the card (expands with it), so neutralize its sticky. */
-  .stage__card :global(.nav) {
-    position: relative;
-    top: auto;
-    z-index: 2;
-  }
-
   /* ===== Hero spine: fits one viewport, vertically centered ===== */
   .hero {
     position: relative;
@@ -236,6 +232,9 @@ const quotes = [
     justify-content: center;
     text-align: center;
     padding: clamp(8px, 2vh, 24px) var(--gutter);
+    /* The card fills the viewport behind the floating nav (no top seam); the
+       content centers BELOW the nav so it never collides with it. */
+    padding-top: calc(var(--nav-h) + clamp(8px, 2vh, 24px));
   }
   .hero__headline {
     margin-top: clamp(12px, 2.2vh, 26px);
@@ -290,13 +289,19 @@ const quotes = [
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: 16px;
-    padding: 20px 24px;
+    padding: clamp(16px, 2.4vh, 20px) 24px;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
   }
   .proof__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
+  }
+  .proof__id {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
   .proof__venue {
     font-family: var(--font-ui);
@@ -304,7 +309,13 @@ const quotes = [
     font-size: 17px;
     color: var(--ink);
   }
+  .proof__sub {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
   .proof__pill {
+    flex: none;
     font-size: 11px;
     font-weight: 500;
     letter-spacing: 0.14em;
@@ -317,15 +328,17 @@ const quotes = [
   .proof__hr {
     height: 1px;
     background: var(--line);
-    margin: 14px 0;
+    margin: clamp(11px, 1.6vh, 14px) 0;
   }
   .proof__quotes {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    gap: 0 6px;
   }
   .proof__q {
-    padding-left: 11px;
-    border-left: 2px solid transparent;
+    padding: 6px 8px 6px 11px;
+    border-left: 3px solid transparent;
+    border-radius: 0 6px 6px 0;
   }
   .proof__qn {
     font-family: var(--font-ui);
@@ -340,7 +353,9 @@ const quotes = [
     margin-top: 3px;
     font-variant-numeric: tabular-nums;
   }
+  /* Winner cell: faint ember-tint background + 3px ember left border + ember text. */
   .proof__q.is-win {
+    background: rgba(255, 106, 61, 0.06);
     border-left-color: var(--ember);
   }
   .proof__q.is-win .proof__qn,
@@ -353,7 +368,7 @@ const quotes = [
     justify-content: space-between;
   }
   .proof__row + .proof__row {
-    margin-top: 9px;
+    margin-top: clamp(7px, 1vh, 9px);
   }
   .proof__k {
     font-size: 11px;
@@ -370,45 +385,6 @@ const quotes = [
   }
   .proof__v--em {
     color: var(--ember-tx);
-  }
-
-  /* ===== Reveal section (revealed as the card grows full-bleed) ===== */
-  .reveal {
-    position: relative;
-    background: var(--bg-0);
-    padding: clamp(80px, 14vh, 150px) var(--gutter);
-    text-align: center;
-  }
-  .reveal :global(.eyebrow) {
-    justify-content: center;
-  }
-  .reveal__steps {
-    margin: 34px auto 0;
-    max-width: 760px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-  .reveal__step {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 22px 20px;
-    text-align: left;
-    background: rgba(241, 239, 234, 0.015);
-  }
-  .reveal__t {
-    font-family: var(--font-ui);
-    font-weight: 600;
-    font-size: 16px;
-    color: var(--ink);
-  }
-  .reveal__d {
-    margin-top: 6px;
-    font-family: var(--font-ui);
-    font-weight: 400;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--ink-3);
   }
 
   /* ===== Motion (all gated by prefers-reduced-motion) ===== */
@@ -474,15 +450,44 @@ const quotes = [
 
   /* ===== Responsive ===== */
   @media (max-width: 560px) {
+    /* On phones the content is taller than one viewport and the inset-to-bleed
+       expand is barely perceptible, so render the hero static (like the
+       reduced-motion path): the card grows with its content and nothing clips.
+       The expand rAF is gated to wider screens in the script. */
+    .stage {
+      height: auto;
+    }
+    .stage__viewport {
+      position: relative;
+      height: auto;
+      min-height: 100dvh;
+      padding: 22px;
+    }
+    /* Top-align below the nav (centering would push the eyebrow under it). */
+    .hero {
+      justify-content: flex-start;
+      padding-top: calc(var(--nav-h) + 12px);
+    }
+    .hero__headline {
+      margin-top: 14px;
+    }
+    .hero__sub {
+      margin-top: 12px;
+    }
+    .hero__cta {
+      margin-top: 18px;
+    }
     .proof {
       max-width: 100%;
+      margin-top: 20px;
+      padding: 16px 18px;
+    }
+    .proof__hr {
+      margin: 11px 0;
     }
     .proof__quotes {
       grid-template-columns: repeat(2, 1fr);
-      gap: 14px 0;
-    }
-    .reveal__steps {
-      grid-template-columns: 1fr;
+      gap: 12px 0;
     }
   }
 </style>
@@ -490,48 +495,80 @@ const quotes = [
 <script>
   // Scroll-expand: map scroll progress across the pinned stage to the card's
   // padding (22 -> 0) and corner radius (28 -> 0), finishing at 72% of the
-  // range. rAF + passive listener; no layout thrash beyond the card box. The
-  // quote strip ticks by tiny amounts (decorative, aria-hidden). Both are
-  // skipped entirely under prefers-reduced-motion.
+  // range. rAF + passive listener; the only per-frame layout is the card box
+  // inside the pinned viewport (content is centered, so it does not reflow).
+  // The proof quotes tick by tiny amounts and RECEIVE + EDGE are recomputed from
+  // them each tick, so the panel stays internally consistent (the small drift
+  // preserves the descending order, so OneSwap stays the winner). Decorative,
+  // aria-hidden, and skipped entirely under prefers-reduced-motion.
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The expand is a wider-screen flourish; on phones the hero is static (CSS).
+  const wide = window.matchMedia('(min-width: 561px)').matches;
   const stage = document.querySelector<HTMLElement>('[data-stage]');
 
   if (stage && !reduce) {
-    const PAD = 22;
-    const RAD = 28;
-    const EXP = 0.72;
-    let ticking = false;
+    if (wide) {
+      const PAD = 22;
+      const RAD = 28;
+      const EXP = 0.72;
+      let ticking = false;
 
-    const update = (): void => {
-      ticking = false;
-      const top = stage.getBoundingClientRect().top;
-      const total = stage.offsetHeight - window.innerHeight;
-      const p = total > 0 ? Math.min(Math.max(-top, 0), total) / total : 0;
-      const e = Math.min(p / EXP, 1);
-      stage.style.setProperty('--hero-pad', (PAD * (1 - e)).toFixed(2) + 'px');
-      stage.style.setProperty('--hero-rad', (RAD * (1 - e)).toFixed(2) + 'px');
-    };
+      const update = (): void => {
+        ticking = false;
+        const top = stage.getBoundingClientRect().top;
+        const total = stage.offsetHeight - window.innerHeight;
+        const p = total > 0 ? Math.min(Math.max(-top, 0), total) / total : 0;
+        const e = Math.min(p / EXP, 1);
+        stage.style.setProperty(
+          '--hero-pad',
+          (PAD * (1 - e)).toFixed(2) + 'px',
+        );
+        stage.style.setProperty(
+          '--hero-rad',
+          (RAD * (1 - e)).toFixed(2) + 'px',
+        );
+      };
 
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (!ticking) {
-          window.requestAnimationFrame(update);
-          ticking = true;
-        }
-      },
-      { passive: true },
-    );
-    window.addEventListener('resize', update);
-    update();
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+          }
+        },
+        { passive: true },
+      );
+      window.addEventListener('resize', update);
+      update();
+    }
 
+    // Live tick: drift quotes by a tiny amount that preserves their descending
+    // order (so OneSwap stays highest), then recompute RECEIVE and EDGE from the
+    // live values. Quotes never drift while the results stay static.
+    const SELL = 320;
     const cells = Array.from(
       document.querySelectorAll<HTMLElement>('.proof__qp'),
     );
+    const bases = cells.map((el) => parseFloat(el.dataset.base || '0'));
+    const receiveEl = document.querySelector<HTMLElement>('[data-receive]');
+    const edgeEl = document.querySelector<HTMLElement>('[data-edge]');
+    const fmtInt = (n: number): string =>
+      n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+
     window.setInterval(() => {
-      for (const el of cells) {
-        const base = parseFloat(el.getAttribute('data-base') || '0');
-        el.textContent = (base + (Math.random() - 0.5) * 0.06).toFixed(2);
+      const vals = bases.map((b) => b + (Math.random() - 0.5) * 0.04);
+      vals.forEach((v, i) => {
+        const el = cells[i];
+        if (el) el.textContent = v.toFixed(2);
+      });
+      const top = vals[0];
+      const next = vals[1];
+      if (top === undefined || next === undefined) return;
+      if (receiveEl) receiveEl.textContent = fmtInt(SELL * top) + ' USDCx';
+      if (edgeEl) {
+        const edge = ((top - next) / next) * 1e4;
+        edgeEl.textContent = '+' + edge.toFixed(1) + ' bps';
       }
     }, 2600);
   }
