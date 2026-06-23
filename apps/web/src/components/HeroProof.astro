@@ -1,0 +1,212 @@
+---
+/**
+ * HeroProof - the hero's single, contained product proof. One bordered panel
+ * that tells the whole story in place: quotes gathered across every venue, the
+ * winner picked (OneSwap, the highest CC/USDCx quote), and the result. No nodes
+ * or lines outside this card. Numbers are illustrative and internally
+ * consistent: OneSwap is the highest quote and therefore the best route.
+ */
+interface Props {
+  class?: string;
+  [key: `data-${string}`]: string | undefined;
+}
+const { class: className, ...rest } = Astro.props;
+
+const quotes = [
+  { venue: 'Cantex', price: '124.72', best: false },
+  { venue: 'OneSwap', price: '125.04', best: true },
+  { venue: 'HydraX', price: '124.55', best: false },
+  { venue: 'Temple', price: '124.81', best: false },
+];
+---
+
+<aside
+  class:list={['proof', className]}
+  aria-label="Best route across Canton venues, illustrative"
+  {...rest}
+>
+  <div class="proof__head">
+    <span class="proof__venue">OneSwap</span>
+    <span class="proof__pill mono">best route</span>
+  </div>
+
+  <div class="proof__rule"></div>
+
+  <dl class="proof__rows">
+    <div class="proof__row">
+      <dt class="proof__k mono">Receive</dt>
+      <dd class="proof__v mono">39,940 USDCx</dd>
+    </div>
+    <div class="proof__row">
+      <dt class="proof__k mono">Edge vs next</dt>
+      <dd class="proof__v proof__v--ember mono">+47.8 bps</dd>
+    </div>
+  </dl>
+
+  <p class="proof__strip-label mono">Quotes across venues</p>
+  <ul class="proof__quotes">
+    {
+      quotes.map((q) => (
+        <li class:list={['proof__quote', q.best && 'is-best']}>
+          <span class="proof__qv">{q.venue}</span>
+          <span class="proof__qp mono">{q.price}</span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="proof__note mono">CC / USDCx, illustrative</p>
+</aside>
+
+<style>
+  .proof {
+    width: 100%;
+    max-width: 560px;
+    margin-inline: auto;
+    text-align: left;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-card);
+    box-shadow:
+      var(--card-inset),
+      0 18px 50px -28px rgba(0, 0, 0, 0.8);
+    padding: 26px;
+  }
+
+  .proof__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .proof__venue {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .proof__pill {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ember-hi);
+    border: 1px solid rgba(255, 106, 61, 0.35);
+    border-radius: var(--r-pill);
+    padding: 4px 10px;
+  }
+
+  .proof__rule {
+    height: 1px;
+    margin: 18px 0;
+    background: var(--line);
+  }
+
+  .proof__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+  .proof__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .proof__k {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+  }
+  .proof__v {
+    font-size: 15px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .proof__v--ember {
+    color: var(--ember);
+  }
+
+  .proof__strip-label {
+    margin-top: 22px;
+    margin-bottom: 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+  }
+  .proof__quotes {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .proof__quote {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--line-3);
+    border-radius: var(--r-xs);
+    background: rgba(241, 239, 234, 0.015);
+  }
+  /* The winner: a single ember accent (left edge + value) ties the strip to the
+     result above. This is the in-card connector, kept inside the panel. */
+  .proof__quote.is-best {
+    border-color: rgba(255, 106, 61, 0.4);
+    border-left: 2px solid var(--ember);
+    background: color-mix(in srgb, var(--bg-1) 88%, var(--ember) 12%);
+  }
+  .proof__qv {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .proof__quote.is-best .proof__qv {
+    color: var(--ink);
+  }
+  .proof__qp {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .proof__quote.is-best .proof__qp {
+    color: var(--ember-hi);
+  }
+
+  .proof__note {
+    margin-top: 16px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+  }
+
+  /* Understated live touch: a gentle ember breath on the best-route pill. */
+  @media (prefers-reduced-motion: no-preference) {
+    .proof__pill {
+      animation: proofPulse 3.2s var(--e-inout) infinite;
+    }
+  }
+  @keyframes proofPulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 106, 61, 0);
+    }
+    50% {
+      box-shadow: 0 0 16px -2px var(--ember-soft);
+    }
+  }
+
+  /* Mobile: the venue strip stacks. */
+  @media (max-width: 460px) {
+    .proof {
+      padding: 22px;
+    }
+    .proof__quotes {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

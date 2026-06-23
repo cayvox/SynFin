@@ -4,7 +4,7 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import Eyebrow from '../components/Eyebrow.astro';
 import Button from '../components/Button.astro';
-import Constellation from '../components/Constellation.astro';
+import HeroProof from '../components/HeroProof.astro';
 import Problem from '../components/Problem.astro';
 import HowItWorks from '../components/HowItWorks.astro';
 import ProofBento from '../components/ProofBento.astro';
@@ -22,25 +22,24 @@ import { REPO, SPEC } from '../site.ts';
   <Nav />
 
   <main id="main">
-    <!-- ===================== HERO - routing constellation (DESIGN.md §6/§8) ===================== -->
+    <!-- ===================== HERO - one centered editorial spine, one contained proof ===================== -->
     <section class="hero" data-hero aria-labelledby="hero-title">
       <div class="container">
         <div class="hero__panel">
-          <Constellation />
+          <div class="hero__ambient" aria-hidden="true"></div>
 
-          <div class="hero__content">
+          <div class="hero__spine">
             <Eyebrow text="Open best-execution layer for Canton" data-anim />
 
             <h1 class="hero__headline" id="hero-title" data-anim>
               <span class="hero__line">Best execution,</span>
-              <span class="hero__line hero__line--muted">native to Canton.</span
-              >
+              <span class="hero__line hero__line--2">native to Canton.</span>
             </h1>
 
             <p class="hero__sub" data-anim>
-              The open, neutral layer that routes every trade across all of
-              Canton's liquidity for the best price, then settles it in one
-              atomic, private transaction.
+              The open, neutral layer that routes every trade across Canton's
+              liquidity for the best price, then settles in one atomic, private
+              transaction.
             </p>
 
             <div class="hero__cta" data-anim>
@@ -58,15 +57,7 @@ import { REPO, SPEC } from '../site.ts';
               >
             </div>
 
-            <!-- Compact best-route readout - shown only below 1024px, where the
-                 full constellation is hidden. Sits clearly below the CTAs. -->
-            <div class="hero__chip" data-anim>
-              <span class="hero__chip-node" aria-hidden="true"></span>
-              <span class="hero__chip-venue">OneSwap</span>
-              <span class="hero__chip-edge mono"
-                ><b>+47.8</b> bps best route</span
-              >
-            </div>
+            <HeroProof class="hero__proof" data-anim />
           </div>
         </div>
       </div>
@@ -120,58 +111,64 @@ import { REPO, SPEC } from '../site.ts';
   .hero__panel {
     position: relative;
     overflow: hidden;
-    min-height: clamp(520px, 92vw, 640px);
     background: var(--bg);
     border: 1px solid var(--line);
     border-radius: var(--panel-radius);
     box-shadow: var(--card-inset), var(--card-shadow);
-    display: grid;
-    place-items: center;
-  }
-  /* Desktop: lock the panel to the constellation viewBox aspect (1440:856) so
-     the fixed-viewBox SVG maps 1:1 - no non-uniform stretch, line ends meet node
-     centres (Fix 6). */
-  @media (min-width: 1024px) {
-    .hero__panel {
-      min-height: 0;
-      aspect-ratio: 1440 / 856;
-    }
+    padding: clamp(64px, 9vw, 132px) var(--gutter);
+    display: flex;
+    justify-content: center;
   }
 
-  .hero__content {
+  /* One subtle ambient treatment: a soft cool highlight at top-center over a
+     fainter ember wash, fading into the canvas. No arcs, nothing crosses type. */
+  .hero__ambient {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        56% 40% at 50% -8%,
+        rgba(241, 239, 234, 0.09),
+        transparent 60%
+      ),
+      radial-gradient(38% 32% at 50% -2%, var(--ember-glow), transparent 66%);
+  }
+
+  .hero__spine {
     position: relative;
-    z-index: 3;
+    z-index: 1;
+    width: 100%;
+    max-width: 760px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 22px;
-    max-width: 660px;
-    padding: 40px var(--gutter);
+    gap: 26px;
   }
 
   .hero__headline {
     display: flex;
     flex-direction: column;
-    font-size: clamp(34px, 6.2vw, 80px);
-    line-height: 0.97;
-    letter-spacing: -0.035em;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(3rem, 6.5vw, 6rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
   }
   .hero__line {
     white-space: nowrap;
   }
-  .hero__line--muted {
+  /* Line 2: a deliberate display grey, distinct from the lighter subhead grey. */
+  .hero__line--2 {
     color: var(--ink-display-muted);
-  }
-  @media (max-width: 460px) {
-    .hero__line {
-      white-space: normal;
-    }
   }
 
   .hero__sub {
-    max-width: 560px;
-    font-size: clamp(16px, 2.2vw, 19px);
+    max-width: 640px;
+    font-family: var(--font-ui);
+    font-weight: 400;
+    font-size: clamp(1.0625rem, 1.4vw, 1.25rem);
     line-height: 1.5;
     color: var(--ink-2);
   }
@@ -180,59 +177,57 @@ import { REPO, SPEC } from '../site.ts';
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
-    margin-top: 6px;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  /* Size the shared Button up for the hero without touching the component. */
+  .hero__cta :global(.btn) {
+    padding: 15px 26px;
+    font-size: 15px;
   }
 
-  /* Compact best-route readout (mobile/tablet only) */
-  .hero__chip {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    padding: 9px 14px;
-    background: linear-gradient(
-      180deg,
-      rgba(25, 26, 30, 0.9),
-      rgba(11, 11, 13, 0.92)
-    );
-    border: 1px solid rgba(255, 106, 61, 0.3);
-    border-radius: var(--r-sm);
-    box-shadow: 0 0 24px -10px var(--ember-glow);
+  /* The proof is clearly separated and subordinate, well below the CTAs. */
+  .hero__proof {
+    margin-top: clamp(56px, 7vw, 88px);
   }
-  .hero__chip-node {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--ember);
-    box-shadow:
-      0 0 0 3px var(--ember-glow),
-      0 0 10px 0 var(--ember-soft);
-    flex: none;
-  }
-  .hero__chip-venue {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--ink);
-  }
-  .hero__chip-edge {
-    font-size: 12px;
-    color: var(--ink-3);
-  }
-  .hero__chip-edge b {
-    font-weight: 500;
-    color: var(--ember);
-  }
-  @media (max-width: 1023px) {
-    .hero__chip {
-      display: inline-flex;
+
+  @media (max-width: 560px) {
+    .hero__line {
+      white-space: normal;
     }
+  }
+
+  /* Entrance: pure-CSS staggered fade-up under the existing .is-animatable
+     guard. With reduced motion the class is never added (Base.astro), so the
+     final state renders immediately. */
+  @keyframes heroFadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  :global(html.is-animatable) .hero :global([data-anim]) {
+    animation: heroFadeUp 0.55s var(--e-out) both;
+  }
+  :global(html.is-animatable) .hero__headline {
+    animation-delay: 0.07s;
+  }
+  :global(html.is-animatable) .hero__sub {
+    animation-delay: 0.14s;
+  }
+  :global(html.is-animatable) .hero__cta {
+    animation-delay: 0.21s;
+  }
+  :global(html.is-animatable) .hero__proof {
+    animation-delay: 0.28s;
   }
 </style>
 
 <script>
-  import '../scripts/hero.ts';
   import '../scripts/orbital.ts';
   import '../scripts/proof.ts';
   import '../scripts/reveal.ts';

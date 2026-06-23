@@ -115,13 +115,11 @@ h3 {
 }
 
 /* Progressive enhancement (DESIGN.md §9): content is visible by DEFAULT.
-   The hidden pre-animation state applies ONLY under `.is-animatable`, which
-   hero.ts adds to the hero root after confirming GSAP is present and motion is
-   allowed. It animates to visible then clearProps + removes the class, so no
-   content is ever hidden behind JS that may not run. No first-paint flash:
-   the class is also set pre-paint by a guarded inline snippet in <head>. */
-/* Opacity-only hide (transform is animated per-element by hero.ts so it never
-   clobbers a positioning transform like the constellation nodes' translate). */
+   The hidden pre-animation state applies ONLY under `.is-animatable`, which a
+   guarded inline snippet in <head> (Base.astro) sets pre-paint, but only when
+   motion is allowed, and removes shortly after. So no content is ever hidden
+   behind JS that may not run, and there is no first-paint flash. The hero
+   animates its [data-anim] items in with CSS under this class. */
 .is-animatable [data-anim] {
   opacity: 0;
 }

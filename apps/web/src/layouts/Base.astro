@@ -22,10 +22,11 @@ const {
 // Absolute URL for the social card (OG/Twitter require absolute image URLs).
 const ogImage = new URL('/og.png', canonical).href;
 
-// Hero faces to preload (STACK.md / FONTS): Mona Sans 600 + Geist 400/500 +
-// Geist Mono 400/500.
+// Hero faces to preload (STACK.md / FONTS): Mona Sans 600 + 700 (the hero
+// headline / LCP element) + Geist 400/500 + Geist Mono 400/500.
 const preloadFonts = [
   'MonaSans-600.woff2',
+  'MonaSans-700.woff2',
   'Geist-Regular.woff2',
   'Geist-Medium.woff2',
   'GeistMono-Regular.woff2',
