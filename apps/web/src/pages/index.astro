@@ -30,9 +30,10 @@ import {
 
 // Hero proof panel: reads the canonical market (src/data/market.ts) so it can
 // never disagree with the Problem and How-it-works sections. The strip shows the
-// top four venues (winner first); RECEIVE and EDGE are derived, and the live
-// tick below recomputes them from drifting quotes. The headline metric is the
-// edge over the next best venue.
+// top four venues (winner first); RECEIVE and EDGE are derived. The panel is
+// static (no live tick) so the displayed quotes, the winner, RECEIVE, and the
+// edge are always mutually consistent. The headline metric is the edge over the
+// next best venue.
 const PANEL_VENUES = ranked.slice(0, 4);
 const metricLabel = 'Edge vs next';
 const metricBps = edgeVsNextBps;
@@ -497,83 +498,51 @@ const metricBps = edgeVsNextBps;
 </style>
 
 <script>
-  import { SELL_CC, QUOTE, fmtAmount } from '../data/market.ts';
   // Scroll-expand: map scroll progress across the pinned stage to the card's
   // padding (22 -> 0) and corner radius (28 -> 0), finishing at 72% of the
   // range. rAF + passive listener; the only per-frame layout is the card box
   // inside the pinned viewport (content is centered, so it does not reflow).
-  // The proof quotes tick by tiny amounts and RECEIVE + EDGE are recomputed from
-  // them each tick, so the panel stays internally consistent (the small drift
-  // preserves the descending order, so OneSwap stays the winner). Decorative,
-  // aria-hidden, and skipped entirely under prefers-reduced-motion.
+  // Decorative, and skipped entirely under prefers-reduced-motion.
+  //
+  // The proof panel itself is rendered server-side from the canonical market
+  // snapshot (src/data/market.ts) and is intentionally static. Any quote drift
+  // small enough to keep OneSwap the winner and the edge at ~+11.3 bps stays
+  // below the 5-decimal display precision, so a live tick would add reorder /
+  // inconsistency risk for no visible change; a correct static snapshot is
+  // preferred (winner OneSwap 0.15006, RECEIVE ~48,019, EDGE +11.3 bps).
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // The expand is a wider-screen flourish; on phones the hero is static (CSS).
   const wide = window.matchMedia('(min-width: 561px)').matches;
   const stage = document.querySelector<HTMLElement>('[data-stage]');
 
-  if (stage && !reduce) {
-    if (wide) {
-      const PAD = 22;
-      const RAD = 28;
-      const EXP = 0.72;
-      let ticking = false;
+  if (stage && !reduce && wide) {
+    const PAD = 22;
+    const RAD = 28;
+    const EXP = 0.72;
+    let ticking = false;
 
-      const update = (): void => {
-        ticking = false;
-        const top = stage.getBoundingClientRect().top;
-        const total = stage.offsetHeight - window.innerHeight;
-        const p = total > 0 ? Math.min(Math.max(-top, 0), total) / total : 0;
-        const e = Math.min(p / EXP, 1);
-        stage.style.setProperty(
-          '--hero-pad',
-          (PAD * (1 - e)).toFixed(2) + 'px',
-        );
-        stage.style.setProperty(
-          '--hero-rad',
-          (RAD * (1 - e)).toFixed(2) + 'px',
-        );
-      };
+    const update = (): void => {
+      ticking = false;
+      const top = stage.getBoundingClientRect().top;
+      const total = stage.offsetHeight - window.innerHeight;
+      const p = total > 0 ? Math.min(Math.max(-top, 0), total) / total : 0;
+      const e = Math.min(p / EXP, 1);
+      stage.style.setProperty('--hero-pad', (PAD * (1 - e)).toFixed(2) + 'px');
+      stage.style.setProperty('--hero-rad', (RAD * (1 - e)).toFixed(2) + 'px');
+    };
 
-      window.addEventListener(
-        'scroll',
-        () => {
-          if (!ticking) {
-            window.requestAnimationFrame(update);
-            ticking = true;
-          }
-        },
-        { passive: true },
-      );
-      window.addEventListener('resize', update);
-      update();
-    }
-
-    // Live tick: drift quotes by a tiny amount that preserves their descending
-    // order (so OneSwap stays highest), then recompute RECEIVE and EDGE from the
-    // live values. Quotes never drift while the results stay static.
-    const cells = Array.from(
-      document.querySelectorAll<HTMLElement>('.proof__qp'),
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!ticking) {
+          window.requestAnimationFrame(update);
+          ticking = true;
+        }
+      },
+      { passive: true },
     );
-    const bases = cells.map((el) => parseFloat(el.dataset.base || '0'));
-    const receiveEl = document.querySelector<HTMLElement>('[data-receive]');
-    const edgeEl = document.querySelector<HTMLElement>('[data-edge]');
-
-    window.setInterval(() => {
-      const vals = bases.map((b) => b + (Math.random() - 0.5) * 0.04);
-      vals.forEach((v, i) => {
-        const el = cells[i];
-        if (el) el.textContent = v.toFixed(2);
-      });
-      const top = vals[0];
-      const next = vals[1];
-      if (top === undefined || next === undefined) return;
-      if (receiveEl)
-        receiveEl.textContent = fmtAmount(SELL_CC * top) + ' ' + QUOTE;
-      if (edgeEl) {
-        const edge = ((top - next) / next) * 1e4;
-        edgeEl.textContent = '+' + edge.toFixed(1) + ' bps';
-      }
-    }, 2600);
+    window.addEventListener('resize', update);
+    update();
   }
 </script>
 
