@@ -1,13 +1,17 @@
 /**
  * Canonical demo market: the SINGLE source of truth for the landing-page venue
- * data. The hero proof panel, the Problem price ladder, and the How-it-works
- * radar all read from here, so they can never disagree. Every derived figure
- * (best, spread, edge, per-venue gap) is computed in code, never hardcoded, so
- * the numbers are always internally consistent.
+ * data. Every section (hero panel, Problem ladder, How-it-works radar, Privacy
+ * legs, the settlement / split cards) reads from here, so the numbers can never
+ * disagree. Everything is DERIVED in code from one price anchor, never hardcoded.
  *
- * Scenario: sell 320 CC into CC -> USDCx. Five venues quote USDCx per CC.
- * OneSwap is the best quote, so it is the winning route. The spread (best to
- * worst) is ~39 bps; the edge over the next best is ~11 bps. Both hold together.
+ * Price scale: 1 CC = 0.15 USDCx. CC trades around fifteen cents, NOT ~$125, so
+ * all quotes sit near 0.15 and every amount derives from ANCHOR_PRICE.
+ *
+ * Two order snapshots share the same venues/prices:
+ *  - SMALL (hero panel + Problem): sell 320,000 CC; the whole order routes to the
+ *    best quote (OneSwap). Edge over the next best venue is ~11.3 bps.
+ *  - LARGE (Privacy + split / atomic sections): sell 250,000 CC; depth-aware
+ *    split across all five venues, settled as one atomic transaction.
  */
 
 export interface Venue {
@@ -21,26 +25,25 @@ export const PAIR = 'CC / USDCx';
 export const BASE = 'CC';
 export const QUOTE = 'USDCx';
 
-/** How much CC the demo taker is selling. */
-export const SELL_CC = 320;
+/** The price anchor: 1 CC = 0.15 USDCx. All quotes cluster around this. */
+export const ANCHOR_PRICE = 0.15; // USDCx per CC (1 CC = $0.15)
 
 /**
- * The five venue quotes (USDCx per CC). Order here is the canonical display
- * order (best to worst), but every derivation below sorts defensively so a
- * reorder can never break the winner/derived values.
+ * The five venue quotes (USDCx per CC), near the anchor. Listed best-first, but
+ * every derivation sorts defensively so a reorder can never change the winner.
  */
 export const venues: Venue[] = [
-  { name: 'OneSwap', price: 125.0 },
-  { name: 'CantonSwap', price: 124.86 },
-  { name: 'Cantex', price: 124.74 },
-  { name: 'CompassSwap', price: 124.6 },
-  { name: 'RFQ desk', price: 124.51 },
+  { name: 'OneSwap', price: 0.15006 },
+  { name: 'CantonSwap', price: 0.14989 },
+  { name: 'Cantex', price: 0.14975 },
+  { name: 'CompassSwap', price: 0.14958 },
+  { name: 'RFQ desk', price: 0.14948 },
 ];
 
 /** Typed indexed access (noUncheckedIndexedAccess-safe), throws if out of range. */
-function at(list: Venue[], i: number): Venue {
+function at<T>(list: T[], i: number): T {
   const v = list[i];
-  if (!v) throw new Error(`market: venue index ${i} out of range`);
+  if (v === undefined) throw new Error(`market: index ${i} out of range`);
   return v;
 }
 
@@ -58,9 +61,6 @@ export const median: Venue = at(
   byPriceDesc,
   Math.floor(byPriceDesc.length / 2),
 );
-
-/** What the taker receives by routing the whole order to the best quote. */
-export const receiveUSDCx = SELL_CC * best.price;
 
 const bps = (a: number, b: number): number => ((a - b) / b) * 1e4;
 
@@ -82,11 +82,69 @@ export const pricePosition = (price: number): number =>
 
 export const isBest = (v: Venue): boolean => v.name === best.name;
 
-// ---- Centralized number formatting ---------------------------------------
-/** Price, always 2 decimals. */
-export const fmtPrice = (n: number): string => n.toFixed(2);
+// ---- SMALL order snapshot (hero panel + Problem) --------------------------
+/** Taker sells this much CC; the whole order routes to the best quote. */
+export const SELL_CC = 320_000;
+/** What the taker receives routing the whole small order to the best quote. */
+export const receiveUSDCx = SELL_CC * best.price;
+
+// ---- LARGE order snapshot (Privacy + split / atomic sections) -------------
+/** Taker sells this much CC; depth-aware split across all five venues. */
+export const LARGE_SELL_CC = 250_000;
+
+/** Depth-aware allocation per venue (fractions, sum to 1), best venue largest. */
+const ALLOC: Record<string, number> = {
+  OneSwap: 0.33,
+  CantonSwap: 0.27,
+  Cantex: 0.2,
+  CompassSwap: 0.13,
+  'RFQ desk': 0.07,
+};
+
+export interface Leg {
+  name: string;
+  price: number;
+  /** Allocation fraction (0..1). */
+  alloc: number;
+  /** Allocation as a percentage (0..100). */
+  sharePct: number;
+  /** CC routed to this venue. */
+  inCC: number;
+  /** USDCx received from this leg. */
+  outUSDCx: number;
+  best: boolean;
+}
+
+/** Per-venue legs for the large order, ranked best-first. */
+export const legs: Leg[] = ranked.map((v) => {
+  const alloc = ALLOC[v.name] ?? 0;
+  const inCC = alloc * LARGE_SELL_CC;
+  return {
+    name: v.name,
+    price: v.price,
+    alloc,
+    sharePct: alloc * 100,
+    inCC,
+    outUSDCx: inCC * v.price,
+    best: isBest(v),
+  };
+});
+
+/** Total USDCx received across all legs of the large order. */
+export const largeTotalOut = legs.reduce((s, l) => s + l.outUSDCx, 0);
+/** Effective blended price of the large routed order (USDCx per CC). */
+export const largeBlendedPrice = largeTotalOut / LARGE_SELL_CC;
+/** The winner's leg in the large order. */
+export const bestLeg: Leg = at(
+  legs.filter((l) => l.best),
+  0,
+);
+
+// ---- Centralized number formatting ----------------------------------------
+/** Price near the anchor, 5 decimals as quoted (e.g. 0.15006). */
+export const fmtPrice = (n: number): string => n.toFixed(5);
 /** Basis points, 1 decimal by default (0 for compact spoke labels). */
 export const fmtBps = (n: number, dp = 1): string => n.toFixed(dp);
-/** Whole amounts with thousands separators. */
+/** Whole amounts with thousands separators (e.g. 37,462). */
 export const fmtAmount = (n: number): string =>
   n.toLocaleString('en-US', { maximumFractionDigits: 0 });

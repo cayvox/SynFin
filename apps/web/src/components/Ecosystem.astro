@@ -11,6 +11,7 @@ import Eyebrow from './Eyebrow.astro';
 const cards = [
   {
     icon: 'venue',
+    tag: 'one adapter',
     title: 'Venues',
     body: [
       { t: 'Implement ', em: false },
@@ -24,6 +25,7 @@ const cards = [
   },
   {
     icon: 'wallet',
+    tag: 'one SDK',
     title: 'Wallets & apps',
     body: [
       { t: 'One SDK', em: true },
@@ -36,6 +38,7 @@ const cards = [
   },
   {
     icon: 'institution',
+    tag: 'provable best-ex',
     title: 'Institutions',
     body: [
       { t: 'Best execution', em: true },
@@ -61,7 +64,7 @@ const cards = [
 
     <div class="eco__grid">
       {
-        cards.map((c, i) => (
+        cards.map((c) => (
           <article class="eco-card card" data-reveal>
             <div class="eco-card__top">
               <span class="eco-card__icon" aria-hidden="true">
@@ -69,23 +72,30 @@ const cards = [
                   {c.icon === 'venue' && (
                     <>
                       <path
-                        d="M4 20V7l6-3 6 3v13"
+                        d="M4 9h13"
                         stroke="currentColor"
                         stroke-width="1.4"
-                        stroke-linejoin="round"
+                        stroke-linecap="round"
                       />
                       <path
-                        d="M16 20V10l4 2v8M3 20h18"
+                        d="M14 6l3 3-3 3"
                         stroke="currentColor"
                         stroke-width="1.4"
                         stroke-linecap="round"
                         stroke-linejoin="round"
                       />
                       <path
-                        d="M8.5 11h3M8.5 14.5h3"
+                        d="M20 15H7"
                         stroke="currentColor"
                         stroke-width="1.4"
                         stroke-linecap="round"
+                      />
+                      <path
+                        d="M10 12l-3 3 3 3"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
                       />
                     </>
                   )}
@@ -133,9 +143,7 @@ const cards = [
                   )}
                 </svg>
               </span>
-              <span class="eco-card__index mono">
-                {String(i + 1).padStart(2, '0')}
-              </span>
+              <span class="eco-card__tag mono">{c.tag}</span>
             </div>
             <h3 class="eco-card__title">{c.title}</h3>
             <p class="eco-card__body">
@@ -212,10 +220,17 @@ const cards = [
     align-items: center;
     justify-content: space-between;
   }
-  .eco-card__index {
-    font-size: 12px;
-    letter-spacing: 0.12em;
-    color: var(--ink-3);
+  /* Per-audience motif tag (its value prop), so each card reads distinct rather
+     than a generic numbered grid. */
+  .eco-card__tag {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ember-tx);
+    border: 1px solid rgba(255, 106, 61, 0.32);
+    border-radius: var(--r-pill);
+    padding: 4px 10px;
+    white-space: nowrap;
   }
   .eco-card__icon {
     width: 44px;

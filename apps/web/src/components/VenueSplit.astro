@@ -1,23 +1,30 @@
 ---
 /**
- * VenueSplit (CONTENT.md §4) - a small, refined stacked bar of the 46/33/21
- * split across CantonSwap / OneSwap / RFQ desk. Warm-white segments (graded
- * --ink ramp), a single ember dot marking the best leg; mono labels. Thin and
- * editorial - not a generic dashboard chart.
+ * VenueSplit (CONTENT.md §4) - a small, refined stacked bar of the large-order
+ * split across all five venues, read from src/data/market.ts so it can never
+ * disagree with the rest of the page. Warm-white segments (graded --ink ramp),
+ * a single ember dot on the best leg; mono labels. Editorial, not a dashboard.
  */
-const segs = [
-  { name: 'CantonSwap', pct: 46, tone: 'var(--ink)', best: true },
-  { name: 'OneSwap', pct: 33, tone: 'var(--ink-2)', best: false },
-  { name: 'RFQ desk', pct: 21, tone: 'var(--ink-3)', best: false },
+import { legs } from '../data/market.ts';
+
+const tones = [
+  'var(--ink)',
+  'var(--ink-2)',
+  'var(--ink-3)',
+  'var(--ink-3)',
+  'var(--ink-3)',
 ];
+const segs = legs.map((l, i) => ({
+  name: l.name,
+  pct: Math.round(l.sharePct),
+  tone: tones[i] ?? 'var(--ink-3)',
+  best: l.best,
+}));
+const ariaLabel = `Split: ${segs.map((s) => `${s.name} ${s.pct}%`).join(', ')}`;
 ---
 
 <div class="vs">
-  <div
-    class="vs__bar"
-    role="img"
-    aria-label="Split: CantonSwap 46%, OneSwap 33%, RFQ desk 21%"
-  >
+  <div class="vs__bar" role="img" aria-label={ariaLabel}>
     {
       segs.map((s) => (
         <span class="vs__seg" style={`width:${s.pct}%;background:${s.tone}`} />

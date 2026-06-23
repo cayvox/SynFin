@@ -10,7 +10,7 @@
  *   - `isAtomicRoute(plan, quotes)` + types `SwapIntent`/`Quote`/`AssetId` from
  *     `@synfin/spec`.
  * There is no `synfin.route()` facade and no literal `edge`/`atomic` fields, so
- * the two payoff values are the DERIVED edge (+47.8 bps, illustrative) and
+ * the two payoff values are the DERIVED edge (illustrative, from market.ts) and
  * `isAtomicRoute(...) === true`. Output values are framed as illustrative
  * example output (never live/measured). Highlight is restrained: ink/ink-2 with
  * keywords+comments in ink-3 and EMBER only on the two payoff values.
@@ -21,6 +21,23 @@
  * matches what's shown; with no JS the <pre> stays selectable/readable.
  */
 import Eyebrow from './Eyebrow.astro';
+import {
+  LARGE_SELL_CC,
+  largeTotalOut,
+  edgeVsNextBps,
+  legs,
+  fmtBps,
+} from '../data/market.ts';
+
+// Derived from the canonical large-order snapshot so the example never drifts.
+const sell = String(LARGE_SELL_CC);
+const total = String(Math.round(largeTotalOut));
+const minReceive = String(Math.floor(largeTotalOut / 1000) * 1000);
+const edge = fmtBps(edgeVsNextBps);
+const splitComment = legs
+  .slice(0, 3)
+  .map((l) => `${l.name} ${Math.round(l.sharePct)}%`)
+  .join(', ');
 
 const ticks = [
   { b: 'One call', t: ': quote, route, settle.' },
@@ -39,8 +56,8 @@ const codeHtml = `<span class="k">import</span> { route } <span class="k">from</
 <span class="k">const</span> intent: SwapIntent = {
   intentId: <span class="s">'demo-1'</span>,
   taker: <span class="s">'alice::canton'</span>,
-  give: { asset: CC, amount: <span class="s">'250000'</span> },
-  want: { asset: USDCx, minReceive: <span class="s">'39800'</span> },
+  give: { asset: CC, amount: <span class="s">'${sell}'</span> },
+  want: { asset: USDCx, minReceive: <span class="s">'${minReceive}'</span> },
   maxSlippageBps: <span class="n">30</span>,
   deadline: <span class="s">'2026-01-01T00:00:00Z'</span>,
 };
@@ -52,8 +69,8 @@ const codeHtml = `<span class="k">import</span> { route } <span class="k">from</
 <span class="k">if</span> (!result.ok) <span class="k">throw new</span> <span class="f">Error</span>(result.reason);
 
 <span class="k">const</span> { plan } = result;
-plan.legs;             <span class="c">// CantonSwap 46% · OneSwap 33% · RFQ desk 21%</span>
-plan.aggregateReceive; <span class="c">// '39940', +<span class="e">47.8</span> bps vs the best single venue</span>
+plan.legs;             <span class="c">// ${splitComment}</span>
+plan.aggregateReceive; <span class="c">// '${total}', +<span class="e">${edge}</span> bps best quote</span>
 <span class="f">isAtomicRoute</span>(plan, quotes); <span class="c">// → <span class="e">true</span> · atomic settlement via CIP-0056 / 0112</span>`;
 ---
 

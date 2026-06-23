@@ -56,7 +56,7 @@ synfin/
 
 ### Technology choices (see ADRs for rationale)
 
-- **On‑ledger:** Daml (Canton's smart‑contract language); builds on the CIP‑0056 Token Standard interfaces.
+- **On‑ledger:** Daml (Canton's smart‑contract language); builds on the CIP‑0056 Token Standard interfaces, and tracks CIP‑0112 (Token Standard V2, the successor to CIP‑0056) as it rolls out across the network.
 - **Off‑ledger:** TypeScript (Node >= 20) for adapters, SDK and UI. `pnpm` workspaces monorepo.
 - **Schemas:** JSON Schema is the source of truth for off‑ledger wire types; TypeScript types are generated from it. Venue HTTP quote APIs are described with OpenAPI, mirroring CIP‑0056's "Daml interface + OpenAPI" convention.
 - **UI:** a thin reference app; no business logic that belongs in the SDK.
