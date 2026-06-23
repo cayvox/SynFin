@@ -23,6 +23,9 @@
      needs only 3:1, which the original #6f6c64 meets (3.84:1), so the intended
      deep tonal dimness is preserved. Never use on text below the large threshold. */
   --ink-display-muted: #6f6c64;
+  /* Hero headline second display line only (mockup source of truth): a lighter
+     warm display grey than --ink-display-muted. Do not reuse elsewhere. */
+  --ink-display-2: #897f77;
 
   /* §1 Lines - hairline light */
   --line: rgba(241, 239, 234, 0.1);
@@ -32,6 +35,10 @@
   /* §1 Accent - ember (the ONLY accent) */
   --ember: #ff6a3d;
   --ember-hi: #ff8a5c; /* hover / line terminus */
+  /* Legible ember for small text on the near-black surface (pill, winner quote,
+     +bps, eyebrow rule): #ff6a3d reads muddy at 11-13px, so this lighter variant
+     is used for small ember type. Per the approved mockup. */
+  --ember-tx: #ff7e52;
   --ember-soft: rgba(255, 106, 61, 0.55);
   --ember-glow: rgba(255, 106, 61, 0.16);
 
