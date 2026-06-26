@@ -3,10 +3,10 @@
  * (ADR-0005; SPEC §5).
  *
  * - `MockVenueAdapter` — deterministic in-memory venue for development/tests.
- * - `CantonSwapAdapter`, `OneSwapAdapter` — **real** quote adapters for the
- *   Mode B (`managed-deposit`) Canton venues (ADR-0009; RFC-0004). Quote layer
- *   only — no settlement/deposit. Each separates an injectable HTTP `Fetcher`
- *   from a pure, deterministic normalizer.
+ * - `CantonSwapAdapter`, `OneSwapAdapter`, `TradecraftAdapter`: **real** quote
+ *   adapters for the Mode B (`managed-deposit`) Canton venues (ADR-0009;
+ *   RFC-0004). Quote layer only, no settlement/deposit. Each separates an
+ *   injectable HTTP `Fetcher` from a pure, deterministic normalizer.
  */
 export { MockVenueAdapter } from './mock-venue-adapter.js';
 export type { MockVenueConfig, MockPair } from './mock-venue-adapter.js';
@@ -28,3 +28,12 @@ export type {
   OneSwapConfig,
   OneSwapNormalizeContext,
 } from './oneswap-adapter.js';
+
+export {
+  TradecraftAdapter,
+  normalizeTradecraftQuote,
+} from './tradecraft-adapter.js';
+export type {
+  TradecraftConfig,
+  TradecraftNormalizeContext,
+} from './tradecraft-adapter.js';
