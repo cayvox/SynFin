@@ -48,3 +48,21 @@ and may reject them.
 | --- | --- | --- |
 | `quote-amulet-usdcx-100.json` | A `Quote` for 100 CC → USDCx. | **Constructed** from the verbatim documented `Quote` TypeScript interface (docs.oneswap.cc/reference/types, 2026-06-18); no live capture was possible without an API key. Token decimals (CC/Amulet = 10, USDCx = 6) cross-referenced from CantonSwap's live `tokens.json` (same Canton-native instruments). |
 | `quote-blocked.json` | A `Quote` whose `settlementSafety` is non-null. | **Constructed** from the documented type to drive the `settlement_blocked` rejection test. |
+
+## Tradecraft: `tradecraft/`
+
+- **Base URL:** `https://api.tradecraft.fi/v1`
+- **Docs:** <https://docs.tradecraft.fi>
+- **Quote mechanism:** `GET /quoteForFixedInput/{tokenA}/{tokenB}?givingAmount=X` (tokenA = give,
+  tokenB = want; the path segments are Tradecraft **symbols**, e.g. `CC`, not the SQSS
+  `instrumentId` `Amulet`) returns `{ user_gets: number }`, already net of the double-sided
+  constant-product fees. No API key, no auth. Read-only and fundless. Settlement (out of scope
+  here) is a deposit to a Pool Address: Mode B (`managed-deposit`).
+- **Firmness:** indicative. The response is explicitly an ESTIMATE (the on-chain trade only starts
+  after the taker deposits, so the realized price can drift) and carries no validity field, so the
+  adapter applies a conservative 30s TTL.
+
+| File | What it is | Provenance |
+| --- | --- | --- |
+| `quote-cc-usdcx-100.json` | `{ user_gets }` for 100 CC → USDCx. | **Real live capture, 2026-06-26** from `GET https://api.tradecraft.fi/v1/quoteForFixedInput/CC/USDCx?givingAmount=100`. |
+| `error-amm-not-found.json` | The venue's `{ error }` body for an unknown pair. | **Real live capture, 2026-06-26** from `GET .../quoteForFixedInput/CC/NOPE?givingAmount=100` (HTTP 400). Drives the `venue_error` and `invalid_request` rejection tests. |
