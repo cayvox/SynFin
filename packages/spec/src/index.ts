@@ -40,6 +40,7 @@ export type { TimeOptions } from './validation/validators.js';
 // Cross-field constraint predicates (SPEC §4.4).
 export {
   assetEquals,
+  computeWorstCaseReceiveNet,
   checkConservation,
   checkWorstCaseFloor,
   checkSlippageBound,
@@ -47,11 +48,13 @@ export {
   checkQuoteLinkage,
   checkNoOverstatement,
   checkAggregateConsistency,
+  checkNetConsistency,
   checkRoutePlan,
   compareByWorstCase,
   isAtomicRoute,
   checkAtomicallySettleable,
 } from './constraints.js';
+export type { NetValueResult } from './constraints.js';
 
 // The three ports (ADR-0005).
 export type {

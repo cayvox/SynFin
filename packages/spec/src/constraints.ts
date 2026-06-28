@@ -57,6 +57,55 @@ function parseAmount(
   return parsed;
 }
 
+/** Result of {@link computeWorstCaseReceiveNet}. */
+export type NetValueResult =
+  | { readonly ok: true; readonly value: Decimal }
+  | { readonly ok: false; readonly reason: 'unsupported_fee_asset' };
+
+/**
+ * Pure, total net-value helper (RFC-0005 §3). Re-bases the gross worst-case
+ * receipt to the taker's worst-case NET value, in the receive asset, per the
+ * intent's give, after charging the plan's network fee.
+ *
+ * - No fee (absent or zero amount): the net equals the gross.
+ * - Fee in the give asset: `gross * give / (give + fee)`, floored to the receive
+ *   asset's precision. This re-bases the receipt to "received per unit of total
+ *   give-asset outlay", which is exact (no rate conversion) and taker-favorable.
+ *   It mirrors the router's `buildLeg` `mul(...).divide(..., scale, 'floor')`
+ *   pattern.
+ * - Fee in the receive asset: `gross - fee` (already at receive precision; may be
+ *   non-positive, which the caller decides how to handle).
+ * - Fee in a third asset: not valued here (RFC-0005 §2 restricts the asset to the
+ *   give or receive asset); returns `{ ok: false, reason: 'unsupported_fee_asset' }`.
+ *
+ * Inputs are {@link Decimal} so the function stays pure: call sites parse the
+ * wire strings first.
+ */
+export function computeWorstCaseReceiveNet(
+  grossWorstCase: Decimal,
+  give: { asset: AssetId; amount: Decimal },
+  receiveAsset: AssetId,
+  networkFee?: { asset: AssetId; amount: Decimal },
+): NetValueResult {
+  if (networkFee === undefined || networkFee.amount.isZero()) {
+    return { ok: true, value: grossWorstCase };
+  }
+  if (assetEquals(networkFee.asset, give.asset)) {
+    const value = grossWorstCase
+      .mul(give.amount)
+      .divide(
+        give.amount.add(networkFee.amount),
+        receiveAsset.decimals,
+        'floor',
+      );
+    return { ok: true, value };
+  }
+  if (assetEquals(networkFee.asset, receiveAsset)) {
+    return { ok: true, value: grossWorstCase.sub(networkFee.amount) };
+  }
+  return { ok: false, reason: 'unsupported_fee_asset' };
+}
+
 /** Σ legs[].give.amount MUST equal intent.give.amount, all in the give asset. */
 export function checkConservation(
   plan: RoutePlan,
@@ -180,6 +229,11 @@ export function checkAggregateConsistency(plan: RoutePlan): ValidationError[] {
     errors,
   );
   const worst = parseAmount(plan.worstCaseReceive, '/worstCaseReceive', errors);
+  // Net never exceeds gross, since a network fee is non-negative (RFC-0005 §5).
+  const net =
+    plan.worstCaseReceiveNet !== undefined
+      ? parseAmount(plan.worstCaseReceiveNet, '/worstCaseReceiveNet', errors)
+      : null;
   if (errors.length > 0) return errors;
   if (aggregate!.gt(sumReceive)) {
     errors.push({
@@ -193,6 +247,13 @@ export function checkAggregateConsistency(plan: RoutePlan): ValidationError[] {
       code: 'worst_above_aggregate',
       message: 'worstCaseReceive exceeds aggregateReceive',
       path: '/worstCaseReceive',
+    });
+  }
+  if (net !== null && net.gt(worst!)) {
+    errors.push({
+      code: 'net_above_gross',
+      message: 'worstCaseReceiveNet exceeds worstCaseReceive',
+      path: '/worstCaseReceiveNet',
     });
   }
   return errors;
@@ -284,7 +345,138 @@ export function checkNoOverstatement(
         path: `/legs/${i}/receive/amount`,
       });
     }
+
+    // No-understatement of a disclosed cost (RFC-0005 §5). If the quote carries a
+    // networkFee, the leg may not hide or understate it.
+    const quoteFee = quote.networkFee;
+    if (quoteFee !== undefined) {
+      // The quote's fee MUST be in the quote's give or receive asset (RFC-0005 §2).
+      if (
+        !assetEquals(quoteFee.asset, quote.give.asset) &&
+        !assetEquals(quoteFee.asset, quote.receive.asset)
+      ) {
+        errors.push({
+          code: 'unsupported_fee_asset',
+          message:
+            'quote networkFee asset is neither the give nor the receive asset',
+          path: `/legs/${i}/quoteRef`,
+        });
+      }
+      const legFee = leg.networkFee;
+      if (legFee === undefined) {
+        errors.push({
+          code: 'fee_understated',
+          message: 'leg omits a networkFee that its quote declares',
+          path: `/legs/${i}/networkFee`,
+        });
+      } else if (!assetEquals(legFee.asset, quoteFee.asset)) {
+        errors.push({
+          code: 'fee_understated',
+          message:
+            'leg networkFee asset differs from the quote networkFee asset',
+          path: `/legs/${i}/networkFee/asset`,
+        });
+      } else {
+        const legFeeAmt = parseAmount(
+          legFee.amount,
+          `/legs/${i}/networkFee/amount`,
+          errors,
+        );
+        const quoteFeeAmt = parseAmount(
+          quoteFee.amount,
+          `/legs/${i}/quoteRef`,
+          errors,
+        );
+        if (
+          legFeeAmt !== null &&
+          quoteFeeAmt !== null &&
+          legFeeAmt.lt(quoteFeeAmt)
+        ) {
+          errors.push({
+            code: 'fee_understated',
+            message:
+              'leg networkFee is less than the referenced quote networkFee',
+            path: `/legs/${i}/networkFee/amount`,
+          });
+        }
+      }
+    }
   });
+  return errors;
+}
+
+/**
+ * Net-value consistency (RFC-0005 §3, §5). Recomputes the expected net via
+ * {@link computeWorstCaseReceiveNet} against the intent's give and verifies the
+ * plan's stated `worstCaseReceiveNet`:
+ *
+ * - If the plan's `networkFee` is in neither the give nor the receive asset, the
+ *   net cannot be valued: `unsupported_fee_asset`.
+ * - If the plan carries a network fee with a positive amount, `worstCaseReceiveNet`
+ *   MUST be present and exactly equal the computed value, else `net_mismatch`.
+ * - If the plan has no network fee (or a zero amount), a present `worstCaseReceiveNet`
+ *   MUST equal `worstCaseReceive` (the computed net equals the gross); an absent
+ *   one is read as equal to the gross, which is fine.
+ */
+export function checkNetConsistency(
+  plan: RoutePlan,
+  intent: SwapIntent,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const gross = parseAmount(plan.worstCaseReceive, '/worstCaseReceive', errors);
+  const give = parseAmount(intent.give.amount, '/give/amount', errors);
+  const fee = plan.networkFee;
+  const feeAmount =
+    fee !== undefined
+      ? parseAmount(fee.amount, '/networkFee/amount', errors)
+      : null;
+  if (gross === null || give === null) return errors;
+  if (fee !== undefined && feeAmount === null) return errors;
+
+  const computed = computeWorstCaseReceiveNet(
+    gross,
+    { asset: intent.give.asset, amount: give },
+    intent.want.asset,
+    fee !== undefined && feeAmount !== null
+      ? { asset: fee.asset, amount: feeAmount }
+      : undefined,
+  );
+  if (!computed.ok) {
+    errors.push({
+      code: 'unsupported_fee_asset',
+      message:
+        'plan networkFee asset is neither the give nor the receive asset',
+      path: '/networkFee/asset',
+    });
+    return errors;
+  }
+
+  const hasPositiveFee =
+    fee !== undefined && feeAmount !== null && feeAmount.isPositive();
+  if (hasPositiveFee && plan.worstCaseReceiveNet === undefined) {
+    errors.push({
+      code: 'net_mismatch',
+      message: 'plan carries a network fee but omits worstCaseReceiveNet',
+      path: '/worstCaseReceiveNet',
+    });
+    return errors;
+  }
+  if (plan.worstCaseReceiveNet !== undefined) {
+    const stated = parseAmount(
+      plan.worstCaseReceiveNet,
+      '/worstCaseReceiveNet',
+      errors,
+    );
+    // computed.value equals the gross when there is no fee, so this one check
+    // covers both the fee and the no-fee case.
+    if (stated !== null && !stated.eq(computed.value)) {
+      errors.push({
+        code: 'net_mismatch',
+        message: 'worstCaseReceiveNet does not equal the computed net value',
+        path: '/worstCaseReceiveNet',
+      });
+    }
+  }
   return errors;
 }
 
@@ -309,19 +501,23 @@ export function checkRoutePlan(
     ...checkQuoteLinkage(plan, quotes),
     ...checkNoOverstatement(plan, quotes, now),
     ...checkAggregateConsistency(plan),
+    ...checkNetConsistency(plan, intent),
   ];
   return errors.length > 0 ? err(errors) : ok(plan);
 }
 
 /**
- * Compare two plans by their worst-case receive (the taker's guaranteed floor).
+ * Compare two plans by the taker's worst-case NET value, the figure the router
+ * ranks on (RFC-0005 §3). Each plan ranks on `worstCaseReceiveNet` when present,
+ * otherwise on `worstCaseReceive` (an absent net reads as equal to the gross), so
+ * two plans with no network fee rank exactly as before (backward compatible).
  * Returns -1 if `a` is worse than `b`, 0 if equal, 1 if better. Used to express
  * the monotonicity property: a router given more/better quotes MUST NOT produce
  * a plan worse than a single-venue baseline (TESTING.md §2).
  */
 export function compareByWorstCase(a: RoutePlan, b: RoutePlan): -1 | 0 | 1 {
-  const aw = Decimal.parse(a.worstCaseReceive);
-  const bw = Decimal.parse(b.worstCaseReceive);
+  const aw = Decimal.parse(a.worstCaseReceiveNet ?? a.worstCaseReceive);
+  const bw = Decimal.parse(b.worstCaseReceiveNet ?? b.worstCaseReceive);
   if (aw === undefined || bw === undefined) {
     throw new Error(
       'compareByWorstCase: plans must have valid decimal receipts',

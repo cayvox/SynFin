@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import {
   assetEquals,
+  computeWorstCaseReceiveNet,
   checkAggregateConsistency,
   checkConservation,
+  checkNetConsistency,
   checkNoOverstatement,
   checkQuoteLinkage,
   checkRoutePlan,
@@ -13,6 +15,7 @@ import {
   compareByWorstCase,
   isAtomicRoute,
   checkAtomicallySettleable,
+  Decimal,
 } from '../src/index.js';
 import type { AssetId, RouteLeg, RoutePlan, SwapIntent } from '../src/index.js';
 import {
@@ -482,5 +485,250 @@ describe('property: monotonicity (TESTING.md §2)', () => {
         expect(compareByWorstCase(better, baseline)).not.toBe(-1);
       }),
     );
+  });
+});
+
+// ---- RFC-0005: network-fee transparency + net-value ranking ----------------
+
+const CC: AssetId = { registry: 'reg::cc', instrumentId: 'CC', decimals: 10 };
+const USDCx: AssetId = {
+  registry: 'reg::usdcx',
+  instrumentId: 'USDCx',
+  decimals: 6,
+};
+const D = (s: string): Decimal => Decimal.parse(s)!;
+const codes = (errs: { code: string }[]): string[] => errs.map((e) => e.code);
+
+/** A leg in the default USD -> BTC shape, optionally carrying a networkFee. */
+function legWithFee(fee?: { asset: AssetId; amount: string }): RouteLeg {
+  return {
+    venueId: 'venue-1',
+    give: { asset: USD, amount: '100.00' },
+    receive: { asset: BTC, amount: '0.00120000' },
+    quoteRef: 'quote-1',
+    ...(fee ? { networkFee: fee } : {}),
+  };
+}
+
+describe('computeWorstCaseReceiveNet (RFC-0005 §3)', () => {
+  it('re-bases a give-asset fee by total give outlay, floored taker-favorably', () => {
+    // RFC-0005 §3 formula: gross * give / (give + fee), floored to 6 dp.
+    // 15.2228400389 * 100 / 100.7948 = 15.102802... -> 15.102802.
+    const r = computeWorstCaseReceiveNet(
+      D('15.2228400389'),
+      { asset: CC, amount: D('100') },
+      USDCx,
+      { asset: CC, amount: D('0.7948') },
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.toString()).toBe('15.102802');
+  });
+
+  it('subtracts a receive-asset fee', () => {
+    const r = computeWorstCaseReceiveNet(
+      D('15.000000'),
+      { asset: CC, amount: D('100') },
+      USDCx,
+      { asset: USDCx, amount: D('0.5') },
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.toString()).toBe('14.500000');
+  });
+
+  it('returns the gross when the fee is absent or zero', () => {
+    const gross = D('15.000000');
+    const give = { asset: CC, amount: D('100') };
+    const noFee = computeWorstCaseReceiveNet(gross, give, USDCx);
+    const zeroFee = computeWorstCaseReceiveNet(gross, give, USDCx, {
+      asset: CC,
+      amount: D('0'),
+    });
+    expect(noFee.ok && noFee.value.eq(gross)).toBe(true);
+    expect(zeroFee.ok && zeroFee.value.eq(gross)).toBe(true);
+  });
+
+  it('rejects a third-asset fee (RFC-0005 §2)', () => {
+    const third: AssetId = {
+      registry: 'reg::eth',
+      instrumentId: 'ETH',
+      decimals: 18,
+    };
+    const r = computeWorstCaseReceiveNet(
+      D('15'),
+      { asset: CC, amount: D('100') },
+      USDCx,
+      { asset: third, amount: D('0.001') },
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('unsupported_fee_asset');
+  });
+
+  it('a give-asset net never overstates the gross (property)', () => {
+    const gross = D('15.000000');
+    fc.assert(
+      fc.property(fc.nat(1_000_000), fc.nat(1_000_000), (g, f) => {
+        const r = computeWorstCaseReceiveNet(
+          gross,
+          { asset: CC, amount: D(String(g + 1)) },
+          USDCx,
+          { asset: CC, amount: D(String(f)) },
+        );
+        expect(r.ok).toBe(true);
+        if (r.ok) expect(r.value.lte(gross)).toBe(true);
+      }),
+    );
+  });
+});
+
+describe('checkNoOverstatement: network-fee no-understatement (RFC-0005 §5)', () => {
+  it('flags a leg that omits a fee its quote declares (fee_understated)', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: USD, amount: '1.00' },
+      }),
+    ];
+    const errs = checkNoOverstatement(validRoutePlan(), quotes, NOW);
+    expect(codes(errs)).toContain('fee_understated');
+  });
+
+  it('flags a leg whose fee is below the quote fee (fee_understated)', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: USD, amount: '1.00' },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [legWithFee({ asset: USD, amount: '0.50' })],
+    });
+    expect(codes(checkNoOverstatement(plan, quotes, NOW))).toContain(
+      'fee_understated',
+    );
+  });
+
+  it('flags a leg whose fee is in a different asset than the quote fee (fee_understated)', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: USD, amount: '1.00' },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [legWithFee({ asset: BTC, amount: '1.00000000' })],
+    });
+    expect(codes(checkNoOverstatement(plan, quotes, NOW))).toContain(
+      'fee_understated',
+    );
+  });
+
+  it('accepts a leg whose fee matches the asset and meets the amount', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: USD, amount: '1.00' },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [legWithFee({ asset: USD, amount: '1.00' })],
+    });
+    expect(checkNoOverstatement(plan, quotes, NOW)).toEqual([]);
+  });
+
+  it('flags a quote fee in neither the give nor receive asset (unsupported_fee_asset)', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: CC, amount: '1' },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [legWithFee({ asset: CC, amount: '1' })],
+    });
+    expect(codes(checkNoOverstatement(plan, quotes, NOW))).toContain(
+      'unsupported_fee_asset',
+    );
+  });
+});
+
+describe('checkAggregateConsistency: net never exceeds gross (RFC-0005 §5)', () => {
+  it('flags worstCaseReceiveNet > worstCaseReceive (net_above_gross)', () => {
+    // The default gross is 0.00110000.
+    const plan = validRoutePlan({ worstCaseReceiveNet: '0.00120000' });
+    expect(codes(checkAggregateConsistency(plan))).toContain('net_above_gross');
+  });
+
+  it('accepts a net at or below the gross', () => {
+    const plan = validRoutePlan({ worstCaseReceiveNet: '0.00100000' });
+    expect(checkAggregateConsistency(plan)).toEqual([]);
+  });
+});
+
+describe('checkNetConsistency (RFC-0005 §3, §5)', () => {
+  const intent = validIntent(); // give USD 100.00, want BTC
+
+  it('accepts a give-asset fee with the correct worstCaseReceiveNet', () => {
+    const expected = computeWorstCaseReceiveNet(
+      D('0.00110000'),
+      { asset: USD, amount: D('100.00') },
+      BTC,
+      { asset: USD, amount: D('1.00') },
+    );
+    expect(expected.ok).toBe(true);
+    if (!expected.ok) return;
+    const plan = validRoutePlan({
+      networkFee: { asset: USD, amount: '1.00' },
+      worstCaseReceiveNet: expected.value.toString(),
+    });
+    expect(checkNetConsistency(plan, intent)).toEqual([]);
+  });
+
+  it('flags a wrong worstCaseReceiveNet (net_mismatch)', () => {
+    const plan = validRoutePlan({
+      networkFee: { asset: USD, amount: '1.00' },
+      worstCaseReceiveNet: '0.00110000', // equals gross, but a fee should lower it
+    });
+    expect(codes(checkNetConsistency(plan, intent))).toContain('net_mismatch');
+  });
+
+  it('flags a network fee with no worstCaseReceiveNet (net_mismatch)', () => {
+    const plan = validRoutePlan({ networkFee: { asset: USD, amount: '1.00' } });
+    expect(codes(checkNetConsistency(plan, intent))).toContain('net_mismatch');
+  });
+
+  it('flags a third-asset fee (unsupported_fee_asset)', () => {
+    const plan = validRoutePlan({
+      networkFee: { asset: CC, amount: '1' },
+      worstCaseReceiveNet: '0.00110000',
+    });
+    expect(codes(checkNetConsistency(plan, intent))).toContain(
+      'unsupported_fee_asset',
+    );
+  });
+
+  it('accepts a plan with no networkFee and no worstCaseReceiveNet', () => {
+    expect(checkNetConsistency(validRoutePlan(), intent)).toEqual([]);
+  });
+});
+
+describe('compareByWorstCase: net-value ranking (RFC-0005 §3)', () => {
+  it('ranks a higher-gross fee-bearing plan below a lower-gross fee-free plan when the net favors the latter', () => {
+    const feeBearing = validRoutePlan({
+      worstCaseReceive: '0.00120000',
+      networkFee: { asset: USD, amount: '5.00' },
+      worstCaseReceiveNet: '0.00100000',
+    });
+    const feeFree = validRoutePlan({ worstCaseReceive: '0.00110000' }); // no net field, ranks on gross
+    // Net: feeBearing 0.00100000 < feeFree 0.00110000, so feeBearing is worse.
+    expect(compareByWorstCase(feeBearing, feeFree)).toBe(-1);
+    expect(compareByWorstCase(feeFree, feeBearing)).toBe(1);
+  });
+
+  it('ranks two fee-free plans by gross exactly as before (backward compatible)', () => {
+    const lo = validRoutePlan({ worstCaseReceive: '0.00100000' });
+    const hi = validRoutePlan({ worstCaseReceive: '0.00120000' });
+    expect(compareByWorstCase(lo, hi)).toBe(-1);
+    expect(compareByWorstCase(hi, lo)).toBe(1);
+    expect(compareByWorstCase(lo, lo)).toBe(0);
   });
 });
