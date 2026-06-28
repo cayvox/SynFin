@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fetchJson } from '../src/index.js';
 
+/** Mirrors the module-private DEFAULT_USER_AGENT in src/http.ts. */
+const DEFAULT_UA = 'synfin-adapters/0.1.0 (+https://synfin.xyz)';
+
 /**
  * `fetchJson` is the default live transport. These tests stub the global
  * `fetch` so the transport logic is exercised deterministically **without any
@@ -73,6 +76,37 @@ describe('fetchJson', () => {
     const headers = init['headers'] as Record<string, string>;
     expect(headers['content-type']).toBe('application/json');
     expect(headers['authorization']).toBe('Bearer k');
+    // The default UA and accept are present alongside a body and custom headers.
+    expect(headers['accept']).toBe('application/json');
+    expect(headers['user-agent']).toBe(DEFAULT_UA);
+  });
+
+  it('sends a default honest user-agent when the request sets no headers', async () => {
+    const { calls } = stubFetch({
+      status: 200,
+      text: () => Promise.resolve('{}'),
+    });
+    await fetchJson()({ url: 'https://x.invalid/q', method: 'GET' });
+    const headers = calls[0]!.init['headers'] as Record<string, string>;
+    expect(headers['user-agent']).toBe(DEFAULT_UA);
+    expect(headers['user-agent']).not.toBe('');
+    // The default does not clobber accept, and there is no body, so no content-type.
+    expect(headers['accept']).toBe('application/json');
+    expect(headers['content-type']).toBeUndefined();
+  });
+
+  it('lets a caller override the default user-agent via request headers', async () => {
+    const { calls } = stubFetch({
+      status: 200,
+      text: () => Promise.resolve('{}'),
+    });
+    await fetchJson()({
+      url: 'https://x.invalid/q',
+      method: 'GET',
+      headers: { 'user-agent': 'custom/1.0' },
+    });
+    const headers = calls[0]!.init['headers'] as Record<string, string>;
+    expect(headers['user-agent']).toBe('custom/1.0');
   });
 
   it('propagates a transport error as a rejected promise', async () => {
