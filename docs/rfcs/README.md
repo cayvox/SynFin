@@ -18,3 +18,4 @@ conformance‑test impact, so no normative change is made silently (the zero‑a
 | [0002](0002-router-port-now-and-result.md) | Fix the `Router` port — per‑call `now` and a typed `RouteResult` | Accepted | 0.3.0 |
 | [0003](0003-privacy-model.md) | Synfin privacy model — per‑leg confidential settlement | Accepted | 0.4.0 |
 | [0004](0004-settlement-mode-capability.md) | Settlement‑mode capability — atomic vs managed‑deposit venues | Accepted | 0.5.0 |
+| [0005](0005-network-fee-transparency.md) | Network-fee transparency: gross receipts, a separate network fee, and net-value routing | Proposed | 0.6.0 |

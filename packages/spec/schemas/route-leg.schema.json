@@ -28,6 +28,10 @@
       "type": "string",
       "minLength": 1,
       "description": "Reference to the Quote this leg is built from (SPEC §4.4)."
+    },
+    "networkFee": {
+      "$ref": "primitives.schema.json#/$defs/NetworkFee",
+      "description": "OPTIONAL. The network fee attributable to this leg, in its native asset (RFC-0005 §2). Absent means no separate network fee for this leg."
     }
   },
   "required": ["venueId", "give", "receive", "quoteRef"]

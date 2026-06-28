@@ -28,6 +28,14 @@
       "type": "integer",
       "minimum": 0,
       "description": "Slippage vs reference, in basis points; MUST satisfy intent.maxSlippageBps (SPEC §4.4)."
+    },
+    "networkFee": {
+      "$ref": "primitives.schema.json#/$defs/NetworkFee",
+      "description": "OPTIONAL. The aggregate network fee for the plan, in its native asset (RFC-0005 §2). Absent means the plan discloses no separate network fee."
+    },
+    "worstCaseReceiveNet": {
+      "$ref": "primitives.schema.json#/$defs/Decimal",
+      "description": "OPTIONAL. The taker's worst-case net value, expressed in the receive asset, per the intent's give, after charging the plan's network fee (RFC-0005 §3). Absent is read as equal to `worstCaseReceive`. The router ranks on this value."
     }
   },
   "required": [

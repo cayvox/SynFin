@@ -78,6 +78,25 @@ export const primitivesSchema: Record<string, unknown> = {
       },
       required: ["registry", "instrumentId", "decimals"],
     },
+    NetworkFee: {
+      title: "NetworkFee",
+      description:
+        "A flat or gas-like cost the taker bears in addition to `give`, in its native asset (SPEC §4.3; RFC-0005 §2): the on-ledger equivalent of gas. Absent means the venue discloses no separate network fee. Normative constraint for 0.6.0: the asset MUST equal the quote's give.asset or its receive.asset; a fee denominated in a third asset needs an external price to value it and is deferred to a follow-up RFC. `amount` is non-negative.",
+      type: "object",
+      properties: {
+        asset: {
+          $ref: "primitives.schema.json#/$defs/AssetId",
+          description:
+            "The asset the network fee is denominated in. MUST equal the quote's give.asset or its receive.asset (RFC-0005 §2).",
+        },
+        amount: {
+          $ref: "primitives.schema.json#/$defs/Decimal",
+          description: "The fee amount in `asset`, non-negative.",
+        },
+      },
+      required: ["asset", "amount"],
+      additionalProperties: false,
+    },
   },
 };
 export const swapIntentSchema: Record<string, unknown> = {
@@ -210,7 +229,7 @@ export const quoteSchema: Record<string, unknown> = {
   $id: "quote.schema.json",
   title: "Quote",
   description:
-    "A venue's normalized answer to a QuoteRequest (SPEC §4.3). Fees are already reflected in `receive`. A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
+    "A venue's normalized answer to a QuoteRequest (SPEC §4.3). `receive` is net of the in-receive-asset proportional fee (feeBps) only; flat or differently-denominated costs are carried in the optional `networkFee`, not folded into `receive` (RFC-0005 §1). A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
   type: "object",
   properties: {
     quoteId: {
@@ -232,7 +251,7 @@ export const quoteSchema: Record<string, unknown> = {
     receive: {
       type: "object",
       description:
-        "The offered output, with all fees already reflected (SPEC §4.3).",
+        "The offered output, net of the in-receive-asset proportional fee (feeBps) only. Flat or differently-denominated costs are NOT folded in here; they are carried in `networkFee` (SPEC §4.3; RFC-0005 §1).",
       properties: {
         asset: { $ref: "primitives.schema.json#/$defs/AssetId" },
         amount: { $ref: "primitives.schema.json#/$defs/Decimal" },
@@ -243,7 +262,12 @@ export const quoteSchema: Record<string, unknown> = {
       type: "integer",
       minimum: 0,
       description:
-        "Fees already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3).",
+        "The proportional, in-receive-asset fee already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3; RFC-0005 §1). Flat or differently-denominated costs are carried in `networkFee`, not here.",
+    },
+    networkFee: {
+      $ref: "primitives.schema.json#/$defs/NetworkFee",
+      description:
+        "OPTIONAL. The flat or gas-like cost the taker bears in addition to `give`, for this quote, in its native asset (RFC-0005 §2). Absent means the venue discloses no separate network fee.",
     },
     sourceKind: {
       type: "string",
@@ -334,6 +358,16 @@ export const routePlanSchema: Record<string, unknown> = {
       description:
         "Slippage vs reference, in basis points; MUST satisfy intent.maxSlippageBps (SPEC §4.4).",
     },
+    networkFee: {
+      $ref: "primitives.schema.json#/$defs/NetworkFee",
+      description:
+        "OPTIONAL. The aggregate network fee for the plan, in its native asset (RFC-0005 §2). Absent means the plan discloses no separate network fee.",
+    },
+    worstCaseReceiveNet: {
+      $ref: "primitives.schema.json#/$defs/Decimal",
+      description:
+        "OPTIONAL. The taker's worst-case net value, expressed in the receive asset, per the intent's give, after charging the plan's network fee (RFC-0005 §3). Absent is read as equal to `worstCaseReceive`. The router ranks on this value.",
+    },
   },
   required: [
     "intentRef",
@@ -373,6 +407,11 @@ export const routeLegSchema: Record<string, unknown> = {
       type: "string",
       minLength: 1,
       description: "Reference to the Quote this leg is built from (SPEC §4.4).",
+    },
+    networkFee: {
+      $ref: "primitives.schema.json#/$defs/NetworkFee",
+      description:
+        "OPTIONAL. The network fee attributable to this leg, in its native asset (RFC-0005 §2). Absent means no separate network fee for this leg.",
     },
   },
   required: ["venueId", "give", "receive", "quoteRef"],
