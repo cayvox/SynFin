@@ -2,6 +2,9 @@ import {
   Decimal,
   assetEquals,
   checkRoutePlan,
+  compareByWorstCase,
+  computeWorstCaseReceiveNet,
+  type AssetId,
   type NoViableRouteReason,
   type Quote,
   type RouteLeg,
@@ -52,6 +55,8 @@ interface Candidate {
   readonly quoteId: string;
   readonly give: Decimal;
   readonly receive: Decimal;
+  /** The source quote's networkFee, carried through unchanged (RFC-0005 §6). */
+  readonly networkFee?: Quote['networkFee'];
 }
 
 function min(a: Decimal, b: Decimal): Decimal {
@@ -89,7 +94,13 @@ function eligibleCandidates(
     const receive = Decimal.parse(q.receive.amount);
     if (give === undefined || receive === undefined) continue;
     if (!give.isPositive() || !receive.isPositive()) continue;
-    candidates.push({ venueId: q.venueId, quoteId: q.quoteId, give, receive });
+    candidates.push({
+      venueId: q.venueId,
+      quoteId: q.quoteId,
+      give,
+      receive,
+      ...(q.networkFee !== undefined ? { networkFee: q.networkFee } : {}),
+    });
   }
   return candidates;
 }
@@ -111,24 +122,31 @@ function buildLeg(
   const receive = giveAmt.eq(cand.give)
     ? cand.receive
     : cand.receive.mul(giveAmt).divide(cand.give, ctx.wantDecimals, 'floor');
-  return {
-    leg: {
-      venueId: cand.venueId,
-      give: { asset: ctx.giveAsset, amount: giveAmt.toString() },
-      receive: { asset: ctx.wantAsset, amount: receive.toString() },
-      quoteRef: cand.quoteId,
-    },
-    receive,
+  // A split leg carries its source quote's networkFee unchanged (RFC-0005 §6,
+  // the conservative choice). No quote fee means no leg fee.
+  const leg: RouteLeg = {
+    venueId: cand.venueId,
+    give: { asset: ctx.giveAsset, amount: giveAmt.toString() },
+    receive: { asset: ctx.wantAsset, amount: receive.toString() },
+    quoteRef: cand.quoteId,
+    ...(cand.networkFee !== undefined ? { networkFee: cand.networkFee } : {}),
   };
+  return { leg, receive };
 }
 
-/** Assemble a plan from legs whose receipts sum to `worst` (= aggregate). */
+/**
+ * Assemble a plan from legs whose receipts sum to `worst` (= aggregate). Returns
+ * `undefined` when a plan is not constructible (RFC-0005): legs carrying network
+ * fees in differing assets cannot be summed, and the net helper supports only a
+ * give-or-receive-asset fee. That case does not occur with the current venues
+ * (all fee in the give asset); it is skipped rather than guessed.
+ */
 function planFromLegs(
   legs: RouteLeg[],
   worst: Decimal,
   ctx: RouteContext,
-): RoutePlan {
-  return {
+): RoutePlan | undefined {
+  const base: RoutePlan = {
     intentRef: ctx.intentRef,
     legs: legs as [RouteLeg, ...RouteLeg[]],
     aggregateReceive: worst.toString(),
@@ -137,6 +155,44 @@ function planFromLegs(
     // haircut model is left to the optimizer (ADR-0007).
     worstCaseReceive: worst.toString(),
     slippageBps: 0,
+  };
+
+  // Aggregate the per-leg network fees (RFC-0005 §6): each leg carries its source
+  // quote's fee unchanged, so the plan fee is their sum in a single asset.
+  let feeAsset: AssetId | undefined;
+  let feeSum = Decimal.zero();
+  let hasFee = false;
+  for (const leg of legs) {
+    const f = leg.networkFee;
+    if (f === undefined) continue;
+    hasFee = true;
+    if (feeAsset === undefined) {
+      feeAsset = f.asset;
+    } else if (!assetEquals(f.asset, feeAsset)) {
+      return undefined; // mixed-asset fees: not summable, not constructible here.
+    }
+    const amount = Decimal.parse(f.amount);
+    if (amount === undefined) return undefined; // defensive: amount is shape-valid.
+    feeSum = feeSum.add(amount);
+  }
+  // Fee-free: omit networkFee and worstCaseReceiveNet, byte-for-byte as before.
+  if (!hasFee || feeAsset === undefined) return base;
+
+  // Net-value (RFC-0005 §3): the figure the router ranks on. worstCaseReceive
+  // stays the gross buy-asset floor; the net re-bases it against the total give
+  // outlay, per the intent's give.
+  const net = computeWorstCaseReceiveNet(
+    worst,
+    { asset: ctx.giveAsset, amount: ctx.total },
+    ctx.wantAsset,
+    { asset: feeAsset, amount: feeSum },
+  );
+  if (!net.ok) return undefined; // unsupported fee asset (should not occur).
+
+  return {
+    ...base,
+    networkFee: { asset: feeAsset, amount: feeSum.toString() },
+    worstCaseReceiveNet: net.value.toString(),
   };
 }
 
@@ -155,18 +211,26 @@ function bestSingleVenue(
   for (const cand of candidates) {
     if (cand.give.lt(ctx.total)) continue; // cannot cover the whole give alone
     const { leg, receive } = buildLeg(cand, ctx.total, ctx);
-    // Prefer higher receipt; break ties by lower venueId, then lower quoteId,
-    // so the choice is independent of input order (determinism).
+    const plan = planFromLegs([leg], receive, ctx);
+    if (plan === undefined) continue; // not constructible (mixed/unsupported fee)
+    if (best === undefined || bestCand === undefined) {
+      best = { plan, worst: receive };
+      bestCand = cand;
+      continue;
+    }
+    // Rank by NET (compareByWorstCase ranks on worstCaseReceiveNet when present,
+    // else the gross worstCaseReceive, so fee-free quotes rank exactly as before).
+    // Break ties by lower venueId, then lower quoteId, so the choice is
+    // independent of input order (determinism).
+    const cmp = compareByWorstCase(plan, best.plan);
     const better =
-      best === undefined ||
-      bestCand === undefined ||
-      receive.gt(best.worst) ||
-      (receive.eq(best.worst) &&
+      cmp > 0 ||
+      (cmp === 0 &&
         (cand.venueId < bestCand.venueId ||
           (cand.venueId === bestCand.venueId &&
             cand.quoteId < bestCand.quoteId)));
     if (better) {
-      best = { plan: planFromLegs([leg], receive, ctx), worst: receive };
+      best = { plan, worst: receive };
       bestCand = cand;
     }
   }
@@ -209,13 +273,21 @@ function greedySplit(
     worst = worst.add(receive);
   }
   if (!remaining.isZero() || legs.length === 0) return undefined;
-  return { plan: planFromLegs(legs, worst, ctx), worst };
+  const plan = planFromLegs(legs, worst, ctx);
+  if (plan === undefined) return undefined; // not constructible (mixed/unsupported fee)
+  return { plan, worst };
 }
 
-/** Choose the better plan candidate: higher worst-case, then fewer legs. */
+/**
+ * Choose the better plan candidate: higher worst-case NET, then fewer legs.
+ * Ranks via {@link compareByWorstCase}, which uses `worstCaseReceiveNet` when
+ * present and falls back to the gross `worstCaseReceive`, so two fee-free plans
+ * are ordered exactly as before (RFC-0005 §3).
+ */
 function preferred(a: PlanCandidate, b: PlanCandidate): PlanCandidate {
-  if (a.worst.gt(b.worst)) return a;
-  if (b.worst.gt(a.worst)) return b;
+  const cmp = compareByWorstCase(a.plan, b.plan);
+  if (cmp > 0) return a;
+  if (cmp < 0) return b;
   return a.plan.legs.length <= b.plan.legs.length ? a : b;
 }
 
