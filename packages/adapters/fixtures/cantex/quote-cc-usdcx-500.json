@@ -1,0 +1,88 @@
+{
+  "estimated_time_seconds": "5.10",
+  "fees": {
+    "amount_admin": "0.0250000000",
+    "amount_liquidity": "0.2250000000",
+    "fee_percentage": "0.0005000000",
+    "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+    "instrument_id": "Amulet",
+    "network_fee": {
+      "amount": "0",
+      "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+      "instrument_id": "Amulet"
+    }
+  },
+  "pool_price_after_trade": "0.1518908349",
+  "pool_price_before_trade": "0.1519849736",
+  "pool_size": {
+    "amount": "3226844.2571161376",
+    "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+    "instrument_id": "Amulet"
+  },
+  "pools": [
+    {
+      "buy": {
+        "amount": "75.9309640211",
+        "instrument_admin": "decentralized-usdc-interchain-rep::12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef",
+        "instrument_id": "USDCx"
+      },
+      "contract_id": "001d3bfeb52a3ff7337f2698deb95bf2a3d76f756105520886590c6523119eeabaca1212204e5558b611e668e4b673aa6b4a8461523bf5315e07f786f304c98650fa0cca5a",
+      "fees": {
+        "admin": {
+          "amount": "0.0250000000",
+          "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+          "instrument_id": "Amulet"
+        },
+        "fee_percentage": "0.0005000000",
+        "liquidity": {
+          "amount": "0.2250000000",
+          "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+          "instrument_id": "Amulet"
+        }
+      },
+      "pool_id": "2820898830768735469",
+      "pool_price_after": "0.1518908349",
+      "pool_price_before": "0.1519849736",
+      "prices": {
+        "pool_after": "0.1518908349",
+        "pool_before": "0.1519849736",
+        "slippage": "0.0003097453",
+        "trade": "0.1518619280",
+        "trade_no_fees": "0.1519378970"
+      },
+      "sell": {
+        "amount": "500.0000000000",
+        "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+        "instrument_id": "Amulet"
+      },
+      "size": {
+        "amount": "3226844.2571161376",
+        "instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+        "instrument_id": "Amulet"
+      },
+      "trade_price": "0.1518619280",
+      "trade_price_no_fees": "0.1519378970"
+    }
+  ],
+  "prices": {
+    "pool_after": "0.1518908349",
+    "pool_before": "0.1519849736",
+    "slippage": "0.0003097451",
+    "trade": "0.1518619280",
+    "trade_no_fees": "0.1519378970"
+  },
+  "returned": {
+    "amount": "75.9309640211",
+    "instrument_admin": "decentralized-usdc-interchain-rep::12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef",
+    "instrument_id": "USDCx"
+  },
+  "sent": {
+    "buy_instrument_admin": "decentralized-usdc-interchain-rep::12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef",
+    "buy_instrument_id": "USDCx",
+    "sell_amount": "500",
+    "sell_instrument_admin": "DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc",
+    "sell_instrument_id": "Amulet"
+  },
+  "slippage": "0.0003097451",
+  "trade_price": "0.1518619280"
+}

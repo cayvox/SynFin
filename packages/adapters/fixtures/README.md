@@ -66,3 +66,24 @@ and may reject them.
 | --- | --- | --- |
 | `quote-cc-usdcx-100.json` | `{ user_gets }` for 100 CC → USDCx. | **Real live capture, 2026-06-26** from `GET https://api.tradecraft.fi/v1/quoteForFixedInput/CC/USDCx?givingAmount=100`. |
 | `error-amm-not-found.json` | The venue's `{ error }` body for an unknown pair. | **Real live capture, 2026-06-26** from `GET .../quoteForFixedInput/CC/NOPE?givingAmount=100` (HTTP 400). Drives the `venue_error` and `invalid_request` rejection tests. |
+
+## Cantex: `cantex/`
+
+- **Base URL:** `https://api.cantex.io/v1/public`
+- **Docs:** the cantex.io front page (CaviarNine); endpoints discovered from the production app.
+- **Quote mechanism:** `POST /v1/public/pools/quote`, **no API key, no account, no auth** (this is the
+  public path the front page calls before sign-in, separate from the authenticated SDK `/v2` path).
+  Body, all decimal strings: `{ sellAmount, sellInstrumentId, sellInstrumentAdmin, buyInstrumentId,
+  buyInstrumentAdmin }`. Response carries nested `QuoteLeg` objects `{ amount, instrument_id,
+  instrument_admin }` with all numbers as strings. `returned.amount` is net of the 5 bps pool fee.
+  Settlement (out of scope here) is a deposit-style flow: Mode B (`managed-deposit`).
+- **Fees:** the 5 bps pool fee is already inside `returned`. `fees.network_fee` is a FLAT per-swap
+  amount in the SELL asset (CC/Amulet), charged on top of the give and WAIVED for `sellAmount >= 500`.
+  The adapter reflects it as a taker-favorable haircut on `receive`, read from each response.
+- **Firmness:** indicative. The public endpoint exposes no validity field, so the adapter applies a
+  conservative 30s TTL.
+
+| File | What it is | Provenance |
+| --- | --- | --- |
+| `quote-cc-usdcx-100.json` | A full quote for 100 CC → USDCx (network_fee 0.7948 CC). | **Real live capture, 2026-06-28** from `POST https://api.cantex.io/v1/public/pools/quote` (no auth). Drives the network-fee haircut test. |
+| `quote-cc-usdcx-500.json` | A full quote for 500 CC → USDCx (network_fee 0, above the waiver threshold). | **Real live capture, 2026-06-28** from `POST https://api.cantex.io/v1/public/pools/quote` (no auth). Drives the no-haircut branch test. |
