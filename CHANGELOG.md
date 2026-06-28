@@ -7,6 +7,19 @@ are versioned independently; each release records the spec version it targets.
 
 ## [Unreleased]
 
+### Changed
+- **SQSS bumped to `0.6.0`, driven by [RFC-0005](docs/rfcs/0005-network-fee-transparency.md):**
+  `Quote`, `RouteLeg`, and `RoutePlan` gain an OPTIONAL `networkFee` (a flat or gas-like cost in its
+  native asset, where the asset MUST equal the quote's `give.asset` or `receive.asset`), `RoutePlan`
+  gains an OPTIONAL `worstCaseReceiveNet` (the taker net value the router ranks on; absent reads as
+  equal to `worstCaseReceive`), and `receive` is clarified as net of the in-receive-asset
+  proportional fee (`feeBps`) only (SPEC §4.3, §4.4). This PR lands ONLY the wire/schema additions
+  and the regenerated types: constraint logic, the router, and the adapters are deferred to later PRs
+  of the RFC-0005 sequence. `@synfin/spec` is bumped to `0.2.0-alpha.0`. Every addition is optional,
+  so this is a backward-compatible additive wire change: every existing quote, leg, and plan stays
+  valid, and a plan without `worstCaseReceiveNet` ranks by `worstCaseReceive` exactly as before.
+  RFC-0005 status: Proposed (it flips to Accepted in the final PR of the sequence).
+
 ### Added
 - **Phase-0 price-divergence monitor (`tools/price-monitor`, `@synfin/price-monitor`).** A
   read-only tool that collects cross-venue quotes (CantonSwap, OneSwap) for the same pairs/sizes

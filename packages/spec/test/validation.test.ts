@@ -187,6 +187,19 @@ describe('validateQuote (SPEC §4.3, §8)', () => {
     expect(validateQuote(validFirmQuote()).ok).toBe(true);
   });
 
+  it('accepts a quote with or without the optional networkFee (RFC-0005 §2)', () => {
+    // Absent networkFee: backward compatible, still valid.
+    expect(validateQuote(validIndicativeQuote()).ok).toBe(true);
+    // Present networkFee, denominated in the quote's give asset (USD): valid.
+    expect(
+      validateQuote(
+        validIndicativeQuote({
+          networkFee: { asset: USD, amount: '1.00' },
+        }),
+      ).ok,
+    ).toBe(true);
+  });
+
   it('rejects a quote missing quoteId (RFC-0001 Decision C)', () => {
     const { quoteId, ...rest } = validIndicativeQuote();
     void quoteId;

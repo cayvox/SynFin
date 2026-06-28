@@ -1,7 +1,13 @@
 # Synfin Quote & Swap‑Intent Standard (SQSS)
 
-`Spec version: 0.5.0 (draft)` · `Status: working draft — RFC required for normative changes`
+`Spec version: 0.6.0 (draft)` · `Status: working draft, RFC required for normative changes`
 
+> Changes in `0.6.0` are driven by [RFC-0005](../rfcs/0005-network-fee-transparency.md): `Quote`,
+> `RouteLeg`, and `RoutePlan` gain an OPTIONAL `networkFee` (a flat or gas-like cost in its native
+> asset), `RoutePlan` gains an OPTIONAL `worstCaseReceiveNet` (the taker net the router ranks on), and
+> `receive` is clarified as net of the in-receive-asset proportional fee (`feeBps`) only (§4.3, §4.4).
+> Every addition is optional, so the change is backward compatible.
+>
 > Changes in `0.5.0` are driven by [RFC‑0004](../rfcs/0004-settlement-mode-capability.md): a Venue
 > declares a `settlementMode` capability (`atomic-allocation` | `managed-deposit`) that is carried on
 > every `Quote` (§4.3) and on the Venue interface (§5); atomic settlement (§6) is normatively valid
@@ -103,12 +109,13 @@ Quote {
   quoteId:     string             // unique id set by the venue/adapter; unique within an intent's quote round
   venueId:     VenueId
   give:        { asset: AssetId, amount: Decimal }   // echoes requested size
-  receive:     { asset: AssetId, amount: Decimal }   // offered output
-  feeBps:      integer            // fees already reflected in `receive`; declared for transparency
+  receive:     { asset: AssetId, amount: Decimal }   // output, net of the in-receive-asset proportional fee (feeBps) only
+  feeBps:      integer            // the proportional, in-receive-asset fee already reflected in `receive`
   sourceKind:  "AMM" | "CLOB" | "RFQ"
   settlementMode: "atomic-allocation" | "managed-deposit"   // how the venue settles (§5, §6; RFC‑0004)
   firmness:    "indicative" | "firm"
   validUntil:  Timestamp
+  networkFee?: { asset: AssetId, amount: Decimal }   // OPTIONAL flat or gas-like cost on top of `give`, in its native asset (RFC-0005)
   commitment?: CommitmentRef      // REQUIRED if firmness == "firm"
   signature?:  Signature          // REQUIRED if firmness == "firm"
 }
@@ -117,6 +124,7 @@ Quote {
 - `quoteId` MUST be present and unique within the scope of an intent's quote‑gathering round; it is the identifier a `RouteLeg.quoteRef` resolves to (§4.4, RFC‑0001 Decision C).
 - An **indicative** quote is non‑binding. A **firm** quote MUST be backed by a `commitment` that can be honored on‑ledger during settlement, and MUST be signed by the venue.
 - `settlementMode` MUST be present and MUST equal the issuing Venue's declared settlement mode (§5). It states how this leg settles (RFC‑0004): `atomic-allocation` means the venue settles via a CIP‑0056 allocation, so the leg MAY be part of a single atomic Daml transaction (§6); `managed-deposit` means the venue settles out of band (e.g. against a managed deposit/balance), so the leg MUST NOT be co‑settled atomically with other legs. It is carried on the `Quote` (alongside `sourceKind`) so a Router operating on quotes (§4.5) can determine each leg's settlement mode without separate venue lookup.
+- `receive` is net of the in-receive-asset proportional fee (`feeBps`) only; flat or differently-denominated costs are NOT folded into `receive`. A venue that bears such a cost carries it in the OPTIONAL `networkFee`, a flat or gas-like cost on top of `give` in its native asset (RFC-0005 §1, §2). For `0.6.0`, `networkFee.asset` MUST equal the quote's `give.asset` or `receive.asset`; a fee in a third asset is deferred to a follow-up RFC. `networkFee` is optional, so a quote that omits it is unchanged and consumers ignore the absent field (§9).
 - Consumers MUST reject quotes where `validUntil` has passed, where amounts are non‑positive, where decimals/units are inconsistent with the instrument, where `settlementMode` is absent or unrecognized, or (for firm) where the signature/commitment does not verify.
 
 ### 4.4 RoutePlan
@@ -126,20 +134,24 @@ RoutePlan {
   intentRef:        string
   legs:             RouteLeg[]
   aggregateReceive: Decimal       // sum of expected leg receipts
-  worstCaseReceive: Decimal       // lower bound given quote firmness/slippage
+  worstCaseReceive: Decimal       // lower bound given quote firmness/slippage (on the delivered buy asset)
   slippageBps:      integer       // vs reference; MUST satisfy intent.maxSlippageBps
+  networkFee?:      { asset: AssetId, amount: Decimal }   // OPTIONAL aggregate network fee (RFC-0005)
+  worstCaseReceiveNet?: Decimal   // OPTIONAL taker net the router ranks on; absent reads as worstCaseReceive (RFC-0005)
 }
 RouteLeg {
   venueId:  VenueId
   give:     { asset: AssetId, amount: Decimal }
   receive:  { asset: AssetId, amount: Decimal }
   quoteRef: string               // MUST equal the quoteId of a Quote returned for this intent
+  networkFee?: { asset: AssetId, amount: Decimal }   // OPTIONAL network fee attributable to this leg (RFC-0005)
 }
 ```
 
 - The sum of `legs[].give.amount` MUST equal `intent.give.amount` (conservation).
 - No `RouteLeg` may reference a venue excluded by `venueAllowList`, and `legs.length` MUST respect `maxVenues`.
 - A `RoutePlan` whose `worstCaseReceive` < `intent.want.minReceive` MUST NOT be submitted for settlement.
+- The OPTIONAL `RoutePlan.networkFee` (aggregate) and `RouteLeg.networkFee` carry a flat or gas-like cost in its native asset; `RoutePlan.worstCaseReceiveNet` is the taker's worst-case net value in the receive asset, per the intent's give, after that fee (RFC-0005 §3). A net-aware router ranks on `worstCaseReceiveNet`; when it is absent it reads as equal to `worstCaseReceive`. The floor on `intent.want.minReceive` stays on `worstCaseReceive` (the delivered buy asset), and conservation (`Σ legs[].give.amount == intent.give.amount`) stays on the give principal: a give-asset network fee is an additional outlay on top, not part of the conserved principal. These fields are optional, so a plan that omits them ranks by `worstCaseReceive` exactly as before.
 - **Quote linkage (RFC‑0001 Decision C).** Each `RouteLeg.quoteRef` MUST equal the `quoteId` of an actual `Quote` returned for the same intent. A `RoutePlan` MUST NOT contain a leg whose `quoteRef` does not resolve to a known quote.
 - **No overstatement (RFC‑0001 Decision C).** For every leg, against the quote it references:
   - `leg.receive.amount` MUST NOT exceed that quote's `receive.amount`;

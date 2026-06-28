@@ -31,6 +31,10 @@ export type VenueId = string;
  */
 export type Timestamp1 = string;
 /**
+ * Exact decimal value carried as a string to avoid binary floating point for value math (SPEC §3). Canonical form: optional leading '-', no leading zeros (except '0'), optional fractional part with at least one digit. No exponent notation.
+ */
+export type Decimal2 = string;
+/**
  * Consumers MUST reject quotes whose validUntil has passed (SPEC §4.3, §8).
  */
 export type Timestamp2 = string;
@@ -45,11 +49,15 @@ export type Signature = string;
 /**
  * Exact decimal value carried as a string to avoid binary floating point for value math (SPEC §3). Canonical form: optional leading '-', no leading zeros (except '0'), optional fractional part with at least one digit. No exponent notation.
  */
-export type Decimal2 = string;
+export type Decimal3 = string;
 /**
  * Exact decimal value carried as a string to avoid binary floating point for value math (SPEC §3). Canonical form: optional leading '-', no leading zeros (except '0'), optional fractional part with at least one digit. No exponent notation.
  */
-export type Decimal3 = string;
+export type Decimal4 = string;
+/**
+ * Exact decimal value carried as a string to avoid binary floating point for value math (SPEC §3). Canonical form: optional leading '-', no leading zeros (except '0'), optional fractional part with at least one digit. No exponent notation.
+ */
+export type Decimal5 = string;
 
 /**
  * Index of all SQSS wire types (generated). Prefer importing the named types directly.
@@ -151,7 +159,7 @@ export interface QuoteRequest {
   nonce: string;
 }
 /**
- * A venue's normalized answer to a QuoteRequest (SPEC §4.3). Fees are already reflected in `receive`. A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).
+ * A venue's normalized answer to a QuoteRequest (SPEC §4.3). `receive` is net of the in-receive-asset proportional fee (feeBps) only; flat or differently-denominated costs are carried in the optional `networkFee`, not folded into `receive` (RFC-0005 §1). A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).
  */
 export interface Quote {
   /**
@@ -167,16 +175,17 @@ export interface Quote {
     amount: Decimal;
   };
   /**
-   * The offered output, with all fees already reflected (SPEC §4.3).
+   * The offered output, net of the in-receive-asset proportional fee (feeBps) only. Flat or differently-denominated costs are NOT folded in here; they are carried in `networkFee` (SPEC §4.3; RFC-0005 §1).
    */
   receive: {
     asset: AssetId;
     amount: Decimal;
   };
   /**
-   * Fees already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3).
+   * The proportional, in-receive-asset fee already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3; RFC-0005 §1). Flat or differently-denominated costs are carried in `networkFee`, not here.
    */
   feeBps: number;
+  networkFee?: NetworkFee;
   /**
    * The kind of liquidity source (SPEC §4.3).
    */
@@ -194,6 +203,27 @@ export interface Quote {
   signature?: Signature;
 }
 /**
+ * OPTIONAL. The flat or gas-like cost the taker bears in addition to `give`, for this quote, in its native asset (RFC-0005 §2). Absent means the venue discloses no separate network fee.
+ */
+export interface NetworkFee {
+  asset: AssetId1;
+  amount: Decimal2;
+}
+/**
+ * Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3, RFC-0001 Decision A: the issuing registry plus the instrument, never a symbol alone). Exactly three fields: registry, instrumentId, decimals.
+ */
+export interface AssetId1 {
+  registry: PartyId1;
+  /**
+   * Instrument identifier within the issuing registry.
+   */
+  instrumentId: string;
+  /**
+   * The instrument's defined decimal precision (non-negative). NOT authoritative on its own: it MUST be consistent with the precision the issuing registry reports via the CIP-0056 token metadata API, and is carried here only so amounts can be validated off-ledger without global readable state (ARCHITECTURE.md §1 #2). Amounts of this asset MUST NOT carry more fractional digits than this.
+   */
+  decimals: number;
+}
+/**
  * A selected/split route across venue legs (SPEC §4.4). Cross-field invariants (conservation, worstCaseReceive >= minReceive, slippage bound, maxVenues/allowList) are enforced by the constraint predicates in @synfin/spec, not by this shape alone.
  */
 export interface RoutePlan {
@@ -207,12 +237,14 @@ export interface RoutePlan {
    * @minItems 1
    */
   legs: [RouteLeg, ...RouteLeg[]];
-  aggregateReceive: Decimal2;
-  worstCaseReceive: Decimal3;
+  aggregateReceive: Decimal3;
+  worstCaseReceive: Decimal4;
   /**
    * Slippage vs reference, in basis points; MUST satisfy intent.maxSlippageBps (SPEC §4.4).
    */
   slippageBps: number;
+  networkFee?: NetworkFee2;
+  worstCaseReceiveNet?: Decimal5;
 }
 /**
  * One venue leg of a RoutePlan (SPEC §4.4).
@@ -237,4 +269,19 @@ export interface RouteLeg {
    * Reference to the Quote this leg is built from (SPEC §4.4).
    */
   quoteRef: string;
+  networkFee?: NetworkFee1;
+}
+/**
+ * OPTIONAL. The network fee attributable to this leg, in its native asset (RFC-0005 §2). Absent means no separate network fee for this leg.
+ */
+export interface NetworkFee1 {
+  asset: AssetId1;
+  amount: Decimal2;
+}
+/**
+ * OPTIONAL. The aggregate network fee for the plan, in its native asset (RFC-0005 §2). Absent means the plan discloses no separate network fee.
+ */
+export interface NetworkFee2 {
+  asset: AssetId1;
+  amount: Decimal2;
 }

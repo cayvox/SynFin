@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "quote.schema.json",
   "title": "Quote",
-  "description": "A venue's normalized answer to a QuoteRequest (SPEC §4.3). Fees are already reflected in `receive`. A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
+  "description": "A venue's normalized answer to a QuoteRequest (SPEC §4.3). `receive` is net of the in-receive-asset proportional fee (feeBps) only; flat or differently-denominated costs are carried in the optional `networkFee`, not folded into `receive` (RFC-0005 §1). A firm quote MUST carry a commitment and signature that can be honored on-ledger (SPEC §4.3, §6).",
   "type": "object",
   "properties": {
     "quoteId": {
@@ -22,7 +22,7 @@
     },
     "receive": {
       "type": "object",
-      "description": "The offered output, with all fees already reflected (SPEC §4.3).",
+      "description": "The offered output, net of the in-receive-asset proportional fee (feeBps) only. Flat or differently-denominated costs are NOT folded in here; they are carried in `networkFee` (SPEC §4.3; RFC-0005 §1).",
       "properties": {
         "asset": { "$ref": "primitives.schema.json#/$defs/AssetId" },
         "amount": { "$ref": "primitives.schema.json#/$defs/Decimal" }
@@ -32,7 +32,11 @@
     "feeBps": {
       "type": "integer",
       "minimum": 0,
-      "description": "Fees already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3)."
+      "description": "The proportional, in-receive-asset fee already reflected in `receive`, declared for transparency, in basis points (SPEC §4.3; RFC-0005 §1). Flat or differently-denominated costs are carried in `networkFee`, not here."
+    },
+    "networkFee": {
+      "$ref": "primitives.schema.json#/$defs/NetworkFee",
+      "description": "OPTIONAL. The flat or gas-like cost the taker bears in addition to `give`, for this quote, in its native asset (RFC-0005 §2). Absent means the venue discloses no separate network fee."
     },
     "sourceKind": {
       "type": "string",
