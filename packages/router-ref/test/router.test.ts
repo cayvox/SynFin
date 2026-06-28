@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   Decimal,
   checkRoutePlan,
+  computeWorstCaseReceiveNet,
   isAtomicRoute,
   type AssetId,
   type Quote,
+  type RoutePlan,
   type SwapIntent,
 } from '@synfin/spec';
 import { referenceRouter, route } from '../src/index.js';
@@ -324,5 +326,117 @@ describe('reference router — settlement mode (RFC-0004, SPEC §6)', () => {
         'managed-deposit',
     );
     if (usesManaged) expect(isAtomicRoute(r.plan, quotes)).toBe(false);
+  });
+});
+
+describe('reference router: network fee and net-value ranking (RFC-0005)', () => {
+  const netOf = (p: RoutePlan): Decimal =>
+    Decimal.parse(p.worstCaseReceiveNet ?? p.worstCaseReceive)!;
+
+  it('emits the leg, plan networkFee, and worstCaseReceiveNet for a give-asset fee', () => {
+    const q = quote({ networkFee: { asset: USD, amount: '1.00' } });
+    const r = route(intent(), [q], NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // The leg carries the source quote's fee unchanged (RFC-0005 §6).
+    expect(r.plan.legs[0]?.networkFee).toEqual({ asset: USD, amount: '1.00' });
+    // The plan aggregate equals it (single leg).
+    expect(r.plan.networkFee).toEqual({ asset: USD, amount: '1.00' });
+    // worstCaseReceive stays the gross floor; worstCaseReceiveNet is the helper output.
+    expect(r.plan.worstCaseReceive).toBe('0.00120000');
+    const expected = computeWorstCaseReceiveNet(
+      Decimal.parse('0.00120000')!,
+      { asset: USD, amount: Decimal.parse('100')! },
+      BTC,
+      { asset: USD, amount: Decimal.parse('1.00')! },
+    );
+    expect(expected.ok).toBe(true);
+    if (expected.ok) {
+      expect(r.plan.worstCaseReceiveNet).toBe(expected.value.toString());
+    }
+    // The router self-validates, including checkNetConsistency.
+    expect(checkRoutePlan(r.plan, intent(), [q], NOW).ok).toBe(true);
+  });
+
+  it('selects the higher-net venue even when its gross is lower (the core RFC scenario)', () => {
+    // X: higher gross, but a give-asset network fee that lowers its net.
+    const x = quote({
+      quoteId: 'qx',
+      venueId: 'vx',
+      receive: { asset: BTC, amount: '0.00120000' },
+      networkFee: { asset: USD, amount: '5.00' },
+    });
+    // Y: lower gross, no fee. Both cover the whole give alone.
+    const y = quote({
+      quoteId: 'qy',
+      venueId: 'vy',
+      receive: { asset: BTC, amount: '0.00118000' },
+    });
+    // Ranking on gross alone would pick X (0.00120000 > 0.00118000).
+    expect(Decimal.parse('0.00120000')!.gt(Decimal.parse('0.00118000')!)).toBe(
+      true,
+    );
+    // Net: X is 0.00120000*100/105 = 0.00114285..., below Y's 0.00118000.
+    const r = route(intent(), [x, y], NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.plan.legs).toHaveLength(1);
+    expect(r.plan.legs[0]?.venueId).toBe('vy'); // net ranking changed the outcome
+    expect(r.plan.networkFee).toBeUndefined();
+    expect(r.plan.worstCaseReceiveNet).toBeUndefined();
+    expect(checkRoutePlan(r.plan, intent(), [x, y], NOW).ok).toBe(true);
+  });
+
+  it('leaves fee-free plans without networkFee or worstCaseReceiveNet (unchanged)', () => {
+    const r = route(intent(), [quote()], NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.plan.networkFee).toBeUndefined();
+    expect(r.plan.worstCaseReceiveNet).toBeUndefined();
+    // Identical to the pre-RFC plan shape.
+    expect(r.plan.aggregateReceive).toBe('0.00120000');
+    expect(r.plan.worstCaseReceive).toBe('0.00120000');
+  });
+
+  it('monotonicity on net: adding a better-net venue never lowers the chosen net', () => {
+    const x = quote({
+      quoteId: 'qx',
+      venueId: 'vx',
+      receive: { asset: BTC, amount: '0.00120000' },
+      networkFee: { asset: USD, amount: '5.00' },
+    });
+    const y = quote({
+      quoteId: 'qy',
+      venueId: 'vy',
+      receive: { asset: BTC, amount: '0.00118000' },
+    });
+    const only = route(intent(), [x], NOW);
+    const both = route(intent(), [x, y], NOW);
+    expect(only.ok && both.ok).toBe(true);
+    if (!only.ok || !both.ok) return;
+    expect(netOf(both.plan).gte(netOf(only.plan))).toBe(true);
+  });
+  it('skips a split whose legs carry network fees in different assets (not constructible)', () => {
+    // Two venues each cover part of the give, with fees in DIFFERENT assets. The
+    // aggregate cannot be summed across assets (the net helper supports one asset),
+    // so the split plan is not constructible and is skipped (RFC-0005).
+    const a = quote({
+      quoteId: 'qa',
+      venueId: 'va',
+      give: { asset: USD, amount: '60' },
+      receive: { asset: BTC, amount: '0.00072000' },
+      networkFee: { asset: USD, amount: '1.00' },
+    });
+    const b = quote({
+      quoteId: 'qb',
+      venueId: 'vb',
+      give: { asset: USD, amount: '60' },
+      receive: { asset: BTC, amount: '0.00072000' },
+      networkFee: { asset: BTC, amount: '0.00001000' },
+    });
+    const r = route(intent(), [a, b], NOW);
+    // No single venue covers the whole give, and the mixed-asset split is skipped.
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('min-receive-unreachable');
   });
 });
