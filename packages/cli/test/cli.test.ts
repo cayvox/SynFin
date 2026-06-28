@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { TradecraftAdapter } from '@synfin/adapters';
 import type {
   AssetId,
   Quote,
@@ -157,6 +159,34 @@ describe('aggregateQuotes', () => {
   });
 });
 
+describe('Tradecraft venue integration (bundled fixture)', () => {
+  it('quotes end to end from the committed Tradecraft fixture', async () => {
+    // Load the fixture the same way main.ts does (relative to this file).
+    const body: unknown = JSON.parse(
+      readFileSync(
+        new URL(
+          '../fixtures/tradecraft/quote-cc-usdcx-100.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+    const tradecraft = new TradecraftAdapter({
+      fetcher: () => Promise.resolve({ status: 200, body }),
+      // Stamp validUntil from the fixed test clock so the quote is valid at NOW.
+      now: () => NOW,
+    });
+    const result = await aggregateQuotes([tradecraft], intent('100'), NOW);
+
+    const outcome = result.outcomes.find((o) => o.venueId === 'tradecraft');
+    expect(outcome?.quote).not.toBeNull();
+    expect(outcome?.quote?.settlementMode).toBe('managed-deposit');
+    expect(outcome?.quote?.firmness).toBe('indicative');
+    expect(result.route.ok).toBe(true);
+    expect(result.bestSingle?.venueId).toBe('tradecraft');
+  });
+});
+
 describe('edgeBps + pickBestSingle (edge cases)', () => {
   it('edgeBps is null on null inputs, non-positive base, or unparseable values', () => {
     expect(edgeBps(null, '16')).toBeNull();
@@ -201,6 +231,7 @@ describe('formatReport', () => {
     expect(report).toContain('oneswap [managed-deposit]');
     expect(report).toContain('Best route:');
     expect(report).toContain('Edge vs best single venue: 0 bps');
+    expect(report).toContain('Tradecraft');
     expect(report).toContain('quote layer only');
   });
 

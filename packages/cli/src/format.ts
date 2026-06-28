@@ -67,7 +67,7 @@ export function formatReport(result: AggregateResult, mode: RunMode): string {
 
   lines.push('');
   lines.push(
-    'Note: CantonSwap and OneSwap are managed-deposit (Mode B) venues — quote layer only.',
+    'Note: CantonSwap, OneSwap, and Tradecraft are managed-deposit (Mode B) venues, quote layer only.',
   );
   lines.push(
     'No deposit, settlement, or funds movement is performed by this command.',
