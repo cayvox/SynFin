@@ -96,6 +96,16 @@ export async function runAdapterConformance(
       assetEquals(quote.receive.asset, req.want.asset),
       'quote receive asset must match the request want',
     );
+    // A disclosed networkFee MUST be in the give or receive asset (RFC-0005 §2),
+    // a cross-field rule the JSON schema cannot express. A third-asset fee needs
+    // an external price and is deferred to a follow-up RFC.
+    if (quote.networkFee !== undefined) {
+      ok(
+        assetEquals(quote.networkFee.asset, quote.give.asset) ||
+          assetEquals(quote.networkFee.asset, quote.receive.asset),
+        'networkFee must be denominated in the give or receive asset (RFC-0005 §2)',
+      );
+    }
     // Respect validUntil: the quote MUST be rejected once its validity passes.
     const afterValidity = new Date(new Date(quote.validUntil).getTime() + 1000);
     ok(

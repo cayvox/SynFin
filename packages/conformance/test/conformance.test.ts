@@ -1,9 +1,11 @@
 import { describe, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
+  CantexAdapter,
   CantonSwapAdapter,
   MockVenueAdapter,
   OneSwapAdapter,
+  TradecraftAdapter,
   type Fetcher,
 } from '@synfin/adapters';
 import { referenceRouter } from '@synfin/router-ref';
@@ -124,6 +126,45 @@ describe('real venue adapters pass adapter conformance (fixture-backed)', () => 
     });
     await runAdapterConformance(adapter, {
       requests: [ccRequest('100', 'o1'), ccRequest('250', 'o2')],
+      now: NOW,
+    });
+  });
+
+  it('CantexAdapter conforms with a give-asset networkFee (size 100)', async () => {
+    // The size-100 capture carries a positive CC network fee, exercising the
+    // give-or-receive-asset rule in the adapter conformance check (RFC-0005 §2).
+    const adapter = new CantexAdapter({
+      fetcher: fixtureFetcher(loadFixture('cantex/quote-cc-usdcx-100.json')),
+      now: () => NOW,
+    });
+    await runAdapterConformance(adapter, {
+      requests: [ccRequest('100', 'cx1')],
+      now: NOW,
+    });
+  });
+
+  it('CantexAdapter conforms with a waived networkFee (size 500)', async () => {
+    // The size-500 capture has network_fee 0 (waived), so the quote omits
+    // networkFee; it must still conform.
+    const adapter = new CantexAdapter({
+      fetcher: fixtureFetcher(loadFixture('cantex/quote-cc-usdcx-500.json')),
+      now: () => NOW,
+    });
+    await runAdapterConformance(adapter, {
+      requests: [ccRequest('500', 'cx2')],
+      now: NOW,
+    });
+  });
+
+  it('TradecraftAdapter conforms (no networkFee)', async () => {
+    const adapter = new TradecraftAdapter({
+      fetcher: fixtureFetcher(
+        loadFixture('tradecraft/quote-cc-usdcx-100.json'),
+      ),
+      now: () => NOW,
+    });
+    await runAdapterConformance(adapter, {
+      requests: [ccRequest('100', 'tc1')],
       now: NOW,
     });
   });
