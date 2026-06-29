@@ -1,5 +1,6 @@
 import {
   Decimal,
+  roundTakerFavorable,
   type AssetId,
   type Quote,
   type QuoteRejection,
@@ -28,12 +29,13 @@ import { fetchJson, type Fetcher } from './http.js';
  * - Response: nested QuoteLeg objects `{ amount, instrument_id, instrument_admin }`
  *   with all numbers as strings. `returned.amount` (the buy asset) is already net
  *   of the 5 bps POOL fee, so `feeBps` is reported as `0`.
- * - `fees.network_fee` is a FLAT per-swap amount denominated in the SELL asset
- *   (CC/Amulet), charged ON TOP of the give (the AMM consumes the full
+ * - `fees.network_fee` is a FLAT per-swap amount denominated in the SELL (give)
+ *   asset (CC/Amulet), charged ON TOP of the give (the AMM consumes the full
  *   `sellAmount`), and WAIVED for `sellAmount >= 500` (network_fee = 0). The flat
  *   amount can change over time, so it is read from each response, never
- *   hardcoded. It is modeled as a taker-favorable haircut on `receive` (see
- *   {@link normalizeCantexQuote}).
+ *   hardcoded. It is surfaced as the Quote's `networkFee` (RFC-0005 §1, §2), NOT
+ *   folded into `receive`: `receive` is the gross output, net of the pool fee
+ *   only, consistent with the other adapters.
  * - The endpoint exposes no validity, so quotes are `firmness = 'indicative'`
  *   and the adapter stamps a conservative TTL.
  *
@@ -127,16 +129,15 @@ function asRecord(v: unknown): Record<string, unknown> | undefined {
  * is untrusted input (ARCHITECTURE.md §1 invariant #7); this function never
  * throws.
  *
- * Fee modeling (never overstates the receipt, SPEC §3):
- * - The 5 bps POOL fee is already inside `returned.amount`, so `feeBps` is `0`.
- * - The flat CC `network_fee` is charged on top of the give. Rather than inflate
- *   the give (which would make the router mis-scale this leg), it is reflected as
- *   a taker-favorable haircut on `receive`: `effectiveGive = give - networkFee`,
- *   then `receive = returned * effectiveGive / give` floored to the want
- *   precision. This equals `returned` (floored) when the fee is `0`, and because
- *   AMM output is concave in input, the linear scaling under-estimates the true
- *   `returned(give - fee)`: it never overstates. The Quote's `give` stays pinned
- *   to the intent's give so cross-venue `assetEquals` and routing are consistent.
+ * Fee modeling (RFC-0005 §1, §2, §6):
+ * - `receive` is the GROSS output, floored to the want precision in the taker's
+ *   favor. `returned.amount` is already net of the 5 bps POOL fee, so `feeBps`
+ *   is `0` and `receive` is on the same basis as the other adapters.
+ * - The flat CC `network_fee`, when present and positive, is surfaced as the
+ *   Quote's `networkFee` `{ asset: give asset, amount }`, read from the response
+ *   (not hardcoded). It is NOT folded into `receive`. A waived (zero or absent)
+ *   fee omits `networkFee`. A positive fee in an asset other than the give is
+ *   rejected rather than mislabeled.
  */
 export function normalizeCantexQuote(
   raw: unknown,
@@ -170,9 +171,12 @@ export function normalizeCantexQuote(
     );
   }
 
-  // network_fee: a FLAT per-swap amount in the SELL asset, charged on top of the
-  // give. Absent (or waived) means 0.
-  let networkFee = Decimal.zero();
+  // network_fee: a FLAT per-swap amount in the SELL (give) asset, charged on top
+  // of the give and waived (0) at large sizes. Surfaced as the Quote's networkFee
+  // (RFC-0005 §2), never folded into receive. A positive fee in a different asset
+  // than the give is rejected rather than mislabeled. A zero or absent fee is
+  // omitted.
+  let networkFeeAmount: string | undefined;
   const fees = asRecord(r['fees']);
   const nf = fees !== undefined ? asRecord(fees['network_fee']) : undefined;
   if (nf !== undefined) {
@@ -184,44 +188,25 @@ export function normalizeCantexQuote(
     if (parsed === undefined || parsed.isNegative()) {
       return reject('invalid_response', 'network_fee.amount is not valid');
     }
-    // A non-zero flat fee must be in the sell asset; if it is in a different
-    // asset we cannot net it against the give, so reject rather than guess.
-    if (
-      parsed.isPositive() &&
-      asString(nf['instrument_id']) !== giveInstrumentId
-    ) {
-      return reject(
-        'invalid_response',
-        'network_fee is in an unexpected asset',
-      );
+    if (parsed.isPositive()) {
+      if (asString(nf['instrument_id']) !== giveInstrumentId) {
+        return reject(
+          'invalid_response',
+          'network_fee is in an unexpected asset',
+        );
+      }
+      networkFeeAmount = nfAmountStr;
     }
-    networkFee = parsed;
   }
 
-  // The give comes from the intent (already validated by quote()); re-parse
-  // defensively so the pure normalizer never throws on bad input.
-  const giveAmount = Decimal.parse(request.give.amount);
-  if (giveAmount === undefined || !giveAmount.isPositive()) {
-    return reject(
-      'invalid_request',
-      'give amount is not a valid positive decimal',
-    );
-  }
-
-  // Taker-favorable haircut for the flat CC network fee (see the doc comment).
-  const effectiveGive = giveAmount.sub(networkFee);
-  if (!effectiveGive.isPositive()) {
-    return reject(
-      'insufficient_liquidity',
-      'network fee meets or exceeds the give; uneconomical at this size',
-    );
-  }
-
-  // receive = returned * effectiveGive / give, floored to want precision. Equals
-  // returned (floored) when networkFee is 0. Mirrors router-ref buildLeg.
-  const receive = grossReturned
-    .mul(effectiveGive)
-    .divide(giveAmount, request.want.asset.decimals, 'floor');
+  // receive: the GROSS output, floored to the want precision in the taker's
+  // favor (returned is already net of the 5 bps pool fee). The flat CC network
+  // fee is NOT folded into receive; it is surfaced as networkFee below.
+  const receive = roundTakerFavorable(
+    grossReturned,
+    request.want.asset.decimals,
+    'receive',
+  );
   if (!receive.isPositive()) {
     return reject(
       'insufficient_liquidity',
@@ -238,11 +223,14 @@ export function normalizeCantexQuote(
     venueId,
     give: { asset: request.give.asset, amount: request.give.amount },
     receive: { asset: request.want.asset, amount: receive.toString() },
-    feeBps: 0, // 5 bps pool fee already inside returned; flat CC fee haircuts receive
+    feeBps: 0, // the 5 bps pool fee is already inside returned
     sourceKind: 'AMM',
     settlementMode: 'managed-deposit',
     firmness: 'indicative',
     validUntil,
+    ...(networkFeeAmount !== undefined
+      ? { networkFee: { asset: request.give.asset, amount: networkFeeAmount } }
+      : {}),
   };
 }
 
