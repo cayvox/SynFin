@@ -500,7 +500,11 @@ const D = (s: string): Decimal => Decimal.parse(s)!;
 const codes = (errs: { code: string }[]): string[] => errs.map((e) => e.code);
 
 /** A leg in the default USD -> BTC shape, optionally carrying a networkFee. */
-function legWithFee(fee?: { asset: AssetId; amount: string }): RouteLeg {
+function legWithFee(fee?: {
+  asset: AssetId;
+  amount: string;
+  appliedTo?: 'on_top' | 'deducted_from_give';
+}): RouteLeg {
   return {
     venueId: 'venue-1',
     give: { asset: USD, amount: '100.00' },
@@ -561,6 +565,64 @@ describe('computeWorstCaseReceiveNet (RFC-0005 §3)', () => {
     );
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toBe('unsupported_fee_asset');
+  });
+
+  it('deducted_from_give: a give-asset fee returns the gross unchanged, no re-base (RFC-0006 §3)', () => {
+    // Same inputs as the on_top re-base test above, but deducted_from_give: the
+    // fee was already taken from the input before pricing, so the net equals the
+    // delivered gross and is NOT re-based to 15.102802.
+    const r = computeWorstCaseReceiveNet(
+      D('15.2228400389'),
+      { asset: CC, amount: D('100') },
+      USDCx,
+      { asset: CC, amount: D('0.7948'), appliedTo: 'deducted_from_give' },
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.toString()).toBe('15.2228400389');
+  });
+
+  it('deducted_from_give: a non-give-asset fee is unsupported (RFC-0006 §2)', () => {
+    // Even the receive asset is rejected for a deducted_from_give fee: it can only
+    // be deducted from what the taker actually sends, the give asset.
+    const r = computeWorstCaseReceiveNet(
+      D('15.000000'),
+      { asset: CC, amount: D('100') },
+      USDCx,
+      { asset: USDCx, amount: D('0.5'), appliedTo: 'deducted_from_give' },
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('unsupported_fee_asset');
+  });
+
+  it('on_top: absent and explicit appliedTo are identical and re-base as in RFC-0005', () => {
+    const gross = D('15.2228400389');
+    const give = { asset: CC, amount: D('100') };
+    const absent = computeWorstCaseReceiveNet(gross, give, USDCx, {
+      asset: CC,
+      amount: D('0.7948'),
+    });
+    const explicit = computeWorstCaseReceiveNet(gross, give, USDCx, {
+      asset: CC,
+      amount: D('0.7948'),
+      appliedTo: 'on_top',
+    });
+    expect(absent.ok && explicit.ok).toBe(true);
+    if (absent.ok && explicit.ok) {
+      expect(absent.value.toString()).toBe('15.102802');
+      expect(explicit.value.toString()).toBe('15.102802');
+      expect(absent.value.eq(explicit.value)).toBe(true);
+    }
+  });
+
+  it('on_top: a receive-asset fee still subtracts (unchanged)', () => {
+    const r = computeWorstCaseReceiveNet(
+      D('15.000000'),
+      { asset: CC, amount: D('100') },
+      USDCx,
+      { asset: USDCx, amount: D('0.5'), appliedTo: 'on_top' },
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.toString()).toBe('14.500000');
   });
 
   it('a give-asset net never overstates the gross (property)', () => {
@@ -649,6 +711,67 @@ describe('checkNoOverstatement: network-fee no-understatement (RFC-0005 §5)', (
       'unsupported_fee_asset',
     );
   });
+
+  it('flags a leg whose appliedTo differs from the quote (fee_applied_to_mismatch, RFC-0006 §2)', () => {
+    // Quote is on_top (absent), leg claims deducted_from_give: same asset and
+    // amount, but a misrepresented fee direction.
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: USD, amount: '1.00' },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [
+        legWithFee({
+          asset: USD,
+          amount: '1.00',
+          appliedTo: 'deducted_from_give',
+        }),
+      ],
+    });
+    expect(codes(checkNoOverstatement(plan, quotes, NOW))).toContain(
+      'fee_applied_to_mismatch',
+    );
+  });
+
+  it('accepts a leg whose appliedTo matches the quote (both deducted_from_give)', () => {
+    // A deducted_from_give fee is a give-asset fee; USD is the quote's give asset.
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: {
+          asset: USD,
+          amount: '1.00',
+          appliedTo: 'deducted_from_give',
+        },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [
+        legWithFee({
+          asset: USD,
+          amount: '1.00',
+          appliedTo: 'deducted_from_give',
+        }),
+      ],
+    });
+    expect(checkNoOverstatement(plan, quotes, NOW)).toEqual([]);
+  });
+
+  it('accepts a leg with appliedTo absent against a quote with appliedTo absent (both on_top)', () => {
+    const quotes = [
+      validIndicativeQuote({
+        quoteId: 'quote-1',
+        networkFee: { asset: USD, amount: '1.00' },
+      }),
+    ];
+    const plan = validRoutePlan({
+      legs: [legWithFee({ asset: USD, amount: '1.00', appliedTo: 'on_top' })],
+    });
+    // Quote absent reads as on_top, leg explicit on_top: no mismatch.
+    expect(checkNoOverstatement(plan, quotes, NOW)).toEqual([]);
+  });
 });
 
 describe('checkAggregateConsistency: net never exceeds gross (RFC-0005 §5)', () => {
@@ -709,6 +832,46 @@ describe('checkNetConsistency (RFC-0005 §3, §5)', () => {
   it('accepts a plan with no networkFee and no worstCaseReceiveNet', () => {
     expect(checkNetConsistency(validRoutePlan(), intent)).toEqual([]);
   });
+
+  it('deducted_from_give: accepts a give-asset fee whose net equals the gross (RFC-0006 §3)', () => {
+    // The fee was deducted from the input before pricing, so the net does NOT
+    // re-base: worstCaseReceiveNet equals worstCaseReceive (the gross).
+    const plan = validRoutePlan({
+      networkFee: {
+        asset: USD,
+        amount: '1.00',
+        appliedTo: 'deducted_from_give',
+      },
+      worstCaseReceiveNet: '0.00110000', // equals the default gross
+    });
+    expect(checkNetConsistency(plan, intent)).toEqual([]);
+  });
+
+  it('deducted_from_give: flags a worstCaseReceiveNet that is not the gross (net_mismatch)', () => {
+    const plan = validRoutePlan({
+      networkFee: {
+        asset: USD,
+        amount: '1.00',
+        appliedTo: 'deducted_from_give',
+      },
+      worstCaseReceiveNet: '0.00100000', // re-based as if on_top: wrong for deducted
+    });
+    expect(codes(checkNetConsistency(plan, intent))).toContain('net_mismatch');
+  });
+
+  it('deducted_from_give: flags a non-give-asset fee (unsupported_fee_asset, RFC-0006 §2)', () => {
+    const plan = validRoutePlan({
+      networkFee: {
+        asset: BTC,
+        amount: '0.00000001',
+        appliedTo: 'deducted_from_give',
+      },
+      worstCaseReceiveNet: '0.00110000',
+    });
+    expect(codes(checkNetConsistency(plan, intent))).toContain(
+      'unsupported_fee_asset',
+    );
+  });
 });
 
 describe('compareByWorstCase: net-value ranking (RFC-0005 §3)', () => {
@@ -730,5 +893,22 @@ describe('compareByWorstCase: net-value ranking (RFC-0005 §3)', () => {
     expect(compareByWorstCase(lo, hi)).toBe(-1);
     expect(compareByWorstCase(hi, lo)).toBe(1);
     expect(compareByWorstCase(lo, lo)).toBe(0);
+  });
+
+  it('ranks a deducted_from_give plan on its gross, equal to a no-fee plan of the same gross (RFC-0006 §3)', () => {
+    // A deducted_from_give plan's net equals its gross, so it ranks identically to
+    // a no-fee plan with the same delivered receipt.
+    const deducted = validRoutePlan({
+      worstCaseReceive: '0.00110000',
+      networkFee: {
+        asset: USD,
+        amount: '5.00',
+        appliedTo: 'deducted_from_give',
+      },
+      worstCaseReceiveNet: '0.00110000', // net equals gross
+    });
+    const feeFree = validRoutePlan({ worstCaseReceive: '0.00110000' });
+    expect(compareByWorstCase(deducted, feeFree)).toBe(0);
+    expect(compareByWorstCase(feeFree, deducted)).toBe(0);
   });
 });

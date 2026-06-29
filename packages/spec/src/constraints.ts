@@ -68,15 +68,20 @@ export type NetValueResult =
  * intent's give, after charging the plan's network fee.
  *
  * - No fee (absent or zero amount): the net equals the gross.
- * - Fee in the give asset: `gross * give / (give + fee)`, floored to the receive
- *   asset's precision. This re-bases the receipt to "received per unit of total
- *   give-asset outlay", which is exact (no rate conversion) and taker-favorable.
- *   It mirrors the router's `buildLeg` `mul(...).divide(..., scale, 'floor')`
- *   pattern.
- * - Fee in the receive asset: `gross - fee` (already at receive precision; may be
- *   non-positive, which the caller decides how to handle).
- * - Fee in a third asset: not valued here (RFC-0005 §2 restricts the asset to the
- *   give or receive asset); returns `{ ok: false, reason: 'unsupported_fee_asset' }`.
+ * - `deducted_from_give` fee (RFC-0006 §2, §3): the fee MUST be in the give asset
+ *   (otherwise `unsupported_fee_asset`). The fee was already taken from the input
+ *   before the output was priced, so the delivered receive already equals the net;
+ *   the helper returns the gross unchanged and does NOT re-base.
+ * - `on_top` fee (the default when `appliedTo` is absent, RFC-0005 behavior):
+ *   - Fee in the give asset: `gross * give / (give + fee)`, floored to the receive
+ *     asset's precision. This re-bases the receipt to "received per unit of total
+ *     give-asset outlay", which is exact (no rate conversion) and taker-favorable.
+ *     It mirrors the router's `buildLeg` `mul(...).divide(..., scale, 'floor')`
+ *     pattern.
+ *   - Fee in the receive asset: `gross - fee` (already at receive precision; may be
+ *     non-positive, which the caller decides how to handle).
+ *   - Fee in a third asset: not valued here (RFC-0005 §2 restricts the asset to the
+ *     give or receive asset); returns `{ ok: false, reason: 'unsupported_fee_asset' }`.
  *
  * Inputs are {@link Decimal} so the function stays pure: call sites parse the
  * wire strings first.
@@ -85,11 +90,26 @@ export function computeWorstCaseReceiveNet(
   grossWorstCase: Decimal,
   give: { asset: AssetId; amount: Decimal },
   receiveAsset: AssetId,
-  networkFee?: { asset: AssetId; amount: Decimal },
+  networkFee?: {
+    asset: AssetId;
+    amount: Decimal;
+    appliedTo?: 'on_top' | 'deducted_from_give';
+  },
 ): NetValueResult {
   if (networkFee === undefined || networkFee.amount.isZero()) {
     return { ok: true, value: grossWorstCase };
   }
+  const applied = networkFee.appliedTo ?? 'on_top';
+  if (applied === 'deducted_from_give') {
+    // RFC-0006 §2: a deducted_from_give fee MUST be denominated in the give asset.
+    if (!assetEquals(networkFee.asset, give.asset)) {
+      return { ok: false, reason: 'unsupported_fee_asset' };
+    }
+    // RFC-0006 §3: the fee was taken from within the give before pricing, so the
+    // delivered receive is already net. Do NOT re-base; the net equals the gross.
+    return { ok: true, value: grossWorstCase };
+  }
+  // on_top (the default): RFC-0005 behavior, unchanged.
   if (assetEquals(networkFee.asset, give.asset)) {
     const value = grossWorstCase
       .mul(give.amount)
@@ -377,6 +397,19 @@ export function checkNoOverstatement(
           path: `/legs/${i}/networkFee/asset`,
         });
       } else {
+        // The leg MUST carry the same fee direction as its quote (RFC-0006 §2);
+        // a mismatch misrepresents whether the fee is on top of or deducted from
+        // the give. Absent reads as on_top on both sides.
+        if (
+          (legFee.appliedTo ?? 'on_top') !== (quoteFee.appliedTo ?? 'on_top')
+        ) {
+          errors.push({
+            code: 'fee_applied_to_mismatch',
+            message:
+              'leg networkFee appliedTo differs from the quote networkFee appliedTo',
+            path: `/legs/${i}/networkFee/appliedTo`,
+          });
+        }
         const legFeeAmt = parseAmount(
           legFee.amount,
           `/legs/${i}/networkFee/amount`,
@@ -438,7 +471,13 @@ export function checkNetConsistency(
     { asset: intent.give.asset, amount: give },
     intent.want.asset,
     fee !== undefined && feeAmount !== null
-      ? { asset: fee.asset, amount: feeAmount }
+      ? {
+          asset: fee.asset,
+          amount: feeAmount,
+          // Forward the fee direction so the helper, the single source, branches
+          // on it (RFC-0006 §3). Absent stays absent (read as on_top).
+          ...(fee.appliedTo !== undefined ? { appliedTo: fee.appliedTo } : {}),
+        }
       : undefined,
   );
   if (!computed.ok) {
