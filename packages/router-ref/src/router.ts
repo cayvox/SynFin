@@ -136,10 +136,13 @@ function buildLeg(
 
 /**
  * Assemble a plan from legs whose receipts sum to `worst` (= aggregate). Returns
- * `undefined` when a plan is not constructible (RFC-0005): legs carrying network
- * fees in differing assets cannot be summed, and the net helper supports only a
- * give-or-receive-asset fee. That case does not occur with the current venues
- * (all fee in the give asset); it is skipped rather than guessed.
+ * `undefined` when a plan is not constructible (RFC-0005, RFC-0006): legs carrying
+ * network fees in differing assets cannot be summed, and legs carrying fees in
+ * differing application directions (`appliedTo`) have an ambiguous aggregate
+ * direction, so neither is aggregated. The net helper supports only a
+ * give-or-receive-asset fee. Those cases do not occur with the current venues
+ * (each a single give-asset fee of one direction); they are skipped rather than
+ * guessed.
  */
 function planFromLegs(
   legs: RouteLeg[],
@@ -160,38 +163,66 @@ function planFromLegs(
   // Aggregate the per-leg network fees (RFC-0005 §6): each leg carries its source
   // quote's fee unchanged, so the plan fee is their sum in a single asset.
   let feeAsset: AssetId | undefined;
+  let feeApplied: 'on_top' | 'deducted_from_give' | undefined;
   let feeSum = Decimal.zero();
   let hasFee = false;
   for (const leg of legs) {
     const f = leg.networkFee;
     if (f === undefined) continue;
     hasFee = true;
+    // Absent appliedTo reads as on_top (RFC-0006 §1), the RFC-0005 behavior.
+    const dir = f.appliedTo ?? 'on_top';
     if (feeAsset === undefined) {
       feeAsset = f.asset;
-    } else if (!assetEquals(f.asset, feeAsset)) {
-      return undefined; // mixed-asset fees: not summable, not constructible here.
+      feeApplied = dir;
+    } else {
+      if (!assetEquals(f.asset, feeAsset)) {
+        return undefined; // mixed-asset fees: not summable, not constructible here.
+      }
+      if (dir !== feeApplied) {
+        // Mixed direction (one on_top, one deducted_from_give): the aggregate
+        // direction is ambiguous, so this split is not constructible here.
+        return undefined;
+      }
     }
     const amount = Decimal.parse(f.amount);
     if (amount === undefined) return undefined; // defensive: amount is shape-valid.
     feeSum = feeSum.add(amount);
   }
   // Fee-free: omit networkFee and worstCaseReceiveNet, byte-for-byte as before.
-  if (!hasFee || feeAsset === undefined) return base;
+  if (!hasFee || feeAsset === undefined || feeApplied === undefined)
+    return base;
 
-  // Net-value (RFC-0005 §3): the figure the router ranks on. worstCaseReceive
-  // stays the gross buy-asset floor; the net re-bases it against the total give
-  // outlay, per the intent's give.
+  // The aggregate fee, carrying its direction. appliedTo is set only for
+  // deducted_from_give, so an on_top (or legacy absent) plan stays byte-for-byte
+  // as before (RFC-0006 §3). The same object (with a Decimal amount) is fed to the
+  // helper, so the plan fee and the net are computed from one source.
+  const deducted = feeApplied === 'deducted_from_give';
+  const planFee = {
+    asset: feeAsset,
+    amount: feeSum.toString(),
+    ...(deducted ? { appliedTo: 'deducted_from_give' as const } : {}),
+  };
+
+  // Net-value (RFC-0005 §3, RFC-0006 §3): the figure the router ranks on.
+  // worstCaseReceive stays the gross buy-asset floor. For on_top the net re-bases
+  // it against the total give outlay; for deducted_from_give the receipt is already
+  // net, so the helper returns the gross unchanged.
   const net = computeWorstCaseReceiveNet(
     worst,
     { asset: ctx.giveAsset, amount: ctx.total },
     ctx.wantAsset,
-    { asset: feeAsset, amount: feeSum },
+    {
+      asset: feeAsset,
+      amount: feeSum,
+      ...(deducted ? { appliedTo: 'deducted_from_give' as const } : {}),
+    },
   );
   if (!net.ok) return undefined; // unsupported fee asset (should not occur).
 
   return {
     ...base,
-    networkFee: { asset: feeAsset, amount: feeSum.toString() },
+    networkFee: planFee,
     worstCaseReceiveNet: net.value.toString(),
   };
 }

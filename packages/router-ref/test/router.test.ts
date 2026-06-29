@@ -440,3 +440,116 @@ describe('reference router: network fee and net-value ranking (RFC-0005)', () =>
     if (!r.ok) expect(r.reason).toBe('min-receive-unreachable');
   });
 });
+
+describe('reference router: network-fee application direction (RFC-0006)', () => {
+  const netOf = (p: RoutePlan): Decimal =>
+    Decimal.parse(p.worstCaseReceiveNet ?? p.worstCaseReceive)!;
+  // Decisive numbers: give 1000, gross 0.00120000, fee 100. on_top re-bases to
+  // 0.00120000 * 1000 / 1100 = 0.00109090; deducted_from_give does not re-base.
+  const intent1000 = (): SwapIntent =>
+    intent({ give: { asset: USD, amount: '1000' } });
+  const quote1000 = (fee?: Quote['networkFee']): Quote =>
+    quote({
+      give: { asset: USD, amount: '1000' },
+      receive: { asset: BTC, amount: '0.00120000' },
+      settlementMode: 'managed-deposit',
+      ...(fee !== undefined ? { networkFee: fee } : {}),
+    });
+
+  it('deducted_from_give: the net equals the gross, no re-base (RFC-0006 §3)', () => {
+    const q = quote1000({
+      asset: USD,
+      amount: '100',
+      appliedTo: 'deducted_from_give',
+    });
+    const r = route(intent1000(), [q], NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // The plan fee carries the direction.
+    expect(r.plan.networkFee).toEqual({
+      asset: USD,
+      amount: '100',
+      appliedTo: 'deducted_from_give',
+    });
+    // The receipt is already net, so the net EQUALS the gross (0.00120000), NOT
+    // the on_top re-base of 0.00109090.
+    expect(r.plan.worstCaseReceive).toBe('0.00120000');
+    expect(r.plan.worstCaseReceiveNet).toBe('0.00120000');
+    expect(netOf(r.plan).eq(Decimal.parse('0.00120000')!)).toBe(true);
+    expect(r.plan.worstCaseReceiveNet).not.toBe('0.00109090');
+    // The router self-validates, including checkNetConsistency (the helper, given
+    // appliedTo, expects the net to equal the gross).
+    expect(checkRoutePlan(r.plan, intent1000(), [q], NOW).ok).toBe(true);
+  });
+
+  it('on_top: re-bases as before and the plan fee omits appliedTo (byte-for-byte)', () => {
+    const q = quote1000({ asset: USD, amount: '100', appliedTo: 'on_top' });
+    const r = route(intent1000(), [q], NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // The plan fee is the pre-RFC-0006 shape: no appliedTo key.
+    expect(r.plan.networkFee).toEqual({ asset: USD, amount: '100' });
+    const expected = computeWorstCaseReceiveNet(
+      Decimal.parse('0.00120000')!,
+      { asset: USD, amount: Decimal.parse('1000')! },
+      BTC,
+      { asset: USD, amount: Decimal.parse('100')! },
+    );
+    expect(expected.ok && expected.value.toString()).toBe('0.00109090');
+    expect(r.plan.worstCaseReceiveNet).toBe('0.00109090');
+    expect(checkRoutePlan(r.plan, intent1000(), [q], NOW).ok).toBe(true);
+  });
+
+  it('a fee with absent appliedTo behaves exactly as on_top (legacy)', () => {
+    const onTop = route(
+      intent1000(),
+      [quote1000({ asset: USD, amount: '100', appliedTo: 'on_top' })],
+      NOW,
+    );
+    const legacy = route(
+      intent1000(),
+      [quote1000({ asset: USD, amount: '100' })],
+      NOW,
+    );
+    expect(onTop.ok && legacy.ok).toBe(true);
+    if (!onTop.ok || !legacy.ok) return;
+    expect(legacy.plan.networkFee).toEqual({ asset: USD, amount: '100' });
+    expect(legacy.plan.worstCaseReceiveNet).toBe(
+      onTop.plan.worstCaseReceiveNet,
+    );
+  });
+
+  it('a split mixing on_top and deducted_from_give fees is not constructible', () => {
+    // Two give-asset fees of DIFFERENT directions: the aggregate direction is
+    // ambiguous, so the split is skipped. Neither venue covers the whole give
+    // alone, so no single-venue plan exists either.
+    const a = quote1000({
+      asset: USD,
+      amount: '1.00',
+      appliedTo: 'on_top',
+    });
+    const b = quote1000({
+      asset: USD,
+      amount: '1.00',
+      appliedTo: 'deducted_from_give',
+    });
+    const half = (q: Quote, id: string): Quote => ({
+      ...q,
+      quoteId: id,
+      venueId: id,
+      give: { asset: USD, amount: '500' },
+      receive: { asset: BTC, amount: '0.00060000' },
+    });
+    const r = route(intent1000(), [half(a, 'va'), half(b, 'vb')], NOW);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe('min-receive-unreachable');
+  });
+
+  it('fee-free: the plan omits networkFee and worstCaseReceiveNet (unchanged)', () => {
+    const r = route(intent1000(), [quote1000()], NOW);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.plan.networkFee).toBeUndefined();
+    expect(r.plan.worstCaseReceiveNet).toBeUndefined();
+  });
+});
