@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  CantexAdapter,
   CantonSwapAdapter,
   OneSwapAdapter,
   TradecraftAdapter,
@@ -50,10 +51,10 @@ Examples:
   synfin quote CC USDCx 125 --slippage-bps 50
   synfin settle-demo
 
-Tokens: CC, USDCx, CBTC. CantonSwap and Tradecraft need no key. OneSwap quoting
-needs ONESWAP_API_KEY (and ONESWAP_BASE_URL); without them that venue is skipped
-and the command falls back to recorded fixtures. \`settle-demo\` needs the Daml
-SDK toolchain (local in-memory ledger; no funds, no mainnet).`;
+Tokens: CC, USDCx, CBTC. CantonSwap, Tradecraft, and Cantex need no key. OneSwap
+quoting needs ONESWAP_API_KEY (and ONESWAP_BASE_URL); without them that venue is
+skipped and the command falls back to recorded fixtures. \`settle-demo\` needs the
+Daml SDK toolchain (local in-memory ledger; no funds, no mainnet).`;
 
 interface Args {
   from: string;
@@ -111,6 +112,8 @@ function liveAdapters(slippageBps: number): VenueAdapter[] {
   );
   // Tradecraft needs no key and defaults its base URL (https://api.tradecraft.fi/v1).
   adapters.push(new TradecraftAdapter({ fetcher: fetchJson() }));
+  // Cantex needs no key; the public quote path defaults to api.cantex.io/v1/public.
+  adapters.push(new CantexAdapter({ fetcher: fetchJson() }));
   return adapters;
 }
 
@@ -126,6 +129,9 @@ function fixtureAdapters(): VenueAdapter[] {
     }),
     new TradecraftAdapter({
       fetcher: fixtureFetcher('tradecraft/quote-cc-usdcx-100.json'),
+    }),
+    new CantexAdapter({
+      fetcher: fixtureFetcher('cantex/quote-cc-usdcx-100.json'),
     }),
   ];
 }

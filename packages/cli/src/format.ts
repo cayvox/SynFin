@@ -36,6 +36,16 @@ export function formatReport(result: AggregateResult, mode: RunMode): string {
         `  - ${o.venueId} ${tag}: ${o.quote.receive.amount} ${want}` +
           `  (${o.quote.firmness}, valid until ${o.quote.validUntil})`,
       );
+      // Surface the flat network fee and the net, the way 1inch shows a gas line.
+      const fee = o.quote.networkFee;
+      if (fee !== undefined) {
+        lines.push(
+          `      + ${fee.amount} ${fee.asset.instrumentId} network fee`,
+        );
+      }
+      if (o.netReceive !== null && o.netReceive !== o.quote.receive.amount) {
+        lines.push(`      net ${o.netReceive} ${want}`);
+      }
     } else {
       const code = o.rejection?.code ?? 'no_quote';
       lines.push(`  - ${o.venueId} ${tag}: no quote (${code})`);
@@ -53,13 +63,14 @@ export function formatReport(result: AggregateResult, mode: RunMode): string {
     lines.push(`  Worst-case receive: ${plan.worstCaseReceive} ${want}`);
     if (result.bestSingle) {
       lines.push(
-        `  Best single venue: ${result.bestSingle.venueId} (${result.bestSingle.receive} ${want})`,
+        `  Best single venue (by net): ${result.bestSingle.venueId}` +
+          ` (${result.bestSingle.net} ${want} net; ${result.bestSingle.receive} gross)`,
       );
     }
     lines.push(
       result.edgeBps === null
-        ? '  Edge vs best single venue: n/a'
-        : `  Edge vs best single venue: ${result.edgeBps} bps`,
+        ? '  Edge vs best single venue (net): n/a'
+        : `  Edge vs best single venue (net): ${result.edgeBps} bps`,
     );
   } else {
     lines.push(`Best route: none (${result.route.reason})`);
@@ -67,7 +78,10 @@ export function formatReport(result: AggregateResult, mode: RunMode): string {
 
   lines.push('');
   lines.push(
-    'Note: CantonSwap, OneSwap, and Tradecraft are managed-deposit (Mode B) venues, quote layer only.',
+    'Note: CantonSwap, OneSwap, Tradecraft, and Cantex are managed-deposit (Mode B) venues, quote layer only.',
+  );
+  lines.push(
+    'Routing ranks venues on net receipt: the gross output minus any network fee.',
   );
   lines.push(
     'No deposit, settlement, or funds movement is performed by this command.',
