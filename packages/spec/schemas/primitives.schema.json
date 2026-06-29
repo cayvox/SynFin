@@ -66,16 +66,21 @@
     },
     "NetworkFee": {
       "title": "NetworkFee",
-      "description": "A flat or gas-like cost the taker bears in addition to `give`, in its native asset (SPEC §4.3; RFC-0005 §2): the on-ledger equivalent of gas. Absent means the venue discloses no separate network fee. Normative constraint for 0.6.0: the asset MUST equal the quote's give.asset or its receive.asset; a fee denominated in a third asset needs an external price to value it and is deferred to a follow-up RFC. `amount` is non-negative.",
+      "description": "A flat or gas-like cost the taker bears for a swap, in its native asset (SPEC §4.3; RFC-0005 §2; RFC-0006): the on-ledger equivalent of gas. Absent means the venue discloses no separate network fee. The `appliedTo` direction defaults to on_top (the taker pays the fee in addition to the give, RFC-0005 behavior); deducted_from_give means the fee is taken from within the give before pricing. The asset MUST equal the quote's give.asset or its receive.asset, and MUST equal the give.asset when appliedTo is deducted_from_give; a fee denominated in a third asset needs an external price to value it and is deferred to a follow-up RFC. `amount` is non-negative.",
       "type": "object",
       "properties": {
         "asset": {
           "$ref": "primitives.schema.json#/$defs/AssetId",
-          "description": "The asset the network fee is denominated in. MUST equal the quote's give.asset or its receive.asset (RFC-0005 §2)."
+          "description": "The asset the network fee is denominated in. MUST equal the quote's give.asset or its receive.asset (RFC-0005 §2); MUST equal the give.asset when appliedTo is deducted_from_give (RFC-0006 §2)."
         },
         "amount": {
           "$ref": "primitives.schema.json#/$defs/Decimal",
           "description": "The fee amount in `asset`, non-negative."
+        },
+        "appliedTo": {
+          "type": "string",
+          "enum": ["on_top", "deducted_from_give"],
+          "description": "How the fee relates to the give the taker parts with (RFC-0006). Absent means on_top: the taker pays the fee in addition to the give (RFC-0005 behavior). deducted_from_give means the fee is taken from within the give before the swap is priced, so the delivered receive is already net of it; in that case the asset MUST equal the quote's give.asset."
         }
       },
       "required": ["asset", "amount"],

@@ -208,6 +208,10 @@ export interface Quote {
 export interface NetworkFee {
   asset: AssetId1;
   amount: Decimal2;
+  /**
+   * How the fee relates to the give the taker parts with (RFC-0006). Absent means on_top: the taker pays the fee in addition to the give (RFC-0005 behavior). deducted_from_give means the fee is taken from within the give before the swap is priced, so the delivered receive is already net of it; in that case the asset MUST equal the quote's give.asset.
+   */
+  appliedTo?: "on_top" | "deducted_from_give";
 }
 /**
  * Registry-qualified instrument identifier consistent with CIP-0056 (SPEC §3, RFC-0001 Decision A: the issuing registry plus the instrument, never a symbol alone). Exactly three fields: registry, instrumentId, decimals.
@@ -277,6 +281,10 @@ export interface RouteLeg {
 export interface NetworkFee1 {
   asset: AssetId1;
   amount: Decimal2;
+  /**
+   * How the fee relates to the give the taker parts with (RFC-0006). Absent means on_top: the taker pays the fee in addition to the give (RFC-0005 behavior). deducted_from_give means the fee is taken from within the give before the swap is priced, so the delivered receive is already net of it; in that case the asset MUST equal the quote's give.asset.
+   */
+  appliedTo?: "on_top" | "deducted_from_give";
 }
 /**
  * OPTIONAL. The aggregate network fee for the plan, in its native asset (RFC-0005 §2). Absent means the plan discloses no separate network fee.
@@ -284,4 +292,8 @@ export interface NetworkFee1 {
 export interface NetworkFee2 {
   asset: AssetId1;
   amount: Decimal2;
+  /**
+   * How the fee relates to the give the taker parts with (RFC-0006). Absent means on_top: the taker pays the fee in addition to the give (RFC-0005 behavior). deducted_from_give means the fee is taken from within the give before the swap is priced, so the delivered receive is already net of it; in that case the asset MUST equal the quote's give.asset.
+   */
+  appliedTo?: "on_top" | "deducted_from_give";
 }
