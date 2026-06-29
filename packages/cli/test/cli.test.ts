@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { TradecraftAdapter } from '@synfin/adapters';
+import { CantexAdapter, TradecraftAdapter } from '@synfin/adapters';
+import { Decimal } from '@synfin/spec';
 import type {
   AssetId,
   Quote,
@@ -59,6 +60,37 @@ function stubVenue(
         settlementMode: 'managed-deposit',
         firmness: 'indicative',
         validUntil: FUTURE,
+      };
+      return Promise.resolve(quote);
+    },
+  };
+}
+
+/**
+ * A stub venue with a give-asset networkFee (RFC-0005). `fee` null means no fee.
+ */
+function feeVenue(
+  venueId: string,
+  receive: string,
+  fee: string | null,
+): VenueAdapter {
+  return {
+    venueId,
+    settlementMode: 'managed-deposit',
+    quote(request: QuoteRequest): Promise<Quote | QuoteRejection> {
+      const quote: Quote = {
+        quoteId: `${venueId}:${request.nonce}`,
+        venueId,
+        give: { asset: request.give.asset, amount: request.give.amount },
+        receive: { asset: request.want.asset, amount: receive },
+        feeBps: 0,
+        sourceKind: 'AMM',
+        settlementMode: 'managed-deposit',
+        firmness: 'indicative',
+        validUntil: FUTURE,
+        ...(fee !== null
+          ? { networkFee: { asset: request.give.asset, amount: fee } }
+          : {}),
       };
       return Promise.resolve(quote);
     },
@@ -189,6 +221,59 @@ describe('Tradecraft venue integration (bundled fixture)', () => {
   });
 });
 
+describe('net-aware best single + edge (RFC-0005)', () => {
+  it('ranks the best single venue and the route on NET, not gross', async () => {
+    // H has a higher gross but a give-asset fee; L has a lower gross and no fee.
+    // Net: H 15.50 * 100/105 = 14.761904, below L 15.00. The give is 100 CC.
+    const high = feeVenue('high', '15.50', '5');
+    const low = feeVenue('low', '15.00', null);
+    const result = await aggregateQuotes([high, low], intent('100'), NOW);
+
+    // Best single by NET is L, even though H has the higher gross.
+    expect(result.bestSingle?.venueId).toBe('low');
+    // The router also picks L on net, and the chosen plan is net-consistent.
+    expect(result.route.ok).toBe(true);
+    if (result.route.ok) {
+      expect(result.route.plan.legs[0]?.venueId).toBe('low');
+    }
+    // pickBestSingle agrees: highest NET, not highest gross.
+    const quotes = result.outcomes
+      .map((o) => o.quote)
+      .filter((q): q is Quote => q !== null);
+    expect(pickBestSingle(quotes, intent('100'))?.venueId).toBe('low');
+
+    // The report shows H's network-fee line and its net below its gross.
+    const report = formatReport(result, 'live');
+    expect(report).toContain('5 Amulet network fee');
+    expect(report).toContain('net 14.761904');
+  });
+});
+
+describe('Cantex venue integration (bundled fixture, RFC-0005)', () => {
+  it('quotes a gross receive with a CC networkFee and a net below the gross', async () => {
+    const body: unknown = JSON.parse(
+      readFileSync(
+        new URL('../fixtures/cantex/quote-cc-usdcx-100.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    const cantex = new CantexAdapter({
+      fetcher: () => Promise.resolve({ status: 200, body }),
+      now: () => NOW,
+    });
+    const result = await aggregateQuotes([cantex], intent('100'), NOW);
+
+    const outcome = result.outcomes.find((o) => o.venueId === 'cantex');
+    expect(outcome?.quote).not.toBeNull();
+    // The flat CC fee is surfaced as networkFee in the give asset (Amulet).
+    expect(outcome?.quote?.networkFee?.asset.instrumentId).toBe('Amulet');
+    // netReceive is below the gross receive.
+    const gross = Decimal.parse(outcome!.quote!.receive.amount)!;
+    const net = Decimal.parse(outcome!.netReceive!)!;
+    expect(net.lt(gross)).toBe(true);
+  });
+});
+
 describe('edgeBps + pickBestSingle (edge cases)', () => {
   it('edgeBps is null on null inputs, non-positive base, or unparseable values', () => {
     expect(edgeBps(null, '16')).toBeNull();
@@ -214,9 +299,12 @@ describe('edgeBps + pickBestSingle (edge cases)', () => {
       firmness: 'indicative',
       validUntil: FUTURE,
     });
-    const best = pickBestSingle([mk('a', 'not-a-number'), mk('b', '16.50')]);
+    const best = pickBestSingle(
+      [mk('a', 'not-a-number'), mk('b', '16.50')],
+      intent(),
+    );
     expect(best?.venueId).toBe('b');
-    expect(pickBestSingle([])).toBeNull();
+    expect(pickBestSingle([], intent())).toBeNull();
   });
 });
 
@@ -232,8 +320,10 @@ describe('formatReport', () => {
     expect(report).toContain('cantonswap [managed-deposit]');
     expect(report).toContain('oneswap [managed-deposit]');
     expect(report).toContain('Best route:');
-    expect(report).toContain('Edge vs best single venue: 0 bps');
+    expect(report).toContain('Edge vs best single venue (net): 0 bps');
     expect(report).toContain('Tradecraft');
+    expect(report).toContain('Cantex');
+    expect(report).toContain('net receipt');
     expect(report).toContain('quote layer only');
   });
 
@@ -268,6 +358,7 @@ describe('formatReport', () => {
           settlementMode: 'managed-deposit',
           quote: null,
           rejection: null,
+          netReceive: null,
         },
       ],
       quotes: [],
