@@ -3,6 +3,7 @@ import fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import {
   Decimal,
+  roundTakerFavorable,
   isQuoteRejection,
   validateQuote,
   type AssetId,
@@ -50,6 +51,15 @@ interface CantexLike {
   fees: { network_fee: { amount: string } };
 }
 
+/** The new receive: the gross returned, floored to the want precision. */
+function flooredGross(returnedAmount: string, decimals: number): string {
+  return roundTakerFavorable(
+    Decimal.parse(returnedAmount)!,
+    decimals,
+    'receive',
+  ).toString();
+}
+
 function request(overrides: Partial<QuoteRequest> = {}): QuoteRequest {
   return {
     intentRef: 'intent-1',
@@ -75,18 +85,6 @@ function ctx(req: QuoteRequest = request()): {
     ttlSeconds: 30,
     giveInstrumentId: 'Amulet',
   };
-}
-
-/** Expected receive: returned * (give - networkFee) / give, floored to 6 dp. */
-function expectedReceive(
-  returnedAmount: string,
-  networkFee: string,
-  give: string,
-): string {
-  const ret = Decimal.parse(returnedAmount)!;
-  const g = Decimal.parse(give)!;
-  const fee = Decimal.parse(networkFee)!;
-  return ret.mul(g.sub(fee)).divide(g, 6, 'floor').toString();
 }
 
 function fetcherReturning(body: unknown, status = 200): Fetcher {
@@ -117,7 +115,7 @@ describe('CantexAdapter: capability', () => {
 });
 
 describe('normalizeCantexQuote: golden fixtures (pure)', () => {
-  it('maps the size-100 quote to a spec-valid managed-deposit Quote with the fee haircut', () => {
+  it('maps the size-100 quote to gross receive plus an explicit networkFee (RFC-0005)', () => {
     const q = normalizeCantexQuote(QUOTE100, ctx());
     expect(isQuoteRejection(q)).toBe(false);
     if (isQuoteRejection(q)) return;
@@ -130,44 +128,24 @@ describe('normalizeCantexQuote: golden fixtures (pure)', () => {
     expect(q.give).toEqual({ asset: CC, amount: '100' });
     expect(q.receive.asset).toEqual(USDCx);
     const fx = QUOTE100 as CantexLike;
-    expect(q.receive.amount).toBe(
-      expectedReceive(fx.returned.amount, fx.fees.network_fee.amount, '100'),
-    );
-    // The flat fee is non-zero here, so receive is strictly below returned.
-    expect(
-      Decimal.parse(q.receive.amount)!.lt(Decimal.parse(fx.returned.amount)!),
-    ).toBe(true);
+    // receive is the GROSS returned, floored to 6 dp, NOT the old haircut figure.
+    expect(q.receive.amount).toBe(flooredGross(fx.returned.amount, 6));
+    // The flat CC fee is surfaced as networkFee in the give asset, read verbatim.
+    expect(q.networkFee).toEqual({
+      asset: CC,
+      amount: fx.fees.network_fee.amount,
+    });
     expect(q.validUntil).toBe('2030-01-01T00:00:30.000Z');
   });
 
-  it('no-haircut branch: size-500 (network_fee 0) returns the floored returned exactly', () => {
+  it('waived branch: size-500 (network_fee 0) has gross receive and omits networkFee', () => {
     const req = request({ give: { asset: CC, amount: '500' } });
     const q = normalizeCantexQuote(QUOTE500, ctx(req));
     if (isQuoteRejection(q)) throw new Error('unexpected rejection');
     const fx = QUOTE500 as CantexLike;
-    // network_fee is 0, so receive == floor(returned, 6).
-    expect(q.receive.amount).toBe(
-      expectedReceive(fx.returned.amount, '0', '500'),
-    );
-    const flooredReturned = Decimal.parse(fx.returned.amount)!
-      .mul(Decimal.parse('1')!)
-      .divide(Decimal.parse('1')!, 6, 'floor')
-      .toString();
-    expect(q.receive.amount).toBe(flooredReturned);
-  });
-
-  it('never overstates: a large network_fee strictly lowers receive (and never exceeds returned)', () => {
-    const raw = {
-      returned: { amount: '15.000000', instrument_id: 'USDCx' },
-      fees: { network_fee: { amount: '10', instrument_id: 'Amulet' } },
-    };
-    const q = normalizeCantexQuote(raw, ctx());
-    if (isQuoteRejection(q)) throw new Error('unexpected rejection');
-    // 15 * (100 - 10) / 100 = 13.5
-    expect(q.receive.amount).toBe('13.500000');
-    expect(
-      Decimal.parse(q.receive.amount)!.lt(Decimal.parse('15.000000')!),
-    ).toBe(true);
+    expect(q.receive.amount).toBe(flooredGross(fx.returned.amount, 6));
+    expect(q.networkFee).toBeUndefined();
+    expect(validateQuote(q, { now: NOW }).ok).toBe(true);
   });
 });
 
@@ -216,16 +194,6 @@ describe('CantexAdapter: typed rejections (never throws for control flow)', () =
     expect(r.code).toBe('invalid_response');
   });
 
-  it('network_fee meets or exceeds the give -> insufficient_liquidity', () => {
-    const raw = {
-      returned: { amount: '15', instrument_id: 'USDCx' },
-      fees: { network_fee: { amount: '150', instrument_id: 'Amulet' } },
-    };
-    const r = normalizeCantexQuote(raw, ctx());
-    if (!isQuoteRejection(r)) throw new Error('expected a rejection');
-    expect(r.code).toBe('insufficient_liquidity');
-  });
-
   it('non-positive returned -> insufficient_liquidity', () => {
     const raw = { returned: { amount: '0', instrument_id: 'USDCx' } };
     const r = normalizeCantexQuote(raw, ctx());
@@ -258,13 +226,6 @@ describe('CantexAdapter: typed rejections (never throws for control flow)', () =
     const r = normalizeCantexQuote(raw, ctx());
     if (!isQuoteRejection(r)) throw new Error('expected a rejection');
     expect(r.code).toBe('invalid_response');
-  });
-
-  it('an unparseable give amount in the normalizer -> invalid_request', () => {
-    const req = request({ give: { asset: CC, amount: 'not-a-number' } });
-    const r = normalizeCantexQuote(QUOTE100, ctx(req));
-    if (!isQuoteRejection(r)) throw new Error('expected a rejection');
-    expect(r.code).toBe('invalid_request');
   });
 
   it('4xx with a non-object body -> invalid_request (fallback message)', async () => {
