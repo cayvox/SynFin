@@ -132,10 +132,12 @@ describe('normalizeCantexQuote: golden fixtures (pure)', () => {
     const fx = QUOTE100 as CantexLike;
     // receive is the GROSS returned, floored to 6 dp, NOT the old haircut figure.
     expect(q.receive.amount).toBe(flooredGross(fx.returned.amount, 6));
-    // The flat CC fee is surfaced as networkFee in the give asset, read verbatim.
+    // The flat CC fee is surfaced as networkFee in the give asset, read verbatim,
+    // charged on top of the give (RFC-0006 §6).
     expect(q.networkFee).toEqual({
       asset: CC,
       amount: fx.fees.network_fee.amount,
+      appliedTo: 'on_top',
     });
     expect(q.validUntil).toBe('2030-01-01T00:00:30.000Z');
   });

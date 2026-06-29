@@ -229,7 +229,15 @@ export function normalizeCantexQuote(
     firmness: 'indicative',
     validUntil,
     ...(networkFeeAmount !== undefined
-      ? { networkFee: { asset: request.give.asset, amount: networkFeeAmount } }
+      ? {
+          networkFee: {
+            asset: request.give.asset,
+            amount: networkFeeAmount,
+            // The flat CC fee is charged ON TOP of the give (RFC-0006 §6): the AMM
+            // consumes the full sellAmount and the fee is an additional outlay.
+            appliedTo: 'on_top' as const,
+          },
+        }
       : {}),
   };
 }
