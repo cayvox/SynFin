@@ -18,12 +18,14 @@ import {
 } from '../src/index.js';
 
 const CC: AssetId = {
-  registry: 'DSO::1220sample',
+  registry:
+    'DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc',
   instrumentId: 'Amulet',
   decimals: 10,
 };
 const USDCx: AssetId = {
-  registry: 'usdc::1220sample',
+  registry:
+    'decentralized-usdc-interchain-rep::12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef',
   instrumentId: 'USDCx',
   decimals: 6,
 };
