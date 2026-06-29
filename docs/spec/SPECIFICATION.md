@@ -1,7 +1,16 @@
 # Synfin Quote & Swap‑Intent Standard (SQSS)
 
-`Spec version: 0.6.0 (draft)` · `Status: working draft, RFC required for normative changes`
+`Spec version: 0.7.0 (draft)` · `Status: working draft, RFC required for normative changes`
 
+> Changes in `0.7.0` are driven by [RFC-0006](../rfcs/0006-network-fee-application-direction.md):
+> `networkFee` gains an OPTIONAL `appliedTo` discriminator (`on_top` | `deducted_from_give`). Absent
+> reads as `on_top`, which is RFC-0005's exact behavior, so every existing quote and plan stays valid.
+> `on_top` means the taker pays the fee in addition to the give, so `receive` is gross of it;
+> `deducted_from_give` means the fee is taken from within the give before the swap is priced, so
+> `receive` is already net of it and the fee asset MUST equal `give.asset`. The net is re-based by
+> `give + fee` only for `on_top`; a `deducted_from_give` fee does NOT re-base, since the delivered
+> receipt already reflects it (§4.3, §4.4). The addition is optional, so the change is backward compatible.
+>
 > Changes in `0.6.0` are driven by [RFC-0005](../rfcs/0005-network-fee-transparency.md): `Quote`,
 > `RouteLeg`, and `RoutePlan` gain an OPTIONAL `networkFee` (a flat or gas-like cost in its native
 > asset), `RoutePlan` gains an OPTIONAL `worstCaseReceiveNet` (the taker net the router ranks on), and
@@ -124,7 +133,7 @@ Quote {
 - `quoteId` MUST be present and unique within the scope of an intent's quote‑gathering round; it is the identifier a `RouteLeg.quoteRef` resolves to (§4.4, RFC‑0001 Decision C).
 - An **indicative** quote is non‑binding. A **firm** quote MUST be backed by a `commitment` that can be honored on‑ledger during settlement, and MUST be signed by the venue.
 - `settlementMode` MUST be present and MUST equal the issuing Venue's declared settlement mode (§5). It states how this leg settles (RFC‑0004): `atomic-allocation` means the venue settles via a CIP‑0056 allocation, so the leg MAY be part of a single atomic Daml transaction (§6); `managed-deposit` means the venue settles out of band (e.g. against a managed deposit/balance), so the leg MUST NOT be co‑settled atomically with other legs. It is carried on the `Quote` (alongside `sourceKind`) so a Router operating on quotes (§4.5) can determine each leg's settlement mode without separate venue lookup.
-- `receive` is net of the in-receive-asset proportional fee (`feeBps`) only; flat or differently-denominated costs are NOT folded into `receive`. A venue that bears such a cost carries it in the OPTIONAL `networkFee`, a flat or gas-like cost on top of `give` in its native asset (RFC-0005 §1, §2). For `0.6.0`, `networkFee.asset` MUST equal the quote's `give.asset` or `receive.asset`; a fee in a third asset is deferred to a follow-up RFC. `networkFee` is optional, so a quote that omits it is unchanged and consumers ignore the absent field (§9).
+- `receive` is net of the in-receive-asset proportional fee (`feeBps`) only; flat or differently-denominated costs are NOT folded into `receive`. A venue that bears such a cost carries it in the OPTIONAL `networkFee`, a flat or gas-like cost in its native asset (RFC-0005 §1, §2). The OPTIONAL `networkFee.appliedTo` states how the fee relates to the give (RFC-0006): absent reads as `on_top` (the taker pays the fee in addition to the give, RFC-0005's behavior), and `deducted_from_give` means the fee is taken from within the give before the swap is priced. `receive` is the delivered buy asset in both directions: gross of an `on_top` fee (paid separately in its own asset), net of a `deducted_from_give` fee (already subtracted from the input before pricing). `networkFee.asset` MUST equal the quote's `give.asset` or `receive.asset`, and MUST equal `give.asset` when `appliedTo` is `deducted_from_give`; a fee in a third asset is deferred to a follow-up RFC. `networkFee` is optional, so a quote that omits it is unchanged and consumers ignore the absent field (§9).
 - Consumers MUST reject quotes where `validUntil` has passed, where amounts are non‑positive, where decimals/units are inconsistent with the instrument, where `settlementMode` is absent or unrecognized, or (for firm) where the signature/commitment does not verify.
 
 ### 4.4 RoutePlan
@@ -151,7 +160,7 @@ RouteLeg {
 - The sum of `legs[].give.amount` MUST equal `intent.give.amount` (conservation).
 - No `RouteLeg` may reference a venue excluded by `venueAllowList`, and `legs.length` MUST respect `maxVenues`.
 - A `RoutePlan` whose `worstCaseReceive` < `intent.want.minReceive` MUST NOT be submitted for settlement.
-- The OPTIONAL `RoutePlan.networkFee` (aggregate) and `RouteLeg.networkFee` carry a flat or gas-like cost in its native asset; `RoutePlan.worstCaseReceiveNet` is the taker's worst-case net value in the receive asset, per the intent's give, after that fee (RFC-0005 §3). A net-aware router ranks on `worstCaseReceiveNet`; when it is absent it reads as equal to `worstCaseReceive`. The floor on `intent.want.minReceive` stays on `worstCaseReceive` (the delivered buy asset), and conservation (`Σ legs[].give.amount == intent.give.amount`) stays on the give principal: a give-asset network fee is an additional outlay on top, not part of the conserved principal. These fields are optional, so a plan that omits them ranks by `worstCaseReceive` exactly as before.
+- The OPTIONAL `RoutePlan.networkFee` (aggregate) and `RouteLeg.networkFee` carry a flat or gas-like cost in its native asset; `RoutePlan.worstCaseReceiveNet` is the taker's worst-case net value in the receive asset, per the intent's give, after that fee (RFC-0005 §3). A net-aware router ranks on `worstCaseReceiveNet`; when it is absent it reads as equal to `worstCaseReceive`. How the net is computed branches on `networkFee.appliedTo` (RFC-0006 §3): an `on_top` give-asset fee re-bases the receipt by the total outlay, `gross * give / (give + fee)`, because the taker parts with `give + fee`; an `on_top` receive-asset fee subtracts directly, `gross - fee`; a `deducted_from_give` fee does NOT re-base, so its net equals `worstCaseReceive`, because the fee was taken from the input before the output was priced and the delivered receipt already reflects it. The floor on `intent.want.minReceive` stays on `worstCaseReceive` (the delivered buy asset), and conservation (`Σ legs[].give.amount == intent.give.amount`) stays on the give principal: an `on_top` give-asset fee is an additional outlay, a `deducted_from_give` fee is taken from within the give principal, and neither alters the conserved principal. These fields are optional, so a plan that omits them ranks by `worstCaseReceive` exactly as before.
 - **Quote linkage (RFC‑0001 Decision C).** Each `RouteLeg.quoteRef` MUST equal the `quoteId` of an actual `Quote` returned for the same intent. A `RoutePlan` MUST NOT contain a leg whose `quoteRef` does not resolve to a known quote.
 - **No overstatement (RFC‑0001 Decision C).** For every leg, against the quote it references:
   - `leg.receive.amount` MUST NOT exceed that quote's `receive.amount`;

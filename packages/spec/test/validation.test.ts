@@ -200,6 +200,29 @@ describe('validateQuote (SPEC §4.3, §8)', () => {
     ).toBe(true);
   });
 
+  it('accepts a networkFee with or without the optional appliedTo discriminator (RFC-0006 §1)', () => {
+    // appliedTo absent: reads as on_top, RFC-0005's behavior, still valid.
+    expect(
+      validateQuote(
+        validIndicativeQuote({
+          networkFee: { asset: USD, amount: '1.00' },
+        }),
+      ).ok,
+    ).toBe(true);
+    // appliedTo: 'deducted_from_give' (a give-asset fee): valid under the schema.
+    expect(
+      validateQuote(
+        validIndicativeQuote({
+          networkFee: {
+            asset: USD,
+            amount: '1.00',
+            appliedTo: 'deducted_from_give',
+          },
+        }),
+      ).ok,
+    ).toBe(true);
+  });
+
   it('rejects a quote missing quoteId (RFC-0001 Decision C)', () => {
     const { quoteId, ...rest } = validIndicativeQuote();
     void quoteId;
