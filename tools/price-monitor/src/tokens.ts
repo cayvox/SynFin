@@ -8,19 +8,19 @@ import type { AssetId } from '@synfin/spec';
 export const TOKENS: Readonly<Record<string, AssetId>> = {
   CC: {
     registry:
-      'DSO::1220sample0000000000000000000000000000000000000000000000000000000000',
+      'DSO::1220b1431ef217342db44d516bb9befde802be7d8899637d290895fa58880f19accc',
     instrumentId: 'Amulet',
     decimals: 10,
   },
   USDCx: {
     registry:
-      'decentralized-usdc-interchain-rep::1220sample00000000000000000000000000000000000000000000000000000000',
+      'decentralized-usdc-interchain-rep::12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef',
     instrumentId: 'USDCx',
     decimals: 6,
   },
   CBTC: {
     registry:
-      'cbtc-network::1220sample000000000000000000000000000000000000000000000000000000',
+      'cbtc-network::12205af3b949a04776fc48cdcc05a060f6bda2e470632935f375d1049a8546a3b262',
     instrumentId: 'CBTC',
     decimals: 8,
   },
