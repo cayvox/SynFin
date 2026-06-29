@@ -1,6 +1,6 @@
 # RFC-0005: Network-fee transparency: gross receipts, a separate network fee, and net-value routing
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-06-28
 - **Author / Steward:** Cayvox Labs (steward)
 - **Targets spec version:** SQSS `0.6.0`
