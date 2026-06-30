@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CantexAdapter, TradecraftAdapter } from '@synfin/adapters';
+import {
+  CantexAdapter,
+  OneSwapAdapter,
+  TradecraftAdapter,
+} from '@synfin/adapters';
 import { Decimal } from '@synfin/spec';
 import type {
   AssetId,
@@ -68,11 +72,13 @@ function stubVenue(
 
 /**
  * A stub venue with a give-asset networkFee (RFC-0005). `fee` null means no fee.
+ * `appliedTo` (RFC-0006) sets the direction; absent leaves it off (read as on_top).
  */
 function feeVenue(
   venueId: string,
   receive: string,
   fee: string | null,
+  appliedTo?: 'on_top' | 'deducted_from_give',
 ): VenueAdapter {
   return {
     venueId,
@@ -89,7 +95,13 @@ function feeVenue(
         firmness: 'indicative',
         validUntil: FUTURE,
         ...(fee !== null
-          ? { networkFee: { asset: request.give.asset, amount: fee } }
+          ? {
+              networkFee: {
+                asset: request.give.asset,
+                amount: fee,
+                ...(appliedTo !== undefined ? { appliedTo } : {}),
+              },
+            }
           : {}),
       };
       return Promise.resolve(quote);
@@ -271,6 +283,117 @@ describe('Cantex venue integration (bundled fixture, RFC-0005)', () => {
     const gross = Decimal.parse(outcome!.quote!.receive.amount)!;
     const net = Decimal.parse(outcome!.netReceive!)!;
     expect(net.lt(gross)).toBe(true);
+  });
+});
+
+describe('deducted_from_give net and formatting (RFC-0006)', () => {
+  it('a deducted_from_give fee leaves the net equal to the gross; on_top re-bases below it', async () => {
+    // Same gross 15.50 and the same fee 5, give 100 CC. Under on_top the net
+    // re-bases to 15.50 * 100 / 105 = 14.761904; under deducted_from_give the
+    // receive is already net, so the net equals the gross.
+    const dRes = await aggregateQuotes(
+      [feeVenue('deducted', '15.50', '5', 'deducted_from_give')],
+      intent('100'),
+      NOW,
+    );
+    const oRes = await aggregateQuotes(
+      [feeVenue('ontop', '15.50', '5', 'on_top')],
+      intent('100'),
+      NOW,
+    );
+    const dOut = dRes.outcomes.find((o) => o.venueId === 'deducted');
+    const oOut = oRes.outcomes.find((o) => o.venueId === 'ontop');
+    // Deducted: net equals the gross receive (compared as Decimal).
+    expect(
+      Decimal.parse(dOut!.netReceive!)!.eq(
+        Decimal.parse(dOut!.quote!.receive.amount)!,
+      ),
+    ).toBe(true);
+    // On_top: net re-bases strictly below the gross.
+    expect(oOut!.netReceive).toBe('14.761904');
+    expect(
+      Decimal.parse(oOut!.netReceive!)!.lt(
+        Decimal.parse(oOut!.quote!.receive.amount)!,
+      ),
+    ).toBe(true);
+  });
+
+  it('pickBestSingle does not penalize a deducted_from_give venue vs a fee-free venue of the same gross', () => {
+    const G = '15.00';
+    const mk = (
+      venueId: string,
+      appliedTo?: 'on_top' | 'deducted_from_give',
+    ): Quote => ({
+      quoteId: `${venueId}:q`,
+      venueId,
+      give: { asset: CC, amount: '100' },
+      receive: { asset: USDCx, amount: G },
+      feeBps: 0,
+      sourceKind: 'AMM',
+      settlementMode: 'managed-deposit',
+      firmness: 'indicative',
+      validUntil: FUTURE,
+      ...(appliedTo !== undefined
+        ? { networkFee: { asset: CC, amount: '5', appliedTo } }
+        : {}),
+    });
+    // D carries a deducted_from_give fee; E is fee-free. Both gross G.
+    const best = pickBestSingle(
+      [mk('d', 'deducted_from_give'), mk('e')],
+      intent('100'),
+    );
+    // D's net equals its gross G (no re-base), so it ties E and is not ranked
+    // below it because of the fee. The chosen net is exactly G.
+    expect(Decimal.parse(best!.net)!.eq(Decimal.parse(G)!)).toBe(true);
+  });
+
+  it('formats a deducted fee as taken from the deposit, with no per-venue net line', async () => {
+    const result = await aggregateQuotes(
+      [feeVenue('deducted', '15.50', '5', 'deducted_from_give')],
+      intent('100'),
+      NOW,
+    );
+    const report = formatReport(result, 'live');
+    expect(report).toContain('5 Amulet network fee, deducted from the deposit');
+    expect(report).not.toContain('+ 5 Amulet network fee'); // not the on-top framing
+    expect(report).not.toMatch(/net 15\.5/); // receive is already the net
+  });
+
+  it('formats an on_top fee with the on-top framing and a net line below the gross', async () => {
+    const result = await aggregateQuotes(
+      [feeVenue('ontop', '15.50', '5', 'on_top')],
+      intent('100'),
+      NOW,
+    );
+    const report = formatReport(result, 'live');
+    expect(report).toContain('+ 5 Amulet network fee');
+    expect(report).toContain('net 14.761904');
+  });
+});
+
+describe('OneSwap venue integration (bundled real fixture, RFC-0006)', () => {
+  it('emits a deducted_from_give CC networkFee whose net equals the gross receive', async () => {
+    const body: unknown = JSON.parse(
+      readFileSync(
+        new URL('../fixtures/oneswap/quote-cc-usdcx-100.json', import.meta.url),
+        'utf8',
+      ),
+    );
+    const oneswap = new OneSwapAdapter({
+      fetcher: () => Promise.resolve({ status: 200, body }),
+      apiKey: 'fixture',
+      now: () => NOW,
+    });
+    const result = await aggregateQuotes([oneswap], intent('100'), NOW);
+    const outcome = result.outcomes.find((o) => o.venueId === 'oneswap');
+    expect(outcome?.quote).not.toBeNull();
+    // The flat CC fee is surfaced as a deducted_from_give give-asset fee (Amulet).
+    expect(outcome?.quote?.networkFee?.appliedTo).toBe('deducted_from_give');
+    expect(outcome?.quote?.networkFee?.asset.instrumentId).toBe('Amulet');
+    // The receive is already net of the deducted fee, so the net equals the gross.
+    const gross = Decimal.parse(outcome!.quote!.receive.amount)!;
+    const net = Decimal.parse(outcome!.netReceive!)!;
+    expect(net.eq(gross)).toBe(true);
   });
 });
 

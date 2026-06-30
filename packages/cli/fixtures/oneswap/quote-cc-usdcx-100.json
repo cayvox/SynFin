@@ -1,0 +1,32 @@
+{
+  "inputToken": "Amulet",
+  "inputTokenAdmin": "",
+  "outputToken": "USDCx",
+  "outputTokenAdmin": "decentralized-usdc-interchain-rep::12208115f1e168dd7e792320be9c4ca720c751a02a3053c7606e1c1cd3dad9bf60ef",
+  "inputAmount": "100",
+  "totalInputAmount": "100.0000000000",
+  "outputAmount": "13.2629233530",
+  "priceImpact": "0.3528",
+  "effectivePrice": "0.1445896724",
+  "rate": "0.1445896724",
+  "fee": 0.003,
+  "poolFeeAmount": "0.2751840390",
+  "lpFeeAmount": "0.2063880292",
+  "platformFeeAmount": "0.0687960097",
+  "inputAmountAfterPoolFee": "91.4528289610",
+  "networkFeeAmount": "8.2719870000",
+  "poolId": "68ba82e7-648d-4741-b3f7-f8d6aa252638",
+  "expiresIn": 30,
+  "maxPriceImpact": 15,
+  "settlementSafety": null,
+  "estimatedTrafficCost": {
+    "bytes": 20024,
+    "usd": "1.201439",
+    "cc": "8.271987",
+    "extraTrafficPricePerMb": "60.00",
+    "amuletPrice": "0.145242"
+  },
+  "trafficFeeInInput": "8.2719870000",
+  "networkFeePolicy": null,
+  "platformFeePolicy": null
+}
