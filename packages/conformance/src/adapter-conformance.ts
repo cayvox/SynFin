@@ -98,13 +98,22 @@ export async function runAdapterConformance(
     );
     // A disclosed networkFee MUST be in the give or receive asset (RFC-0005 §2),
     // a cross-field rule the JSON schema cannot express. A third-asset fee needs
-    // an external price and is deferred to a follow-up RFC.
+    // an external price and is deferred to a follow-up RFC. A deducted_from_give
+    // fee is stricter: it MUST be in the give asset, since it is taken from within
+    // the give before the swap is priced (RFC-0006 §2).
     if (quote.networkFee !== undefined) {
-      ok(
-        assetEquals(quote.networkFee.asset, quote.give.asset) ||
-          assetEquals(quote.networkFee.asset, quote.receive.asset),
-        'networkFee must be denominated in the give or receive asset (RFC-0005 §2)',
-      );
+      if (quote.networkFee.appliedTo === 'deducted_from_give') {
+        ok(
+          assetEquals(quote.networkFee.asset, quote.give.asset),
+          'a deducted_from_give networkFee must be denominated in the give asset (RFC-0006 §2)',
+        );
+      } else {
+        ok(
+          assetEquals(quote.networkFee.asset, quote.give.asset) ||
+            assetEquals(quote.networkFee.asset, quote.receive.asset),
+          'networkFee must be denominated in the give or receive asset (RFC-0005 §2)',
+        );
+      }
     }
     // Respect validUntil: the quote MUST be rejected once its validity passes.
     const afterValidity = new Date(new Date(quote.validUntil).getTime() + 1000);

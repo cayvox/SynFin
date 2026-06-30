@@ -154,6 +154,12 @@ const feeScenarioArbitrary: fc.Arbitrary<Scenario> = fc
       fc.record({
         sats: fc.bigInt({ min: 1n, max: 10n ** 11n }),
         fee: fc.integer({ min: 0, max: 1000 }),
+        // A give-asset fee can be charged on top of the give or deducted from
+        // within it (RFC-0006 §2); both directions are valid for a give-asset fee.
+        applied: fc.constantFrom(
+          'on_top' as const,
+          'deducted_from_give' as const,
+        ),
       }),
       { minLength: 1, maxLength: 3 },
     ),
@@ -170,7 +176,13 @@ const feeScenarioArbitrary: fc.Arbitrary<Scenario> = fc
       firmness: 'indicative',
       validUntil: FAR_FUTURE,
       ...(v.fee > 0
-        ? { networkFee: { asset: USD, amount: String(v.fee) } }
+        ? {
+            networkFee: {
+              asset: USD,
+              amount: String(v.fee),
+              appliedTo: v.applied,
+            },
+          }
         : {}),
     }));
     return { intent: baseIntent(giveTotal), quotes };
@@ -404,5 +416,75 @@ export function runRouterConformance(
       r.ok,
       'floor-on-gross: minReceive is checked on the gross worstCaseReceive, so a plan must exist',
     );
+  }
+
+  // 7. Deterministic deducted_from_give net (RFC-0006 §3), not fuzz. give = 1000
+  //    USD. Venue D has gross 0.00120000 and a give-asset fee of 100 that is
+  //    deducted from WITHIN the give, so the receipt is already net: the net
+  //    EQUALS the gross, with no re-base. Contrast case 6, where the SAME gross
+  //    0.00120000 and the SAME fee 100 under on_top dropped the net to about
+  //    0.00109. This proves the router honors appliedTo via the shared helper.
+  {
+    const intent = baseIntent(1000);
+    const d: Quote = {
+      quoteId: 'qd',
+      venueId: 'vd',
+      give: { asset: USD, amount: '1000' },
+      receive: { asset: BTC, amount: '0.00120000' },
+      feeBps: 0,
+      sourceKind: 'AMM',
+      settlementMode: 'managed-deposit',
+      firmness: 'indicative',
+      validUntil: FAR_FUTURE,
+      networkFee: {
+        asset: USD,
+        amount: '100',
+        appliedTo: 'deducted_from_give',
+      },
+    };
+    const r = router.route(intent, [d], now);
+    ok(r.ok, 'deducted: a plan must exist');
+    if (r.ok) {
+      ok(
+        netWorstOf(r.plan).eq(Decimal.parse('0.00120000')!),
+        'deducted: the net equals the gross 0.00120000 exactly, no re-base',
+      );
+    }
+  }
+
+  // 8. A deducted_from_give fee is not penalized relative to a fee-free venue of
+  //    the same gross (RFC-0006 §3). D (deducted, gross G) and E (no fee, gross G)
+  //    tie on net, both equal to G, so a plan exists and the chosen net equals G.
+  {
+    const G = '0.00120000';
+    const intent = baseIntent(1000);
+    const common = {
+      give: { asset: USD, amount: '1000' },
+      receive: { asset: BTC, amount: G },
+      feeBps: 0,
+      sourceKind: 'AMM' as const,
+      settlementMode: 'managed-deposit' as const,
+      firmness: 'indicative' as const,
+      validUntil: FAR_FUTURE,
+    };
+    const d: Quote = {
+      quoteId: 'qd',
+      venueId: 'vd',
+      ...common,
+      networkFee: {
+        asset: USD,
+        amount: '100',
+        appliedTo: 'deducted_from_give',
+      },
+    };
+    const e: Quote = { quoteId: 'qe', venueId: 've', ...common };
+    const r = router.route(intent, [d, e], now);
+    ok(r.ok, 'deducted-vs-free: a plan must exist');
+    if (r.ok) {
+      ok(
+        netWorstOf(r.plan).eq(Decimal.parse(G)!),
+        'deducted-vs-free: the chosen net equals the shared gross G',
+      );
+    }
   }
 }
