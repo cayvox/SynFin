@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   CantexAdapter,
@@ -9,6 +9,7 @@ import {
   type Fetcher,
 } from '@synfin/adapters';
 import { referenceRouter } from '@synfin/router-ref';
+import { isQuoteRejection } from '@synfin/spec';
 import type { AssetId, QuoteRequest } from '@synfin/spec';
 import { runAdapterConformance, runRouterConformance } from '../src/index.js';
 
@@ -128,6 +129,25 @@ describe('real venue adapters pass adapter conformance (fixture-backed)', () => 
       requests: [ccRequest('100', 'o1'), ccRequest('250', 'o2')],
       now: NOW,
     });
+  });
+
+  it('OneSwapAdapter emits a deducted_from_give give-asset networkFee (RFC-0006 §2)', async () => {
+    // Lock that OneSwap exercises the deducted_from_give path: its flat CC fee is
+    // deducted from within the give, so the quote carries appliedTo
+    // deducted_from_give in the give asset (CC).
+    const adapter = new OneSwapAdapter({
+      baseUrl: 'https://example.invalid',
+      apiKey: 'test-key-not-a-secret',
+      fetcher: fixtureFetcher(loadFixture('oneswap/quote-cc-usdcx-100.json')),
+      now: () => NOW,
+    });
+    const q = await adapter.quote(ccRequest('100', 'oc1'));
+    if (isQuoteRejection(q)) {
+      throw new Error(`unexpected rejection: ${q.code}`);
+    }
+    expect(q.networkFee).toBeDefined();
+    expect(q.networkFee?.appliedTo).toBe('deducted_from_give');
+    expect(q.networkFee?.asset).toEqual(CC);
   });
 
   it('CantexAdapter conforms with a give-asset networkFee (size 100)', async () => {
