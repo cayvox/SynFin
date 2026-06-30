@@ -51,10 +51,11 @@ Examples:
   synfin quote CC USDCx 125 --slippage-bps 50
   synfin settle-demo
 
-Tokens: CC, USDCx, CBTC. CantonSwap, Tradecraft, and Cantex need no key. OneSwap
-quoting needs ONESWAP_API_KEY (and ONESWAP_BASE_URL); without them that venue is
-skipped and the command falls back to recorded fixtures. \`settle-demo\` needs the
-Daml SDK toolchain (local in-memory ledger; no funds, no mainnet).`;
+Tokens: CC, USDCx, CBTC. CantonSwap, Tradecraft, and Cantex need no key. OneSwap,
+unlike those, needs an API key (ONESWAP_API_KEY, with an optional ONESWAP_BASE_URL);
+without it OneSwap reports not_configured and the command continues with the other
+venues. \`settle-demo\` needs the Daml SDK toolchain (local in-memory ledger; no
+funds, no mainnet).`;
 
 interface Args {
   from: string;
@@ -123,9 +124,10 @@ function fixtureAdapters(): VenueAdapter[] {
       fetcher: fixtureFetcher('cantonswap/quote-amulet-usdcx-125.json'),
     }),
     new OneSwapAdapter({
-      baseUrl: 'fixture',
+      // A dummy key so the adapter calls the fixture fetcher instead of returning
+      // not_configured. The fixture is the real CC/USDCx capture (RFC-0006).
       apiKey: 'fixture',
-      fetcher: fixtureFetcher('oneswap/quote-amulet-usdcx-100.json'),
+      fetcher: fixtureFetcher('oneswap/quote-cc-usdcx-100.json'),
     }),
     new TradecraftAdapter({
       fetcher: fixtureFetcher('tradecraft/quote-cc-usdcx-100.json'),

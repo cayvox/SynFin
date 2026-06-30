@@ -1,6 +1,6 @@
 # RFC-0006: Network-fee application direction: on-top versus deducted-from-give
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-06-29
 - **Author / Steward:** Cayvox Labs (steward)
 - **Targets spec version:** SQSS `0.7.0`

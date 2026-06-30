@@ -1,3 +1,4 @@
+import { Decimal } from '@synfin/spec';
 import type { AggregateResult } from './aggregate.js';
 
 /** Whether the report came from live venue calls or recorded fixtures. */
@@ -36,15 +37,35 @@ export function formatReport(result: AggregateResult, mode: RunMode): string {
         `  - ${o.venueId} ${tag}: ${o.quote.receive.amount} ${want}` +
           `  (${o.quote.firmness}, valid until ${o.quote.validUntil})`,
       );
-      // Surface the flat network fee and the net, the way 1inch shows a gas line.
+      // Surface the flat network fee, distinguishing how it is charged (RFC-0006).
       const fee = o.quote.networkFee;
       if (fee !== undefined) {
-        lines.push(
-          `      + ${fee.amount} ${fee.asset.instrumentId} network fee`,
-        );
+        if ((fee.appliedTo ?? 'on_top') === 'deducted_from_give') {
+          // A deducted fee is taken from within the deposit, so the receive above
+          // is already net of it (RFC-0006 §3): framed as taken from within.
+          lines.push(
+            `      ${fee.amount} ${fee.asset.instrumentId} network fee, deducted from the deposit`,
+          );
+        } else {
+          // An on-top fee is an additional outlay in its own asset (1inch gas line).
+          lines.push(
+            `      + ${fee.amount} ${fee.asset.instrumentId} network fee`,
+          );
+        }
       }
-      if (o.netReceive !== null && o.netReceive !== o.quote.receive.amount) {
-        lines.push(`      net ${o.netReceive} ${want}`);
+      // Show the net only when it is strictly below the gross receive: an on-top
+      // fee lowers it; a deducted fee leaves it equal (its receive already IS the
+      // net), so no net line. Compare as Decimal so string form never triggers it.
+      if (o.netReceive !== null) {
+        const netDec = Decimal.parse(o.netReceive);
+        const grossDec = Decimal.parse(o.quote.receive.amount);
+        if (
+          netDec !== undefined &&
+          grossDec !== undefined &&
+          netDec.lt(grossDec)
+        ) {
+          lines.push(`      net ${o.netReceive} ${want}`);
+        }
       }
     } else {
       const code = o.rejection?.code ?? 'no_quote';

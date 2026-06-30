@@ -68,7 +68,14 @@ function quoteNetReceive(quote: Quote, intent: SwapIntent): string {
     { asset: intent.give.asset, amount: give },
     intent.want.asset,
     fee !== undefined && feeAmount !== undefined
-      ? { asset: fee.asset, amount: feeAmount }
+      ? {
+          asset: fee.asset,
+          amount: feeAmount,
+          // Forward the fee direction so the helper branches on it (RFC-0006 §3):
+          // an on_top fee re-bases, a deducted_from_give fee is already net (the
+          // net equals the gross). Absent stays absent (read as on_top).
+          ...(fee.appliedTo !== undefined ? { appliedTo: fee.appliedTo } : {}),
+        }
       : undefined,
   );
   return net.ok ? net.value.toString() : quote.receive.amount;
